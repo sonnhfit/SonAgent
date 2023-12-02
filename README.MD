@@ -19,10 +19,13 @@ The Digital Consciousness Backup Agent is an autonomous system designed to safeg
 
 ### Getting Started
 
-1. Clone the Repository:
-2. Configure Settings
-3. Install Dependencies
-4. Run the Agent:
+1. Install Dependencies
+
+```
+pip install sonagent
+```
+
+2. Run the Agent:
 
 ### Contributing
 Contributions to enhance the Digital Consciousness Backup Agent are welcome! If you have ideas for improvements, bug fixes, or new features, feel free to open an issue or submit a pull request.
