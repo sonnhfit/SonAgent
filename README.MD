@@ -27,5 +27,9 @@ pip install sonagent
 
 2. Run the Agent:
 
+### Architecture
+![Architecture](docs/source/_static/img/agent_design.png)
+
+
 ### Contributing
 Contributions to enhance the Digital Consciousness Backup Agent are welcome! If you have ideas for improvements, bug fixes, or new features, feel free to open an issue or submit a pull request.

@@ -12,3 +12,4 @@ repos:
           "-sn", # Don't display the score
           "--load-plugins=pylint.extensions.docparams", # Load an extension
         ]
+        
