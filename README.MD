@@ -26,6 +26,9 @@ pip install sonagent
 ```
 
 2. Run the Agent:
+```
+python main.py
+```
 
 ### Architecture
 ![Architecture](docs/source/_static/img/agent_design.png)
