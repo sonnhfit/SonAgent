@@ -4,7 +4,7 @@ from typing import List, Optional
 from sqlalchemy import inspect, select, text, tuple_, update
 
 from sonagent.persistence.belief_models import Belief
-
+from sonagent.persistence.planning_models import Plan
 
 logger = logging.getLogger(__name__)
 
