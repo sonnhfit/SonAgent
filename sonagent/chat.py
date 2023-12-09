@@ -7,6 +7,9 @@ class Chat:
 
     def start(self):
         print("Hello, world!")
+
+    def run(self, input):
+        print("Hello, world!")
     
     def stop(self, input):
         print("Goodbye, world!")

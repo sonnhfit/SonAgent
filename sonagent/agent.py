@@ -5,5 +5,9 @@ class Agent:
     def __init__(self) -> None:
         init_db("sqlite:///user_data/agentdb.sqlite")
     
-    def run(self) -> None:
+    def run(self, input) -> None:
         print("Hello, world!")
+
+
+    def get_tools(self) -> list:
+        return []
