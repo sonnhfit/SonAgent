@@ -1,0 +1,1 @@
+from persistence.models import init_db
