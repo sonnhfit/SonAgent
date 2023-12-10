@@ -103,13 +103,13 @@ E-mail these ideas to my significant other. Translate it to French."
   
 class SonAgentPlanner(BasicPlanner):
 
-    async def create_plan_async(
+    def create_plan_async(
         self,
         goal: str,
         kernel: Kernel,
         prompt: str = PROMPT,
     ) -> Plan:
-        return await super().create_plan_async(goal, kernel, prompt)
+        return super().create_plan_async(goal, kernel, prompt)
 
     def load_planning_prompt(self):
         pass

@@ -82,7 +82,7 @@ instance/
 
 # Scrapy stuff:
 .scrapy
-.ipynb
+# .ipynb
 
 # memray
 memray-*
@@ -108,7 +108,7 @@ target/
 
 .pytest_cache/
 .mypy_cache/
-*.ipynb
+# *.ipynb
 
 #exceptions
 !*.gitkeep
