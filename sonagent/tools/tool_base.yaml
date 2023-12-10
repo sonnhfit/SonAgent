@@ -1,7 +1,10 @@
 # person_skills.yaml
 
 - name: learning
+  module_path: tools/learning
   description: Acquire new knowledge and skills through various educational resources, training, and experiences. Embrace a proactive approach to continuous learning and self-improvement.
 
 - name: search
+  module_path: tools/search
   description: Efficiently locate and retrieve information using online and offline resources. Utilize search engines, databases, and research techniques to find relevant and accurate data.
+
