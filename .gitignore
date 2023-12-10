@@ -107,6 +107,7 @@ target/
 
 .pytest_cache/
 .mypy_cache/
+*.ipynb
 
 #exceptions
 !*.gitkeep
