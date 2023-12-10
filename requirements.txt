@@ -1,5 +1,5 @@
 SQLAlchemy==2.0.23
-
+semantic-kernel==0.3.12.dev0
 # linter 
 ipython
 pylint
