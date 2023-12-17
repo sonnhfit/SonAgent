@@ -17,6 +17,8 @@ The Digital Consciousness Backup Agent is an autonomous system designed to safeg
 
 - **Secure Backup:** The agent employs robust encryption and secure protocols to create backups of your digital consciousness, preventing unauthorized access and ensuring the integrity of your data.
 
+- **Many tools and skills:** Train neural network, Search, write file, ...
+
 ### Getting Started
 
 1. Install Dependencies
