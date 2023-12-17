@@ -31,7 +31,11 @@ python main.py
 ```
 
 ### Architecture
+#### Basic Idea
 ![Architecture](docs/source/_static/img/agent_design.png)
+
+#### Detail design 
+![Detail design](docs/source/_static/img/son_agent_design.png)
 
 
 ### Contributing
