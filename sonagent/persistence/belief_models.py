@@ -16,7 +16,7 @@ from sqlalchemy import (
     select,
 )
 from sqlalchemy.orm import Mapped, lazyload, mapped_column, relationship, validates
-
+from datetime import datetime, timedelta, timezone
 
 logger = logging.getLogger(__name__)
 
@@ -28,3 +28,14 @@ class Belief(ModelBase):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     name: Mapped[str] = mapped_column(String, nullable=False)
+    metadata: Mapped[str] = mapped_column(String, nullable=False)
+    create_date: Mapped[datetime] = mapped_column(nullable=True, default=dt_now)
+
+    def apply_sync(self, *args, **kwargs):
+        """
+        Load the belief to the agent memory.
+        make sure data in db is synced with memory
+        """
+        pass
+
+
