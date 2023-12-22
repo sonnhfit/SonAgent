@@ -1,5 +1,6 @@
 import logging
 from sonagent.persistence.base import ModelBase, SessionType
+from sonagent.utils.datetime_helpers import dt_now
 from typing import Any, ClassVar, Dict, List, Optional, Sequence, cast
 
 from sqlalchemy import (
@@ -27,9 +28,16 @@ class Belief(ModelBase):
     session: ClassVar[SessionType]
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    name: Mapped[str] = mapped_column(String, nullable=False)
+    text: Mapped[str] = mapped_column(String, nullable=False)
     metadata: Mapped[str] = mapped_column(String, nullable=False)
     create_date: Mapped[datetime] = mapped_column(nullable=True, default=dt_now)
+    is_still_belief = mapped_column(bool, nullable=False, default=True)
+
+    @staticmethod
+    def get_all_belief(*, create_date: Optional[datetime] = None) -> List["Belief"]:
+        return Belief.session.scalars(
+            select(Belief).filter(Belief.is_still_belief.is_(True))).all()
+
 
     def apply_sync(self, *args, **kwargs):
         """
@@ -37,5 +45,4 @@ class Belief(ModelBase):
         make sure data in db is synced with memory
         """
         pass
-
 
