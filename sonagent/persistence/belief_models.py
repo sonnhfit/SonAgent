@@ -29,9 +29,8 @@ class Belief(ModelBase):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     text: Mapped[str] = mapped_column(String, nullable=False)
-    metadata: Mapped[str] = mapped_column(String, nullable=False)
+    description: Mapped[str] = mapped_column(String, nullable=True)
     create_date: Mapped[datetime] = mapped_column(nullable=True, default=dt_now)
-    is_still_belief = mapped_column(bool, nullable=False, default=True)
 
     @staticmethod
     def get_all_belief(*, create_date: Optional[datetime] = None) -> List["Belief"]:

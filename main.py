@@ -1,4 +1,4 @@
 from sonagent.agent import Agent
 
 
-Agent().run()
+Agent().run(input="hello")

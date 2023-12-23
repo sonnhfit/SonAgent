@@ -1,1 +1,1 @@
-from persistence.models import init_db
+from sonagent.persistence.models import init_db
