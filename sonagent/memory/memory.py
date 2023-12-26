@@ -1,6 +1,6 @@
 import os
 import chromadb
-
+from chromadb.config import Settings
 
 class SonMemory:
 
@@ -11,7 +11,8 @@ class SonMemory:
 
         if memory_init_mode == "file":
             self.chroma_client = chromadb.PersistentClient(
-                path=default_memory_path
+                path=default_memory_path,
+                settings=Settings(allow_reset=True)
             )
         elif memory_init_mode == "server":
             self.chroma_client = chromadb.HttpClient(
@@ -40,16 +41,42 @@ class SonMemory:
             query_texts=[query],
             n_results=n_results
         )
-
+        return results
+    
+    def brain_area_search(self, query, area_collection_name, n_results=10):
+        area_collection = self.chroma_client.get_or_create_collection(
+            name=area_collection_name
+        )
+        
+        results = area_collection.query(
+            query_texts=[query],
+            n_results=n_results
+        )
         return results
     
 
-    def add(self, document: str="", metadata: dict={}, id: str=""):
-        self.memory_collection.add(
-            documents=[document],
-            metadatas=[metadata],
-            ids=[id]
-        )
+    def add(self, document: str="", metadata: dict={}, id: str="", area_collection_name=None):
+        try:
+            if area_collection_name is not None:
+                area_collection = self.chroma_client.get_or_create_collection(
+                    name=area_collection_name
+                )
+                area_collection.add(
+                    documents=[document],
+                    metadatas=[metadata],
+                    ids=[id]
+                )
+                return True
+            else:
+                self.memory_collection.add(
+                    documents=[document],
+                    metadatas=[metadata],
+                    ids=[id]
+                )
+                return True
+        except Exception as e:
+            print(e)
+            return False
 
         
     def search_with_embedding(self, embedding):
@@ -58,8 +85,8 @@ class SonMemory:
     def save(self):
         pass
     
-    def delete(self):
-        pass
+    def clear_all(self):
+        self.chroma_client.reset()
 
     def load(self):
         pass
