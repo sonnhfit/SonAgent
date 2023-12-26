@@ -31,11 +31,12 @@ class Belief(ModelBase):
     text: Mapped[str] = mapped_column(String, nullable=False)
     description: Mapped[str] = mapped_column(String, nullable=True)
     create_date: Mapped[datetime] = mapped_column(nullable=True, default=dt_now)
+    # is_still_belief: Mapped[bool] = mapped_column(nullable=False, default=True)
 
     @staticmethod
     def get_all_belief(*, create_date: Optional[datetime] = None) -> List["Belief"]:
         return Belief.session.scalars(
-            select(Belief).filter(Belief.is_still_belief.is_(True))).all()
+            select(Belief).filter()).all()
 
 
     def apply_sync(self, *args, **kwargs):

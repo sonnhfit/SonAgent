@@ -1,4 +1,4 @@
 from sonagent.agent import Agent
 
 
-Agent().run(input="hello")
+Agent(memory_path="./user_data/memory").run(input="hello")
