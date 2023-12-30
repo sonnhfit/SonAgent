@@ -31,6 +31,20 @@ pip install sonagent
 ```
 python main.py
 ```
+output
+```
+{
+    "input": "Train neural network for image classification of digits 0-9",
+    "subtasks": [
+        {"function": "PyTorchSkill.SetupEnvironment"},
+        {"function": "PyTorchSkill.CreateCNN", "args": {"architecture": "ResNet50"}},
+        {"function": "PyTorchSkill.PreprocessData", "args": {"data": "MNIST"}},
+        {"function": "PyTorchSkill.TrainModel", "args": {"epochs": 10}},
+        {"function": "PyTorchSkill.EvaluateModel"},
+        {"function": "PyTorchSkill.SaveModel"}
+    ]
+}
+```
 
 ### Architecture
 #### Basic Idea
