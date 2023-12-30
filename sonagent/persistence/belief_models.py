@@ -38,6 +38,16 @@ class Belief(ModelBase):
         return Belief.session.scalars(
             select(Belief).filter()).all()
 
+    @staticmethod
+    def get_belief_by_id(id: int) -> "Belief":
+        return Belief.session.scalars(
+            select(Belief).filter(Belief.id == id)).one()
+    
+    @staticmethod
+    def get_belief_by_ids(ids: List[int]) -> List["Belief"]:
+        return Belief.session.scalars(
+            select(Belief).filter(Belief.id.in_(ids))).all()
+
 
     def apply_sync(self, *args, **kwargs):
         """
