@@ -68,6 +68,7 @@ class Agent:
             input_vars=variables,
         )
         print(result)
+        print(type(result))
         # self._create_belief("my name is Son", "this is my name")
         
     def sync_beliefs(self) -> None:
