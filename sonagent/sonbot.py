@@ -10,7 +10,7 @@ from typing import Any, Dict, List, Optional, Tuple
 from sonagent.mixins import LoggingMixin
 from sonagent.enums.enums import State
 from sonagent.enums.rpcmessagetype import RPCMessageType
-
+from sonagent.rpc import RPCManager
 from sonagent.persistence.belief_models import Belief
                              
 
@@ -23,7 +23,7 @@ class SonBot(LoggingMixin):
 
         self.config = config
 
-        self.rpc = None
+        self.rpc: RPCManager = RPCManager(self)
 
     def cleanup(self) -> None:
         """
@@ -53,6 +53,12 @@ class SonBot(LoggingMixin):
             # Exeptions here will be happening if the db disappeared.
             # At which point we can no longer commit anyway.
             pass
+
+    def startup(self) -> None:
+        pass
+
+    def process(self) -> None:
+        print("process")
 
     def notify_status(self, msg: str, msg_type=RPCMessageType.STATUS) -> None:
         """

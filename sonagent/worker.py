@@ -9,7 +9,11 @@ import sdnotify
 
 from sonagent import __version__
 from sonagent.sonbot import SonBot
-from sonagent.enums import State
+from sonagent.enums.enums import State
+from sonagent.enums.rpcmessagetype import RPCMessageType
+from sonagent.constants import PROCESS_THROTTLE_SECS, RETRY_TIMEOUT
+from sonagent.exceptions import OperationalException, TemporaryError
+
 
 logger = logging.getLogger(__name__)
 
@@ -59,6 +63,24 @@ class Worker:
     def _sleep(sleep_duration: float) -> None:
         """Local sleep method - to improve testability"""
         time.sleep(sleep_duration)
+    
+    def _process_running(self) -> None:
+        try:
+            self.sonbot.process()
+        except TemporaryError as error:
+            logger.warning(f"Error: {error}, retrying in {RETRY_TIMEOUT} seconds...")
+            time.sleep(RETRY_TIMEOUT)
+        except OperationalException:
+            tb = traceback.format_exc()
+            hint = 'Issue `/start` if you think it is safe to restart.'
+
+            self.sonbot.notify_status(
+                f'*OperationalException:*\n```\n{tb}```\n {hint}',
+                msg_type=RPCMessageType.EXCEPTION
+            )
+
+            logger.exception('OperationalException. Stopping trader ...')
+            self.sonbot.state = State.STOPPED
 
     def _reconfigure(self) -> None:
         """
