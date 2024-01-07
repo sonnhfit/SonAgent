@@ -12,3 +12,6 @@ class RPCMessageType(str, Enum):
 
     def __str__(self):
         return self.value
+    
+
+NO_ECHO_MESSAGES = ()

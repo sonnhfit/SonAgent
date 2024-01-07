@@ -29,6 +29,8 @@ def main(sysargv: Optional[List[str]] = None) -> None:
         arguments = Arguments(sysargv)
         args = arguments.get_parsed_arg()
 
+        print("|------- - -------- args", args)
+
         # Call subcommand.
         if 'func' in args:
             logger.info(f'SonAgent {__version__}')
@@ -37,12 +39,12 @@ def main(sysargv: Optional[List[str]] = None) -> None:
         else:
             # No subcommand was issued.
             raise OperationalException(
-                "Usage of Freqtrade requires a subcommand to be specified.\n"
+                "Usage of SonAgent requires a subcommand to be specified.\n"
                 "To have the bot executing trades in live/dry-run modes, "
-                "depending on the value of the `dry_run` setting in the config, run Freqtrade "
-                "as `freqtrade trade [options...]`.\n"
+                "depending on the value of the `dry_run` setting in the config, run SonAgent "
+                "as `SonAgent trade [options...]`.\n"
                 "To see the full list of options available, please use "
-                "`freqtrade --help` or `freqtrade <command> --help`."
+                "`SonAgent --help` or `SonAgent <command> --help`."
             )
 
     except SystemExit as e:  # pragma: no cover

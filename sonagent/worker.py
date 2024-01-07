@@ -84,13 +84,13 @@ class Worker:
 
     def _reconfigure(self) -> None:
         """
-        Cleans up current freqtradebot instance, reloads the configuration and
+        Cleans up current sonagentbot instance, reloads the configuration and
         replaces it with the new instance
         """
         # Tell systemd that we initiated reconfiguration
         self._notify("RELOADING=1")
 
-        # Clean up current freqtrade modules
+        # Clean up current sonagent modules
         self.sonbot.cleanup()
 
         # Load and validate config and create new instance of the bot

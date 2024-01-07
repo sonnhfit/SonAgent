@@ -8,7 +8,8 @@ from sonagent.constants import DEFAULT_CONFIG
 
 
 ARGS_COMMON = ["verbosity", "logfile", "version", "config", "datadir", "user_data_dir"]
-ARGS_TRADE = ["db_url", "sd_notify", "dry_run", "dry_run_wallet", "fee"]
+ARGS_BUILD_CONFIG = ["config"]
+ARGS_RUN = ["sd_notify", "dry_run_wallet"]
 NO_CONF_REQURIED = []
 
 
@@ -42,7 +43,11 @@ class Arguments:
         # Workaround issue in argparse with action='append' and default value
         # (see https://bugs.python.org/issue16399)
         # Allow no-config for certain commands (like downloading / plotting)
+        # print("------------")
+        # print(parsed_arg.config)
+
         if ('config' in parsed_arg and parsed_arg.config is None):
+            print("go here ")
             conf_required = ('command' in parsed_arg and parsed_arg.command in NO_CONF_REQURIED)
 
             if 'user_data_dir' in parsed_arg and parsed_arg.user_data_dir is not None:
@@ -65,6 +70,7 @@ class Arguments:
     def _build_args(self, optionlist, parser):
 
         for val in optionlist:
+
             opt = AVAILABLE_CLI_OPTIONS[val]
             parser.add_argument(*opt.cli, dest=val, **opt.kwargs)
 
@@ -92,7 +98,7 @@ class Arguments:
                                         )
         
         # Add trade subcommand
-        start_cmd = subparsers.add_parser('trade', help='Trade module.',
+        start_cmd = subparsers.add_parser('run', help='SonAgent run.',
                                           parents=[_common_parser])
         start_cmd.set_defaults(func=start_sonagent)
-        self._build_args(optionlist=ARGS_TRADE, parser=start_cmd)
+        self._build_args(optionlist=ARGS_RUN, parser=start_cmd)

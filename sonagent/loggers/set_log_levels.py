@@ -27,9 +27,9 @@ def set_loggers(verbosity: int = 0, api_verbosity: str = 'info') -> None:
 
 
 __BIAS_TESTER_LOGGERS = [
-    'freqtrade.resolvers',
-    'freqtrade.strategy.hyper',
-    'freqtrade.configuration.config_validation',
+    'sonagent.resolvers',
+    'sonagent.strategy.hyper',
+    'sonagent.configuration.config_validation',
 ]
 
 

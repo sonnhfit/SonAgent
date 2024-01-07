@@ -21,7 +21,12 @@ def start_sonagent(args: Dict[str, Any]) -> int:
     worker = None
     try:
         signal.signal(signal.SIGTERM, term_handler)
-        worker = Worker(args)
+        config = {
+            'internals': {
+                'sd_notify': True
+            }
+        }
+        worker = Worker(args, config=config)
         worker.run()
     except Exception as e:
         logger.error(str(e))

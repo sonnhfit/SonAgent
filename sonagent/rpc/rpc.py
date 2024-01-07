@@ -56,3 +56,14 @@ class RPCHandler:
     def send_msg(self, msg: RPCSendMsg) -> None:
         """ Sends a message to all registered rpc modules """
 
+
+class RPC:
+    def __init__(self, sonagent) -> None:
+        """
+        Initializes all enabled rpc modules
+        :param freqtrade: Instance of a freqtrade bot
+        :return: None
+        """
+        self.sonagent = sonagent
+        self._config: dict = sonagent.config
+
