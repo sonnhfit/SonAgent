@@ -5,6 +5,7 @@ from typing import Any, Dict
 
 logger = logging.getLogger(__name__)
 
+
 def start_sonagent(args: Dict[str, Any]) -> int:
     """
     Main entry point for running mode

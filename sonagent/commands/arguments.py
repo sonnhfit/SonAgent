@@ -8,6 +8,7 @@ from sonagent.constants import DEFAULT_CONFIG
 
 
 ARGS_COMMON = ["verbosity", "logfile", "version", "config", "datadir", "user_data_dir"]
+ARGS_TRADE = ["db_url", "sd_notify", "dry_run", "dry_run_wallet", "fee"]
 NO_CONF_REQURIED = []
 
 
@@ -81,3 +82,17 @@ class Arguments:
 
         self.parser = argparse.ArgumentParser(description='SonAgent')
         self._build_args(optionlist=['version'], parser=self.parser)
+
+        from sonagent.commands import (start_sonagent)
+
+        subparsers = self.parser.add_subparsers(dest='command',
+                                        # Use custom message when no subhandler is added
+                                        # shown from `main.py`
+                                        # required=True
+                                        )
+        
+        # Add trade subcommand
+        start_cmd = subparsers.add_parser('trade', help='Trade module.',
+                                          parents=[_common_parser])
+        start_cmd.set_defaults(func=start_sonagent)
+        self._build_args(optionlist=ARGS_TRADE, parser=start_cmd)

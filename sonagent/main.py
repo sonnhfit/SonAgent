@@ -12,6 +12,8 @@ from sonagent import __version__
 from sonagent.exceptions import SonAgentException, OperationalException
 from sonagent.utils.gc_setup import gc_set_threshold
 from sonagent.commands import Arguments
+from sonagent.loggers import setup_logging_pre
+
 
 logger = logging.getLogger('sonagent')
 
