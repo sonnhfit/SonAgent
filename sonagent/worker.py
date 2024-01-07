@@ -9,6 +9,7 @@ import sdnotify
 
 from sonagent import __version__
 from sonagent.sonbot import SonBot
+from sonagent.enums import State
 
 logger = logging.getLogger(__name__)
 
@@ -38,7 +39,6 @@ class Worker:
         self._sd_notify = sdnotify.SystemdNotifier() if \
             self._config.get('internals', {}).get('sd_notify', False) else None
 
-
     def _notify(self, message: str) -> None:
         """
         Removes the need to verify in all occurrences if sd_notify is enabled
@@ -47,4 +47,43 @@ class Worker:
         if self._sd_notify:
             logger.debug(f"sd_notify: {message}")
             self._sd_notify.notify(message)
+
+    def run(self) -> None:
+        state = None
+        while True:
+            state = self._worker(old_state=state)
+            if state == State.RELOAD_CONFIG:
+                self._reconfigure()
+
+    @staticmethod
+    def _sleep(sleep_duration: float) -> None:
+        """Local sleep method - to improve testability"""
+        time.sleep(sleep_duration)
+
+    def _reconfigure(self) -> None:
+        """
+        Cleans up current freqtradebot instance, reloads the configuration and
+        replaces it with the new instance
+        """
+        # Tell systemd that we initiated reconfiguration
+        self._notify("RELOADING=1")
+
+        # Clean up current freqtrade modules
+        self.sonbot.cleanup()
+
+        # Load and validate config and create new instance of the bot
+        self._init(True)
+
+        self.sonbot.notify_status('config reloaded')
+
+        # Tell systemd that we completed reconfiguration
+        self._notify("READY=1")
+
+    def exit(self) -> None:
+        # Tell systemd that we are exiting now
+        self._notify("STOPPING=1")
+
+        if self.sonbot:
+            self.sonbot.notify_status('process died')
+            self.sonbot.cleanup()
 
