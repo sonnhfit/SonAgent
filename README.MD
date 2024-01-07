@@ -56,3 +56,10 @@ output
 
 ### Contributing
 Contributions to enhance the Digital Consciousness Backup Agent are welcome! If you have ideas for improvements, bug fixes, or new features, feel free to open an issue or submit a pull request.
+
+
+### Dev
+
+```
+pip install --editable .
+```
