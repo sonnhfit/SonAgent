@@ -8,25 +8,17 @@ from sonagent.version import __version__
 with open("README.md", "r", encoding="utf8") as f:
     readme = f.read()
 
-install_requires = [
-    "pandas",
-    "ipython",
-    "pylint",
-    "sphinx-material",
-    "numpydoc",
-    "nbsphinx",
-    "recommonmark",
-    "sphinx-markdown-tables",
-    "sphinx_copybutton",
-    "readthedocs-sphinx-search",
-]
+with open("requirements.txt", "r", encoding="utf8") as f2:
+    required = f2.read().splitlines()
 
 # package configuration - for reference see:
 # https://setuptools.readthedocs.io/en/latest/setuptools.html#id9
 setup(
     name="sonagent",
-    description=("Autonomous Agent for Digital Consciousness Backup "
-                 "Using Large Language Models (LLM)."),
+    description=(
+        "Autonomous Agent for Digital Consciousness Backup "
+        "Using Large Language Models (LLM)."
+    ),
     long_description=readme,
     long_description_content_type="text/markdown",
     version=__version__,
@@ -36,11 +28,13 @@ setup(
     packages=find_packages(),
     include_package_data=True,
     python_requires=">=3.9.0",
-    install_requires=install_requires,
+    install_requires=required,
     license="MIT",
     zip_safe=False,
     entry_points={
-        "console_scripts": ["py-package-template=py_pkg.entry_points:main"],
+        "console_scripts": [
+            "sonagent = sonagent.main:main",
+        ]
     },
     classifiers=[
         "Programming Language :: Python :: 3",
