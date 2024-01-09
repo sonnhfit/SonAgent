@@ -25,6 +25,12 @@ class SonBot(LoggingMixin):
 
         self.rpc: RPCManager = RPCManager(self)
 
+        # Set initial bot state from config
+        initial_state = self.config.get('initial_state')
+
+        self.state = State[initial_state.upper()] if initial_state else State.STOPPED
+
+
     def cleanup(self) -> None:
         """
         Cleanup pending resources on an already stopped bot
@@ -58,7 +64,14 @@ class SonBot(LoggingMixin):
         pass
 
     def process(self) -> None:
-        print("process")
+        # print("process")
+        pass
+
+    def process_stopped(self) -> None:
+        """
+        handle process stopped
+        """
+        pass
 
     def notify_status(self, msg: str, msg_type=RPCMessageType.STATUS) -> None:
         """

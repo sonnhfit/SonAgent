@@ -69,6 +69,10 @@ class Agent:
         )
         print(result)
         print(type(result))
+        print("plan: ", result.json())
+
+        print("skill: ", result.skills)
+
         # self._create_belief("my name is Son", "this is my name")
         
     def sync_beliefs(self) -> None:

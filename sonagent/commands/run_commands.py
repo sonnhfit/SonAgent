@@ -22,6 +22,7 @@ def start_sonagent(args: Dict[str, Any]) -> int:
     try:
         signal.signal(signal.SIGTERM, term_handler)
         config = {
+            'initial_state': 'running',
             'internals': {
                 'sd_notify': True
             }
