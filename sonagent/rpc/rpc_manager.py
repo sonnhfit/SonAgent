@@ -19,6 +19,15 @@ class RPCManager:
         self._rpc = RPC(sonagent)
         config = sonagent.config
 
+        # Enable local rest api server for cmd line control
+        if config.get('api_server', {}).get('enabled', False):
+            logger.info('Enabling rpc.api_server')
+            from sonagent.rpc.api_server import ApiServer
+            apiserver = ApiServer(config)
+            apiserver.add_rpc_handler(self._rpc)
+            self.registered_modules.append(apiserver)
+
+
 
     def send_msg(self, msg: RPCSendMsg) -> None:
         """

@@ -23,6 +23,18 @@ def start_sonagent(args: Dict[str, Any]) -> int:
         signal.signal(signal.SIGTERM, term_handler)
         config = {
             'initial_state': 'running',
+            "api_server": {
+                "enabled": True,
+                "listen_ip_address": "0.0.0.0",
+                "listen_port": 8080,
+                "verbosity": "error",
+                "enable_openapi": True,
+                "jwt_secret_key": "secret",
+                "ws_token": "4IvjuMcs3MsVRYcMcl-3UXfZuWX3oNvbrQ",
+                "CORS_origins": [],
+                "username": "sonnh",
+                "password": "son123"
+            },
             'internals': {
                 'sd_notify': True
             }

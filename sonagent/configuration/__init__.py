@@ -1,0 +1,1 @@
+from sonagent.configuration.detect_environment import running_in_docker

@@ -6,6 +6,7 @@ arrow==1.3.0
 ipython
 pylint
 
+fastapi==0.108.0
 # Notify systemd
 sdnotify==0.3.2
 
