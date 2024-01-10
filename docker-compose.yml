@@ -2,7 +2,7 @@
 version: '3'
 services:
   sonagent:
-    image: sonagent:latest
+    image: sonnhfit/sonagent:latest
     restart: unless-stopped
     container_name: sonagent
     volumes:
