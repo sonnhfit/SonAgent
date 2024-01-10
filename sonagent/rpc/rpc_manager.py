@@ -19,6 +19,13 @@ class RPCManager:
         self._rpc = RPC(sonagent)
         config = sonagent.config
 
+        # Enable telegram
+        if config.get('telegram', {}).get('enabled', False):
+            logger.info('Enabling rpc.telegram ...')
+            from sonagent.rpc.telegram import Telegram
+            self.registered_modules.append(Telegram(self._rpc, config))
+
+
         # Enable local rest api server for cmd line control
         if config.get('api_server', {}).get('enabled', False):
             logger.info('Enabling rpc.api_server')

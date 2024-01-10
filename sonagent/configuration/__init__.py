@@ -1,1 +1,2 @@
 from sonagent.configuration.detect_environment import running_in_docker
+from sonagent.configuration.load_config import load_config_file

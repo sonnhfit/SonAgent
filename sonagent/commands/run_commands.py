@@ -1,7 +1,8 @@
 import logging
 import signal
 from typing import Any, Dict
-
+from sonagent.configuration import load_config_file
+from sonagent.exceptions import OperationalException
 
 logger = logging.getLogger(__name__)
 
@@ -21,6 +22,7 @@ def start_sonagent(args: Dict[str, Any]) -> int:
     worker = None
     try:
         signal.signal(signal.SIGTERM, term_handler)
+        
         config = {
             'initial_state': 'running',
             "api_server": {
@@ -39,6 +41,13 @@ def start_sonagent(args: Dict[str, Any]) -> int:
                 'sd_notify': True
             }
         }
+
+        try:
+            config = load_config_file(args['config'][0])
+        except Exception as e:
+            config = config
+            raise OperationalException("Error loading config file: " + str(e))
+
         worker = Worker(args, config=config)
         worker.run()
     except Exception as e:
