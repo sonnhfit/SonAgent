@@ -16,7 +16,7 @@ SonAgent-plot.html
 SonAgent-profit-plot.html
 SonAgent/rpc/api_server/ui/*
 build_helpers/ta-lib/*
-
+user_data/
 # Macos related
 .DS_Store
 
