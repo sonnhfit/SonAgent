@@ -5,7 +5,7 @@ from setuptools import setup, find_packages
 from sonagent.version import __version__
 
 # load the README file and use it as the long_description for PyPI
-with open("README.md", "r", encoding="utf8") as f:
+with open("README.MD", "r", encoding="utf8") as f:
     readme = f.read()
 
 with open("requirements.txt", "r", encoding="utf8") as f2:

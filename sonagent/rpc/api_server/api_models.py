@@ -1,7 +1,7 @@
 from datetime import date, datetime
 from typing import Any, Dict, List, Optional, Union
 
-from pydantic import BaseModel, RootModel, SerializeAsAny
+from pydantic import BaseModel
 
 
 class Ping(BaseModel):

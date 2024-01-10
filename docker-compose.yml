@@ -2,3 +2,17 @@
 version: '3'
 services:
   sonagent:
+    image: sonagent:latest
+    restart: unless-stopped
+    container_name: sonagent
+    volumes:
+      - "./user_data:/sonagent/user_data"
+    # Expose api on port 8080 (localhost only)
+    # Please read the https://www.freqtrade.io/en/stable/rest-api/ documentation
+    # for more information.
+    ports:
+      - "0.0.0.0:8080:8080"
+    # Default command used when running `docker compose up`
+    command: >
+      run
+      --config /freqtrade/user_data/config.json
