@@ -22,8 +22,9 @@ from telegram import (CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup,
                       ReplyKeyboardMarkup, Update)
 from telegram.constants import MessageLimit, ParseMode
 from telegram.error import BadRequest, NetworkError, TelegramError
-from telegram.ext import Application, CallbackContext, CallbackQueryHandler, CommandHandler
+from telegram.ext import Application, CallbackContext, CallbackQueryHandler, CommandHandler, MessageHandler, ContextTypes
 from telegram.helpers import escape_markdown
+from telegram.ext import filters
 
 from sonagent.exceptions import OperationalException
 from sonagent.rpc import RPC, RPCException, RPCHandler
@@ -99,6 +100,10 @@ class Telegram(RPCHandler):
     def _init_telegram_app(self):
         return Application.builder().token(self._config['telegram']['token']).build()
 
+    async def echo(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+        """Echo the user message."""
+        await update.message.reply_text(update.message.text)
+
     def _init(self) -> None:
         """
         Initializes this module with the given config,
@@ -118,14 +123,21 @@ class Telegram(RPCHandler):
         handles = [
             CommandHandler('help', self._help),
             CommandHandler('version', self._version),
+            # MessageHandler(
+            #     filters.TEXT & ~(filters.COMMAND | filters.Regex("^Done$")),
+            #     self._handle_messages,
+            # )
+
+
         ]
 
         for handle in handles:
             self._app.add_handler(handle)
+        
+        self._app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, self._handle_messages))
 
         logger.info(
-            'rpc.telegram is listening for following commands: %s',
-            [[x for x in sorted(h.commands)] for h in handles]
+            'rpc.telegram is listening for following commands'
         )
         self._loop.run_until_complete(self._startup_telegram())
 
@@ -133,13 +145,17 @@ class Telegram(RPCHandler):
         await self._app.initialize()
         await self._app.start()
         if self._app.updater:
-            await self._app.updater.start_polling(
-                bootstrap_retries=-1,
-                timeout=20,
-                # read_latency=60,  # Assumed transmission latency
-                drop_pending_updates=True,
-                # stop_signals=[],  # Necessary as we don't run on the main thread
-            )
+            
+            # await self._app.updater.start_polling(
+            #     bootstrap_retries=-1,
+            #     timeout=20,
+            #     # read_latency=60,  # Assumed transmission latency
+            #     drop_pending_updates=True,
+            #     allowed_updates=Update.ALL_TYPES
+            #     # stop_signals=[],  # Necessary as we don't run on the main thread
+            # )
+
+            await self._app.updater.start_polling(allowed_updates=Update.ALL_TYPES)
             while True:
                 await asyncio.sleep(10)
                 if not self._app.updater.running:
@@ -293,6 +309,7 @@ class Telegram(RPCHandler):
         :param update: message update
         :return: None
         """
+        print("help")
         message = (
             "_Bot Control_\n"
             "------------\n"
@@ -312,3 +329,16 @@ class Telegram(RPCHandler):
         """
         version_string = f'*Version:* `{__version__}`'
         await self._send_msg(version_string)
+
+    async def _handle_messages(self, update: Update, context: CallbackContext)  -> None:
+        # Lấy thông tin từ tin nhắn
+        # message = update.message
+        # chat_id = message.chat_id
+        # text = message.text
+        # Xử lý tin nhắn ở đây
+
+        logger.info("--------- go here")
+        # print(f"Received message '{text}' from chat {chat_id}")
+        # logger.info(
+        #     f"---- Received message '{text}' from chat {chat_id}"
+        # )

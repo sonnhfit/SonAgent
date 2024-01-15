@@ -29,8 +29,6 @@ def main(sysargv: Optional[List[str]] = None) -> None:
         arguments = Arguments(sysargv)
         args = arguments.get_parsed_arg()
 
-        print("|------- - -------- args", args)
-
         # Call subcommand.
         if 'func' in args:
             logger.info(f'SonAgent {__version__}')

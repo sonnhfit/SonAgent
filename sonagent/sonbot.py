@@ -12,18 +12,36 @@ from sonagent.enums.enums import State
 from sonagent.enums.rpcmessagetype import RPCMessageType
 from sonagent.rpc import RPCManager
 from sonagent.persistence.belief_models import Belief
-                             
+from sonagent.agent import Agent
+from sonagent.persistence.models import init_db
+                     
 
 logger = logging.getLogger(__name__)
 
 
 class SonBot(LoggingMixin):
-    def __init__(self, config: dict) -> None:
+    def __init__(self, config: dict, args: Any = None) -> None:
+
+
         self.state = State.STOPPED
+        self.args = args
 
         self.config = config
+        
+        memory_url = self.args.get('memory-url', "./user_data/memory")
+        agentdb = self.args.get('agentdb', "sqlite:///user_data/agentdb.sqlite")
+
+        if agentdb is None:
+            agentdb = "sqlite:///user_data/agentdb.sqlite"
+        
+        if memory_url is None:
+            memory_url = "./user_data/memory"
+
+        init_db(agentdb)
 
         self.rpc: RPCManager = RPCManager(self)
+
+        self.agent = Agent(memory_path=memory_url)
 
         # Set initial bot state from config
         initial_state = self.config.get('initial_state')

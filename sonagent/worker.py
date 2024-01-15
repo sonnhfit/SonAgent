@@ -36,7 +36,7 @@ class Worker:
 
     def _init(self, reconfig: bool) -> None:
         # Init the instance of the bot
-        self.sonbot = SonBot(self._config)
+        self.sonbot = SonBot(self._config, args=self._args)
 
         internals_config = self._config.get("internals", {})
         self._throttle_secs = internals_config.get(

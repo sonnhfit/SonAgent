@@ -73,20 +73,20 @@ AVAILABLE_CLI_OPTIONS = {
         help='Path to userdata directory.',
         metavar='PATH',
     ),
+    "memory-url": Arg(
+        '--memory-url',
+        help='Path to memory db.',
+        metavar='PATH',
+    ),
     "sd_notify": Arg(
         '--sd-notify',
         help='Notify systemd service manager.',
         action='store_true',
     ),
-    "dry_run": Arg(
-        '--dry-run',
-        help='Enforce dry-run for trading (removes Exchange secrets and simulates trades).',
-        action='store_true',
-    ),
-    "dry_run_wallet": Arg(
-        '--dry-run-wallet', '--starting-balance',
-        help='Starting balance, used for backtesting / hyperopt and dry-runs.',
-        type=float,
+    "agentdb": Arg(
+        '--agentdb-url',
+        help='Agent database url.',
+        metavar='PATH',
     ),
     "freqaimodel": Arg(
         '--freqaimodel',

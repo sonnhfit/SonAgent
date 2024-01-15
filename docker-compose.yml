@@ -16,3 +16,4 @@ services:
     command: >
       run
       --config /freqtrade/user_data/config.json
+      --db-url sqlite:///user_data/tradesv3.sqlite

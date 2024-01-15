@@ -1,6 +1,5 @@
 import logging
 
-from sonagent.persistence.models import init_db
 from sonagent.persistence.belief_models import Belief
 from sonagent.memory.memory import SonMemory
 from sonagent.planning.planner import SonAgentPlanner
@@ -15,25 +14,17 @@ logger = logging.getLogger(__name__)
 class Agent:
     def __init__(self, memory_path) -> None:
         # persistence
-        init_db("sqlite:///user_data/agentdb.sqlite")
-
-        
 
         # memory
         self.memory = SonMemory(default_memory_path=memory_path)
-        
 
         # planner
-
         self.planner = SonAgentPlanner()
-
-
         # self.sync_beliefs()
     
     def get_beliefs_for_planner(self, ids: list) -> list:
         list_belief = Belief.get_belief_by_ids(ids=ids)
         return list_belief
-
 
     async def run(self, input) -> None:
         # get belief -> thinking, planning -> acting
