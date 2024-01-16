@@ -91,7 +91,7 @@ memray-*
 docs/_build/
 # Mkdocs documentation
 site/
-
+user_data_example/
 # PyBuilder
 target/
 
