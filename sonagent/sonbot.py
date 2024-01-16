@@ -48,6 +48,8 @@ class SonBot(LoggingMixin):
 
         self.state = State[initial_state.upper()] if initial_state else State.STOPPED
 
+    async def chat(self, input: str) -> str:
+        return await self.agent.chat(input)
 
     def cleanup(self) -> None:
         """

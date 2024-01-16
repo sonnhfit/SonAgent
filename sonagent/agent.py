@@ -5,11 +5,14 @@ from sonagent.memory.memory import SonMemory
 from sonagent.planning.planner import SonAgentPlanner
 import semantic_kernel as sk
 from semantic_kernel.connectors.ai.open_ai import AzureChatCompletion
+import semantic_kernel.connectors.ai.open_ai as sk_oai
+
+
 from sonagent.planning.prompt import PROMPT_PLAN
 
 
-
 logger = logging.getLogger(__name__)
+
 
 class Agent:
     def __init__(self, memory_path) -> None:
@@ -21,7 +24,7 @@ class Agent:
         # planner
         self.planner = SonAgentPlanner()
         # self.sync_beliefs()
-    
+
     def get_beliefs_for_planner(self, ids: list) -> list:
         list_belief = Belief.get_belief_by_ids(ids=ids)
         return list_belief
@@ -29,8 +32,10 @@ class Agent:
     async def run(self, input) -> None:
         # get belief -> thinking, planning -> acting
 
-        belief = self.memory.brain_area_search(area_collection_name="belief_base", query=input)
-        belief_ids = belief['ids'][0]
+        belief = self.memory.brain_area_search(
+            area_collection_name="belief_base", query=input
+        )
+        belief_ids = belief["ids"][0]
         result_list = self.get_beliefs_for_planner(belief_ids)
         belief_text = ""
         for item in result_list:
@@ -39,7 +44,9 @@ class Agent:
         deployment, api_key, endpoint = sk.azure_openai_settings_from_dot_env()
         # print(deployment, api_key, endpoint)
         kernel = sk.Kernel()
-        kernel.add_chat_service("chat_completion", AzureChatCompletion(deployment, endpoint, api_key))
+        kernel.add_chat_service(
+            "chat_completion", AzureChatCompletion(deployment, endpoint, api_key)
+        )
 
         # planner = SonAgentPlanner()
         ask = "train a neural network for classify 0 -> 9?"
@@ -48,12 +55,10 @@ class Agent:
 
         variables = sk.ContextVariables()
 
-        variables['believe'] = belief_text
-        variables['goal'] = ask
+        variables["believe"] = belief_text
+        variables["goal"] = ask
 
-        semantic_function = kernel.create_semantic_function(
-            PROMPT_PLAN
-        )
+        semantic_function = kernel.create_semantic_function(PROMPT_PLAN)
         result = await kernel.run_async(
             semantic_function,
             input_vars=variables,
@@ -65,13 +70,18 @@ class Agent:
         print("skill: ", result.skills)
 
         # self._create_belief("my name is Son", "this is my name")
-        
+
     def sync_beliefs(self) -> None:
         logger.debug("Start syncing beliefs to memory.")
         list_belief = Belief.get_all_belief()
         print(list_belief)
         for belief in list_belief:
-            self.memory.add(belief.text, {"description": belief.description}, str(belief.id), area_collection_name="belief_base")
+            self.memory.add(
+                belief.text,
+                {"description": belief.description},
+                str(belief.id),
+                area_collection_name="belief_base",
+            )
         logger.debug("Finish syncing beliefs to memory.")
 
     def create_belief(self, text: str, description: str) -> None:
@@ -94,4 +104,20 @@ class Agent:
 
     def get_tools(self) -> list:
         return []
-    
+
+    async def chat(self, input: str) -> str:
+
+        deployment, api_key, endpoint = sk.azure_openai_settings_from_dot_env()
+        # print(deployment, api_key, endpoint)
+        kernel = sk.Kernel()
+        kernel.add_chat_service(
+            "chat_completion", AzureChatCompletion(deployment, endpoint, api_key)
+        )
+
+        semantic_function = kernel.create_semantic_function(input)
+        variables = sk.ContextVariables()
+        result = await kernel.run_async(
+            semantic_function,
+            input_vars=variables,
+        )
+        return str(result)

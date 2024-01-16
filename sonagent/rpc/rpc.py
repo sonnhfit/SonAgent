@@ -67,3 +67,10 @@ class RPC:
         self.sonagent = sonagent
         self._config: dict = sonagent.config
 
+    async def chat(self, msg: str) -> None:
+        """
+        Send a chat message to all registered rpc modules.
+        :param msg: Message to send
+        :return: None
+        """
+        return await self.sonagent.chat(msg)

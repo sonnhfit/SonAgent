@@ -102,7 +102,19 @@ class Telegram(RPCHandler):
 
     async def echo(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         """Echo the user message."""
-        await update.message.reply_text(update.message.text)
+        msg = update.message.text.replace('/sonagent', '')
+        if len(msg) <= 0:
+            msg = "Hello, I'm SonAgent"
+        await update.message.reply_text(msg)
+
+    async def echo_msg(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+        """Echo the user message."""
+        msg = update.message.text.replace('/sonagent', '')
+        if len(msg) <= 0:
+            msg = "Hello, I'm SonAgent"
+        
+        chat_result = await self._rpc.chat(msg)
+        await update.message.reply_text(chat_result)
 
     def _init(self) -> None:
         """
@@ -123,18 +135,14 @@ class Telegram(RPCHandler):
         handles = [
             CommandHandler('help', self._help),
             CommandHandler('version', self._version),
-            # MessageHandler(
-            #     filters.TEXT & ~(filters.COMMAND | filters.Regex("^Done$")),
-            #     self._handle_messages,
-            # )
-
-
+            CommandHandler('sonagent', self.echo),
         ]
 
         for handle in handles:
             self._app.add_handler(handle)
-        
-        self._app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, self._handle_messages))
+        self._app.add_handler(
+            MessageHandler(filters.TEXT & ~filters.COMMAND, self.echo_msg))
+        # self._app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, self._handle_messages))
 
         logger.info(
             'rpc.telegram is listening for following commands'
@@ -146,16 +154,15 @@ class Telegram(RPCHandler):
         await self._app.start()
         if self._app.updater:
             
-            # await self._app.updater.start_polling(
-            #     bootstrap_retries=-1,
-            #     timeout=20,
-            #     # read_latency=60,  # Assumed transmission latency
-            #     drop_pending_updates=True,
-            #     allowed_updates=Update.ALL_TYPES
-            #     # stop_signals=[],  # Necessary as we don't run on the main thread
-            # )
+            await self._app.updater.start_polling(
+                bootstrap_retries=-1,
+                timeout=20,
+                # read_latency=60,  # Assumed transmission latency
+                drop_pending_updates=True,
+                allowed_updates=Update.ALL_TYPES,
+                #stop_signals=[],  # Necessary as we don't run on the main thread
+            )
 
-            await self._app.updater.start_polling(allowed_updates=Update.ALL_TYPES)
             while True:
                 await asyncio.sleep(10)
                 if not self._app.updater.running:
