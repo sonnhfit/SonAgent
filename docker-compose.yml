@@ -3,6 +3,8 @@ version: '3'
 services:
   sonagent:
     image: sonnhfit/sonagent:latest
+    env_file:
+      - .env
     restart: unless-stopped
     container_name: sonagent
     volumes:
