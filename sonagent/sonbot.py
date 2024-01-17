@@ -28,7 +28,7 @@ class SonBot(LoggingMixin):
 
         self.config = config
         
-        memory_url = self.args.get('memory-url', "./user_data/memory")
+        memory_url = self.args.get('memory-url', "user_data/memory")
         agentdb = self.args.get('agentdb', "sqlite:///user_data/agentdb.sqlite")
 
         if agentdb is None:
@@ -36,8 +36,11 @@ class SonBot(LoggingMixin):
         
         if memory_url is None:
             memory_url = "./user_data/memory"
-
-        init_db(agentdb)
+        try:
+            init_db(agentdb)
+        except Exception as e:
+            logger.error(f"Error initializing database: {e}")
+            
 
         self.rpc: RPCManager = RPCManager(self)
 

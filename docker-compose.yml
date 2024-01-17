@@ -9,6 +9,7 @@ services:
     container_name: sonagent
     volumes:
       - "./user_data:/sonagent/user_data"
+      - "./user_data/.env:/sonagent/.env"
     # Expose api on port 8080 (localhost only)
     # Please read the https://www.freqtrade.io/en/stable/rest-api/ documentation
     # for more information.
@@ -17,5 +18,6 @@ services:
     # Default command used when running `docker compose up`
     command: >
       run
-      --config /freqtrade/user_data/config.json
-      --db-url sqlite:///user_data/tradesv3.sqlite
+      --config /sonagent/user_data/config.json
+      --agentdb sqlite:///user_data/tradesv3.sqlite
+      --memory-url /sonagent/user_data/memory

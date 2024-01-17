@@ -114,7 +114,8 @@ class Agent:
             "chat_completion", AzureChatCompletion(deployment, endpoint, api_key)
         )
 
-        semantic_function = kernel.create_semantic_function(input)
+        semantic_function = kernel.create_semantic_function(input, max_tokens=2500, temperature=0.7, top_p=0.8)
+
         variables = sk.ContextVariables()
         result = await kernel.run_async(
             semantic_function,

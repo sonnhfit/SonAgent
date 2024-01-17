@@ -107,6 +107,20 @@ class Telegram(RPCHandler):
             msg = "Hello, I'm SonAgent"
         await update.message.reply_text(msg)
 
+    def split_message_parts(self, msg: str) -> List[str]:
+        """
+        Split a message into parts of maximum length.
+        :param msg: message to split
+        :return: list of message parts
+        """
+        # Split message into parts of maximum length
+        msg_parts = []
+        while len(msg) > MAX_MESSAGE_LENGTH:
+            msg_parts.append(msg[:MAX_MESSAGE_LENGTH])
+            msg = msg[MAX_MESSAGE_LENGTH:]
+        msg_parts.append(msg)
+        return msg_parts
+
     async def echo_msg(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         """Echo the user message."""
         msg = update.message.text.replace('/sonagent', '')
@@ -114,6 +128,11 @@ class Telegram(RPCHandler):
             msg = "Hello, I'm SonAgent"
         
         chat_result = await self._rpc.chat(msg)
+
+        if len(chat_result) > MAX_MESSAGE_LENGTH:
+            msg_parts = self.split_message_parts(chat_result)
+            for msg_part in msg_parts:
+                await update.message.reply_text(msg_part)
         await update.message.reply_text(chat_result)
 
     def _init(self) -> None:
