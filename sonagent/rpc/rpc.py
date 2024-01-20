@@ -87,3 +87,26 @@ class RPC:
     
         return "Belief not added"
 
+    async def reincarnate(self) -> None:
+        """
+        Send a chat message to all registered rpc modules.
+        :param msg: Message to send
+        :return: None
+        """
+        return await self.sonagent.reincarnate()
+    
+    async def askme(self, msg: str) -> str:
+        """
+        Send a chat message to all registered rpc modules.
+        :param msg: Message to send
+        :return: None
+        """
+        return await self.sonagent.askme(msg)
+
+    async def clear_short_term_memory(self) -> str:
+        """
+        Send a chat message to all registered rpc modules.
+        :param msg: Message to send
+        :return: None
+        """
+        return await self.sonagent.clear_short_term_memory()

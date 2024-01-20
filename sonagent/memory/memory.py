@@ -1,7 +1,9 @@
 import os
 import chromadb
 from chromadb.config import Settings
+import logging
 
+logger = logging.getLogger(__name__)
 class SonMemory:
 
     def __init__(self, collection_name="son_memory", memory_init_mode="file", default_memory_path=None):
@@ -47,11 +49,15 @@ class SonMemory:
         area_collection = self.chroma_client.get_or_create_collection(
             name=area_collection_name
         )
+
+        logger.debug(f"Searching in brain area {area_collection_name} with query {query}")
         
         results = area_collection.query(
             query_texts=[query],
             n_results=n_results
         )
+        logger.debug(f"results {results}")
+
         return results
     
 

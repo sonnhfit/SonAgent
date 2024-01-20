@@ -57,6 +57,15 @@ class SonBot(LoggingMixin):
     async def ibelieve(self, input: str) -> str:
         return await self.agent.ibelieve(input)
 
+    async def reincarnate(self) -> str:
+        return await self.agent.reincarnate()
+    
+    async def askme(self, input: str) -> str:
+        return await self.agent.askme(input)
+    
+    async def clear_short_term_memory(self) -> str:
+        return await self.agent.clear_short_term_memory()
+
     def cleanup(self) -> None:
         """
         Cleanup pending resources on an already stopped bot

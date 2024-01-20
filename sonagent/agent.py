@@ -2,6 +2,7 @@ import logging
 
 from sonagent.persistence.belief_models import Belief
 from sonagent.memory.memory import SonMemory
+from sonagent.memory.short_memory import ShortTermMemory
 from sonagent.planning.planner import SonAgentPlanner
 import semantic_kernel as sk
 from semantic_kernel.connectors.ai.open_ai import AzureChatCompletion
@@ -9,6 +10,7 @@ import semantic_kernel.connectors.ai.open_ai as sk_oai
 
 
 from sonagent.planning.prompt import PROMPT_PLAN
+from sonagent.core_prompt.me import ASK_ABOUT_ME_PROMP
 
 
 logger = logging.getLogger(__name__)
@@ -16,10 +18,12 @@ logger = logging.getLogger(__name__)
 
 class Agent:
     def __init__(self, memory_path) -> None:
-        # persistence
-
         # memory
+        logger.debug(f"init memory with path {memory_path}.")
         self.memory = SonMemory(default_memory_path=memory_path)
+        self.short_term_memory = ShortTermMemory(
+            collection_name="short_term_memory", default_memory_path=memory_path
+        )
 
         # planner
         self.planner = SonAgentPlanner()
@@ -28,8 +32,12 @@ class Agent:
         deployment, api_key, endpoint = sk.azure_openai_settings_from_dot_env()
         # print(deployment, api_key, endpoint)
         self.kernel = sk.Kernel()
+        self.chat_service = AzureChatCompletion(
+            deployment_name=deployment, endpoint=endpoint, api_key=api_key
+        )
         self.kernel.add_chat_service(
-            "chat_completion", AzureChatCompletion(deployment_name=deployment, endpoint=endpoint, api_key=api_key)
+            "chat_completion",
+            self.chat_service
         )
 
     def get_beliefs_for_planner(self, ids: list) -> list:
@@ -52,7 +60,10 @@ class Agent:
         # print(deployment, api_key, endpoint)
         kernel = sk.Kernel()
         kernel.add_chat_service(
-            "chat_completion", AzureChatCompletion(deployment_name=deployment, endpoint=endpoint, api_key=api_key)
+            "chat_completion",
+            AzureChatCompletion(
+                deployment_name=deployment, endpoint=endpoint, api_key=api_key
+            ),
         )
 
         # planner = SonAgentPlanner()
@@ -81,7 +92,7 @@ class Agent:
     def sync_beliefs(self) -> None:
         logger.debug("Start syncing beliefs to memory.")
         list_belief = Belief.get_all_belief()
-        print(list_belief)
+
         for belief in list_belief:
             self.memory.add(
                 belief.text,
@@ -89,9 +100,9 @@ class Agent:
                 str(belief.id),
                 area_collection_name="belief_base",
             )
-        logger.debug("Finish syncing beliefs to memory.")
+        logger.info("Finish syncing beliefs to memory.")
 
-    def create_belief(self, text: str, description: str) -> None:
+    def create_beslief(self, text: str, description: str) -> None:
         belief = Belief(text=text, description=description)
         Belief.session.add(belief)
         Belief.session.commit()
@@ -104,40 +115,100 @@ class Agent:
 
         logger.debug("Finish delete all belief.")
 
-    def delete_everything(self) -> None:
-        self.clear_all_beliefs()
-        self.memory.clear_all()
-        logger.debug("Finish delete everything.")
+    def delete_everything(self) -> bool:
+        try:
+            self.clear_all_beliefs()
+            self.memory.clear_all()
+            logger.debug("Finish delete everything.")
+        except Exception as e:
+            logger.error(f"Error delete everything: {e}")
+            return False
+        return True
 
     def get_tools(self) -> list:
         return []
 
     async def chat(self, input: str) -> str:
+        self.short_term_memory.add_chat_item({"role": "user", "content": input})
+        message_text = self.short_term_memory.get_chat_dialog()
 
-        deployment, api_key, endpoint = sk.azure_openai_settings_from_dot_env()
-        # print(deployment, api_key, endpoint)
-        kernel = sk.Kernel()
-        kernel.add_chat_service(
-            "chat_completion", AzureChatCompletion(deployment_name=deployment, endpoint=endpoint, api_key=api_key)
+        logger.info(f"Start chat: {message_text}")
+        res = await self.chat_service.complete_chat_async(
+            messages=message_text,
+            settings=sk_oai.AzureChatRequestSettings(
+                temperature=0.7,
+                max_tokens=2500,
+                top_p=0.8,
+                frequency_penalty=0.0,
+                presence_penalty=0.0,
+                stop=[],
+            ),
         )
+        response = str(res[0])
+        
+        self.short_term_memory.add_chat_item({"role":"assistant","content":str(response)})
+        logger.info(f"Finish chat: {str(response)}")
 
-        semantic_function = kernel.create_semantic_function(input, max_tokens=2500, temperature=0.7, top_p=0.8)
+        return str(response)
 
-        variables = sk.ContextVariables()
-        result = await kernel.run_async(
-            semantic_function,
-            input_vars=variables,
-        )
-        return str(result)
+    async def clear_short_term_memory(self) -> str:
+        self.short_term_memory.clear_chat_dialog()
+        return "Clear short term memory successfully."
     
     async def ibelieve(self, input: str) -> bool:
-        # maybe that gen by LLM + your input 
+        # maybe that gen by LLM + your input
         try:
-            self.create_belief(input, input)
+            self.create_beslief(input, input)
+            self.sync_beliefs()
         except Exception as e:
             logger.error(f"Error gen belief: {e}")
             return False
         return True
+
+    async def askme(self, question: str) -> str:
+        # get belief
+        logger.debug(f"Start asking: Q: {question}")
+
+        belief = self.memory.brain_area_search(
+            area_collection_name="belief_base", query=question
+        )
+
+        belief_ids = belief["ids"][0]
+
+        logger.debug(f"belief_ids: {belief_ids}")
+
+        result_list = self.get_beliefs_for_planner(belief_ids)
+
+        logger.debug(f"result_list: {result_list}")
+
+        belief_text = ""
+        for item in result_list:
+            belief_text += str("-" + item.text + "\n")
+
+        logger.info(f"Belief_text: \n{belief_text}")
+
+        # answer by belief
+        semantic_function = self.kernel.create_semantic_function(
+            ASK_ABOUT_ME_PROMP, max_tokens=2500, temperature=0.7, top_p=0.8
+        )
+
+        variables = sk.ContextVariables()
+
+        variables["believe"] = belief_text
+        variables["question"] = question
+
+        result = await self.kernel.run_async(
+            semantic_function,
+            input_vars=variables,
+        )
+        logger.debug("Finish asking.")
+        return str(result)
+
+    async def reincarnate(self) -> str:
+        if self.delete_everything():
+            return "Reincarnate successfully."
+        else:
+            return "Reincarnate failed."
 
     def _save_plan(self, plan: str) -> None:
         pass

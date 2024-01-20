@@ -153,6 +153,9 @@ class Telegram(RPCHandler):
 
         # Register command handler and start telegram message polling
         handles = [
+            CommandHandler('clear_chat', self._clear_short_term_memory),
+            CommandHandler('reincarnate', self._reincarnate),
+            CommandHandler('askme', self._askme),
             CommandHandler('ibelieve', self._ibelieve),
             CommandHandler('help', self._help),
             CommandHandler('version', self._version),
@@ -368,10 +371,28 @@ class Telegram(RPCHandler):
         """
         result = "I believe in you!"
         msg = update.message.text.replace('/ibelieve', '')
+
+        if len(msg) > 0:
+            result = await self._rpc.ibelieve(msg)
+        else:
+            result = "What do you believe?"
+
+        await update.message.reply_text(result)
+
+    async def _askme(self, update: Update, context: CallbackContext) -> None:
+        """
+        Handler for /askme.
+        Show version information
+        :param bot: telegram bot
+        :param update: message update
+        :return: None
+        """
+        result = "I believe in you!"
+        msg = update.message.text.replace('/askme', '')
         if len(msg) <= 0:
-            msg = "What do you believe?"
+            msg = "What do you ask me?"
         
-        result = await self._rpc.ibelieve(msg)
+        result = await self._rpc.askme(msg)
         await update.message.reply_text(result)
 
     async def _handle_messages(self, update: Update, context: CallbackContext)  -> None:
@@ -386,3 +407,25 @@ class Telegram(RPCHandler):
         # logger.info(
         #     f"---- Received message '{text}' from chat {chat_id}"
         # )
+
+    async def _reincarnate(self, update: Update, context: CallbackContext) -> None:
+        """
+        Handler for /reincarnate.
+        Show version information
+        :param bot: telegram bot
+        :param update: message update
+        :return: None
+        """
+        result = await self._rpc.reincarnate()
+        await update.message.reply_text(result)
+
+    async def _clear_short_term_memory(self, update: Update, context: CallbackContext) -> None:
+        """
+        Handler for /clear_short_term_memory.
+        Show version information
+        :param bot: telegram bot
+        :param update: message update
+        :return: None
+        """
+        result = await self._rpc.clear_short_term_memory()
+        await update.message.reply_text(result)

@@ -46,7 +46,7 @@ class Belief(ModelBase):
     @staticmethod
     def get_belief_by_ids(ids: List[int]) -> List["Belief"]:
         return Belief.session.scalars(
-            select(Belief).filter(Belief.id.in_(ids))).all()
+            select(Belief).filter(Belief.id.in_(ids)).order_by(Belief.create_date.asc())).all()
 
 
     def apply_sync(self, *args, **kwargs):
