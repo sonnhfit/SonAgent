@@ -53,7 +53,7 @@ sonagent run
 ```
 ### Some Demo 
 
-![demo_telegram](docs/source/_static/img/demo_telegram.png)
+![demo_telegram](docs/source/_static/img/demo_telegram2.png)
 
 ### Architecture
 #### Basic Idea
