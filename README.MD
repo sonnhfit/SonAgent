@@ -53,6 +53,12 @@ output
 #### Detail design 
 ![Detail design](docs/source/_static/img/son_agent_design.png)
 
+Task Update
+
+- [x] chat with telegram for human feedback 
+- [] plannning and save plan to db and 
+- [] learning skill for learn new skill 
+
 
 ### Contributing
 Contributions to enhance the Digital Consciousness Backup Agent are welcome! If you have ideas for improvements, bug fixes, or new features, feel free to open an issue or submit a pull request.
