@@ -29,7 +29,7 @@ class Agent:
         # print(deployment, api_key, endpoint)
         self.kernel = sk.Kernel()
         self.kernel.add_chat_service(
-            "chat_completion", AzureChatCompletion(deployment, endpoint, api_key)
+            "chat_completion", AzureChatCompletion(deployment_name=deployment, endpoint=endpoint, api_key=api_key)
         )
 
     def get_beliefs_for_planner(self, ids: list) -> list:
@@ -52,7 +52,7 @@ class Agent:
         # print(deployment, api_key, endpoint)
         kernel = sk.Kernel()
         kernel.add_chat_service(
-            "chat_completion", AzureChatCompletion(deployment, endpoint, api_key)
+            "chat_completion", AzureChatCompletion(deployment_name=deployment, endpoint=endpoint, api_key=api_key)
         )
 
         # planner = SonAgentPlanner()
@@ -118,7 +118,7 @@ class Agent:
         # print(deployment, api_key, endpoint)
         kernel = sk.Kernel()
         kernel.add_chat_service(
-            "chat_completion", AzureChatCompletion(deployment, endpoint, api_key)
+            "chat_completion", AzureChatCompletion(deployment_name=deployment, endpoint=endpoint, api_key=api_key)
         )
 
         semantic_function = kernel.create_semantic_function(input, max_tokens=2500, temperature=0.7, top_p=0.8)
