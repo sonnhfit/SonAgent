@@ -27,7 +27,7 @@ class MathSkill(SKBaseModel):
     @sk_function_context_parameter(
         name="Amount",
         description="Amount to add",
-        type="number",
+        # type="number",
         required=True,
     )
     def add(self, initial_value_text: str, context: "SKContext") -> str:

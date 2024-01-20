@@ -25,6 +25,13 @@ class Agent:
         self.planner = SonAgentPlanner()
         # self.sync_beliefs()
 
+        deployment, api_key, endpoint = sk.azure_openai_settings_from_dot_env()
+        # print(deployment, api_key, endpoint)
+        self.kernel = sk.Kernel()
+        self.kernel.add_chat_service(
+            "chat_completion", AzureChatCompletion(deployment, endpoint, api_key)
+        )
+
     def get_beliefs_for_planner(self, ids: list) -> list:
         list_belief = Belief.get_belief_by_ids(ids=ids)
         return list_belief
@@ -122,3 +129,19 @@ class Agent:
             input_vars=variables,
         )
         return str(result)
+    
+    async def gen_belief(self, input: str) -> str:
+        pass
+
+    def _save_plan(self, plan: str) -> None:
+        pass
+
+    async def planning(self, input: str) -> str:
+        # get belief 
+
+        # thinking
+
+        # planning
+
+        # save plan
+        pass
