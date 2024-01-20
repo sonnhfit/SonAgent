@@ -51,6 +51,9 @@ output
 ```
 sonagent run
 ```
+### Some Demo 
+
+![demo_telegram](docs/source/_static/img/demo_telegram.png)
 
 ### Architecture
 #### Basic Idea
@@ -74,4 +77,9 @@ Contributions to enhance the Digital Consciousness Backup Agent are welcome! If 
 
 ```
 pip install --editable .
+```
+
+if you want to build docker image 
+```
+docker build --pull --rm -f "Dockerfile" -t sonnhfit/sonagent:0.02-dev "." --platform=linux/amd64
 ```
