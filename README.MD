@@ -27,7 +27,7 @@ The Digital Consciousness Backup Agent is an autonomous system designed to safeg
 pip install sonagent
 ```
 
-2. Run the Agent:
+2. Test the Agent:
 ```
 python main.py
 ```
@@ -44,6 +44,12 @@ output
         {"function": "PyTorchSkill.SaveModel"}
     ]
 }
+```
+
+3. Run bot 
+
+```
+sonagent run
 ```
 
 ### Architecture
