@@ -130,14 +130,22 @@ class Agent:
         )
         return str(result)
     
-    async def gen_belief(self, input: str) -> str:
-        pass
+    async def ibelieve(self, input: str) -> bool:
+        # maybe that gen by LLM + your input 
+        try:
+            self.create_belief(input, input)
+        except Exception as e:
+            logger.error(f"Error gen belief: {e}")
+            return False
+        return True
 
     def _save_plan(self, plan: str) -> None:
         pass
 
     async def planning(self, input: str) -> str:
-        # get belief 
+        # get belief
+
+        # get skill with belief
 
         # thinking
 

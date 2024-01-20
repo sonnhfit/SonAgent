@@ -68,13 +68,14 @@ class Telegram(RPCHandler):
         section.
         """
         self._keyboard: List[List[Union[str, KeyboardButton]]] = [
-            ['/version', '/help']
+            ['/ibelieve', '/version', '/help']
         ]
         # do not allow commands with mandatory arguments and critical cmds
         # TODO: DRY! - its not good to list all valid cmds here. But otherwise
         #       this needs refactoring of the whole telegram module (same
         #       problem in _help()).
         valid_keys: List[str] = [
+            r'/ibelieve',
             r'/help$', r'/version$'
         ]
         # Create keys for generation
@@ -152,6 +153,7 @@ class Telegram(RPCHandler):
 
         # Register command handler and start telegram message polling
         handles = [
+            CommandHandler('ibelieve', self._ibelieve),
             CommandHandler('help', self._help),
             CommandHandler('version', self._version),
             CommandHandler('sonagent', self.echo),
@@ -355,6 +357,22 @@ class Telegram(RPCHandler):
         """
         version_string = f'*Version:* `{__version__}`'
         await self._send_msg(version_string)
+
+    async def _ibelieve(self, update: Update, context: CallbackContext) -> None:
+        """
+        Handler for /ibelieve.
+        Show version information
+        :param bot: telegram bot
+        :param update: message update
+        :return: None
+        """
+        result = "I believe in you!"
+        msg = update.message.text.replace('/ibelieve', '')
+        if len(msg) <= 0:
+            msg = "What do you believe?"
+        
+        result = await self._rpc.ibelieve(msg)
+        await update.message.reply_text(result)
 
     async def _handle_messages(self, update: Update, context: CallbackContext)  -> None:
         # Lấy thông tin từ tin nhắn

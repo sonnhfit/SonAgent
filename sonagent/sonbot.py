@@ -53,6 +53,9 @@ class SonBot(LoggingMixin):
 
     async def chat(self, input: str) -> str:
         return await self.agent.chat(input)
+    
+    async def ibelieve(self, input: str) -> str:
+        return await self.agent.ibelieve(input)
 
     def cleanup(self) -> None:
         """

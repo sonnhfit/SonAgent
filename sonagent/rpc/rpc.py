@@ -74,3 +74,16 @@ class RPC:
         :return: None
         """
         return await self.sonagent.chat(msg)
+    
+    async def ibelieve(self, msg: str) -> bool:
+        """
+        Send a chat message to all registered rpc modules.
+        :param msg: Message to send
+        :return: None
+        """
+        is_belief_added = await self.sonagent.ibelieve(msg)
+        if is_belief_added:
+            return "Belief added"
+    
+        return "Belief not added"
+
