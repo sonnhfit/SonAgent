@@ -66,6 +66,12 @@ class SonBot(LoggingMixin):
     async def clear_short_term_memory(self) -> str:
         return await self.agent.clear_short_term_memory()
 
+    async def planning(self, goal: str) -> str:
+        return await self.agent.planning(goal)
+
+    async def show_plan(self) -> str:
+        return await self.agent.show_plan()
+    
     def cleanup(self) -> None:
         """
         Cleanup pending resources on an already stopped bot

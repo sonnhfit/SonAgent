@@ -153,6 +153,8 @@ class Telegram(RPCHandler):
 
         # Register command handler and start telegram message polling
         handles = [
+            CommandHandler('show_plan', self._show_plan),
+            CommandHandler('planning', self._planning),
             CommandHandler('clear_chat', self._clear_short_term_memory),
             CommandHandler('reincarnate', self._reincarnate),
             CommandHandler('askme', self._askme),
@@ -428,4 +430,31 @@ class Telegram(RPCHandler):
         :return: None
         """
         result = await self._rpc.clear_short_term_memory()
+        await update.message.reply_text(result)
+
+    async def _planning(self, update: Update, context: CallbackContext) -> None:
+        """
+        Handler for /planning.
+        Show version information
+        :param bot: telegram bot
+        :param update: message update
+        :return: None
+        """
+        msg = update.message.text.replace('/planning', '')
+        if len(msg) <= 0:
+            msg = "What do you want to plan?"
+        
+        result = await self._rpc.planning(msg)
+        await update.message.reply_text(result)
+
+    async def _show_plan(self, update: Update, context: CallbackContext) -> None:
+        """
+        Handler for /show_plan.
+        Show version information
+        :param bot: telegram bot
+        :param update: message update
+        :return: None
+        """
+
+        result = await self._rpc.show_plan()
         await update.message.reply_text(result)

@@ -110,3 +110,19 @@ class RPC:
         :return: None
         """
         return await self.sonagent.clear_short_term_memory()
+    
+    async def planning(self, msg: str) -> str:
+        """
+        Send a chat message to all registered rpc modules.
+        :param msg: Message to send
+        :return: None
+        """
+        return await self.sonagent.planning(msg)
+    
+    async def show_plan(self) -> str:
+        """
+        Send a chat message to all registered rpc modules.
+        :param msg: Message to send
+        :return: None
+        """
+        return await self.sonagent.show_plan()

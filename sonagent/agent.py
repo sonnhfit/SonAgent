@@ -1,15 +1,18 @@
 import logging
 
-from sonagent.persistence.belief_models import Belief
+from sonagent.persistence import Belief, Plan
+
 from sonagent.memory.memory import SonMemory
 from sonagent.memory.short_memory import ShortTermMemory
-from sonagent.planning.planner import SonAgentPlanner
+from sonagent.planning.planner import SonAgentPlanner, SonAgentSequentialPlanner
 import semantic_kernel as sk
 from semantic_kernel.connectors.ai.open_ai import AzureChatCompletion
 import semantic_kernel.connectors.ai.open_ai as sk_oai
+from semantic_kernel.planning.sequential_planner.sequential_planner_parser import (
+    SequentialPlanParser,
+)
 
-
-from sonagent.planning.prompt import PROMPT_PLAN
+from sonagent.planning.prompt import PROMPT_PLAN, SEQUENCE_PLAN, CLEAN_BELIEF_PROMPT
 from sonagent.core_prompt.me import ASK_ABOUT_ME_PROMP
 
 
@@ -103,11 +106,14 @@ class Agent:
         logger.info("Finish syncing beliefs to memory.")
 
     def create_beslief(self, text: str, description: str) -> None:
-        belief = Belief(text=text, description=description)
-        Belief.session.add(belief)
-        Belief.session.commit()
-        logger.debug("Finish Create new belief.")
-        # Belief.commit()
+        try:
+            belief = Belief(text=text, description=description)
+            Belief.session.add(belief)
+            Belief.session.commit()
+            logger.debug("Finish Create new belief.")
+            # Belief.commit()
+        except Exception as e:
+            logger.error(f"Error create belief: {e}")
 
     def clear_all_beliefs(self) -> None:
         Belief.session.query(Belief).delete()
@@ -210,17 +216,57 @@ class Agent:
         else:
             return "Reincarnate failed."
 
-    def _save_plan(self, plan: str) -> None:
-        pass
+    async def planning(self, goal: str) -> str:
 
-    async def planning(self, input: str) -> str:
-        # get belief
+        belief = self.memory.brain_area_search(
+            area_collection_name="belief_base", query=goal
+        )
+        belief_ids = belief["ids"][0]
+        result_list = self.get_beliefs_for_planner(belief_ids)
 
-        # get skill with belief
+        belief_text = ""
+        for item in result_list:
+            belief_text += str("-" + item.text + "\n")
 
-        # thinking
+        # clean belief
+        
+        clean_belief_semantic_function = self.kernel.create_semantic_function(CLEAN_BELIEF_PROMPT)
+        clean_variables = sk.ContextVariables()
+        clean_variables["believe"] = belief_text
+        clean_variables["goal"] = goal
+        clean_result = await self.kernel.run_async(
+            clean_belief_semantic_function,
+            input_vars=clean_variables
+        )
+        belief_text = clean_result.result.strip()
 
-        # planning
 
-        # save plan
-        pass
+        variables = sk.ContextVariables()
+
+        # variables["available_functions"] = relevant_function_manual
+        variables["believe"] = belief_text
+        variables["goal"] = goal
+
+        semantic_function = self.kernel.create_semantic_function(PROMPT_PLAN)
+
+        result = await self.kernel.run_async(
+            semantic_function,
+            input_vars=variables,
+        )
+
+        plan_result_string = result.result.strip()
+
+        # save to database   
+        plan = Plan(goal=goal, subtask=plan_result_string)
+        Plan.session.add(plan)
+        Plan.session.commit()
+
+        logger.debug("Finish Create new plan.")
+        return plan_result_string
+
+    async def show_plan(self) -> str:
+        plan_list = Plan.get_all_plans()
+        plan_text = ""
+        for plan in plan_list:
+            plan_text += str("-" + plan.goal + "\n")
+        return plan_text

@@ -1,6 +1,10 @@
 # planning module 
 from semantic_kernel.kernel import Kernel
 from semantic_kernel.planning.basic_planner import Plan, BasicPlanner
+from semantic_kernel.planning.sequential_planner import SequentialPlanner
+from semantic_kernel.planning.sequential_planner.sequential_planner_config import SequentialPlannerConfig
+from sonagent.planning.prompt import SEQUENCE_PLAN
+
 
 PROMPT = """
 You are a planner for the Semantic Kernel.
@@ -116,3 +120,8 @@ class SonAgentPlanner(BasicPlanner):
 
     def save_plan_to_db(self, plan):
         pass
+
+
+class SonAgentSequentialPlanner(SequentialPlanner):
+    def __init__(self, kernel: Kernel, config: SequentialPlannerConfig = None, prompt: str = SEQUENCE_PLAN):
+        super().__init__(kernel, config, prompt)
