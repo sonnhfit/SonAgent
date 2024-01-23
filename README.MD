@@ -65,9 +65,11 @@ sonagent run
 
 Task Update
 
-- [x] chat with telegram for human feedback 
-- [] plannning and save plan to db and 
-- [] learning skill for learn new skill 
+[x] chat with telegram for human feedback 
+[x] plannning and save plan to db and
+[] load skill from user_data folder 
+[] planning for learning skill for learn new skill
+[] auto create pull request for add new skill
 
 
 ### Contributing
@@ -82,5 +84,5 @@ pip install --editable .
 
 if you want to build docker image 
 ```
-docker build --pull --rm -f "Dockerfile" -t sonnhfit/sonagent:0.02-dev "." --platform=linux/amd64
+docker build --pull --rm -f "Dockerfile" -t sonnhfit/sonagent:dev "." --platform=linux/amd64
 ```

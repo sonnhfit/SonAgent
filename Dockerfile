@@ -24,10 +24,10 @@ WORKDIR /sonagent
 # Install dependencies
 COPY  requirements.txt  /sonagent/requirements.txt
 # USER root
-RUN  pip install --user --no-cache-dir numpy \
-  && pip install --user --no-cache-dir -r requirements.txt
+RUN  pip install --user  numpy \
+  && pip install --user  -r requirements.txt
 
-RUN pip install -e . --user --no-cache-dir --no-build-isolation \
+RUN pip install -e . --user  --no-build-isolation \
   && mkdir /sonagent/user_data/
 
 RUN python setup.py install
