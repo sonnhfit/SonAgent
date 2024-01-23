@@ -16,6 +16,7 @@ The Digital Consciousness Backup Agent is an autonomous system designed to safeg
 - **Learning with Human Feedback:** The agent incorporates human feedback into its learning process, enhancing its capabilities through continuous interaction with users. This dynamic learning mechanism ensures that the agent evolves and improves its performance based on real-world user experiences.
 
 - **Secure Backup:** The agent employs robust encryption and secure protocols to create backups of your digital consciousness, preventing unauthorized access and ensuring the integrity of your data.
+- **Self-Repairing source code**  edits its own source code and compiles itself under human approval
 
 - **Many tools and skills:** Train neural network, Search, write file, ...
 
