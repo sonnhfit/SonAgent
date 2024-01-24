@@ -32,6 +32,8 @@ class Agent:
         self.planner = SonAgentPlanner()
         # self.sync_beliefs()
 
+        self.skill_manager = None
+
         deployment, api_key, endpoint = sk.azure_openai_settings_from_dot_env()
         # print(deployment, api_key, endpoint)
         self.kernel = sk.Kernel()
