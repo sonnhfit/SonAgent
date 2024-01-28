@@ -11,6 +11,7 @@ from sonagent.mixins import LoggingMixin
 from sonagent.enums.enums import State
 from sonagent.enums.rpcmessagetype import RPCMessageType
 from sonagent.rpc import RPCManager
+from sonagent.skills.skills_manager import SkillsManager
 from sonagent.persistence.belief_models import Belief
 from sonagent.agent import Agent
 from sonagent.persistence.models import init_db
@@ -43,6 +44,10 @@ class SonBot(LoggingMixin):
             
 
         self.rpc: RPCManager = RPCManager(self)
+
+        self.skills = SkillsManager(self)
+        names = str(self.skills.load_register_skills_name())
+        logger.info(f"SKILLLS NAME: {names}")
 
         self.agent = Agent(memory_path=memory_url)
 

@@ -31,7 +31,6 @@ class PathModifier:
         if str_path in sys.path:
             sys.path.remove(str_path)
 
-
 class BaseLoading:
     """
     This class contains all the logic to load custom classes
@@ -177,15 +176,15 @@ class BaseLoading:
         abs_paths = cls.build_search_paths(config,
                                            user_subdir=cls.user_subdir,
                                            extra_dirs=extra_dirs)
+        print(abs_paths)
+        
 
         found_object = cls._load_object(paths=abs_paths, object_name=object_name,
                                         kwargs=kwargs)
+        print(found_object)
         if found_object:
             return found_object
-        raise OperationalException(
-            f"Impossible to load {cls.object_type_str} '{object_name}'. This class does not exist "
-            "or contains Python code errors."
-        )
+        raise Exception(f"Could not find {object_name}'")
 
     @classmethod
     def search_all_objects(cls, config: dict, enum_failed: bool,
@@ -252,3 +251,4 @@ class BaseLoading:
                      'location_rel': cls._build_rel_location(basedir or directory, entry),
                      })
         return objects
+

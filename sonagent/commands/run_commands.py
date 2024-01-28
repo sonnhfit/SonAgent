@@ -47,7 +47,9 @@ def start_sonagent(args: Dict[str, Any]) -> int:
         except Exception as e:
             config = config
             raise OperationalException("Error loading config file: " + str(e))
-
+        # config['user_data_dir'] = args['user_data_dir']
+        # print(config)
+        config['user_data_dir'] = args['user_data_dir']
         worker = Worker(args, config=config)
         worker.run()
     except Exception as e:

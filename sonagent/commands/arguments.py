@@ -7,7 +7,7 @@ from sonagent.commands.cli_options import AVAILABLE_CLI_OPTIONS
 from sonagent.constants import DEFAULT_CONFIG
 
 
-ARGS_COMMON = ["verbosity", "logfile", "version", "config", "datadir", "agentdb", "memory-url"]
+ARGS_COMMON = ["verbosity", "logfile", "version", "config", "datadir", "agentdb", "memory-url", "user_data_dir"]
 ARGS_BUILD_CONFIG = ["config"]
 ARGS_RUN = ["sd_notify"]
 NO_CONF_REQURIED = []

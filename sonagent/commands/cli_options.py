@@ -69,7 +69,7 @@ AVAILABLE_CLI_OPTIONS = {
         metavar='PATH',
     ),
     "user_data_dir": Arg(
-        '--userdir', '--user-data-dir',
+        '--user-data-dir',
         help='Path to userdata directory.',
         metavar='PATH',
     ),
