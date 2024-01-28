@@ -49,7 +49,7 @@ class SonBot(LoggingMixin):
         names = str(self.skills.load_register_skills_name())
         logger.info(f"SKILLLS NAME: {names}")
 
-        self.agent = Agent(memory_path=memory_url)
+        self.agent = Agent(memory_path=memory_url, skills=self.skills)
 
         # Set initial bot state from config
         initial_state = self.config.get('initial_state')

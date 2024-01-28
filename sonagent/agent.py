@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 
 
 class Agent:
-    def __init__(self, memory_path) -> None:
+    def __init__(self, memory_path, skills) -> None:
         # memory
         logger.debug(f"init memory with path {memory_path}.")
         self.memory = SonMemory(default_memory_path=memory_path)
@@ -32,7 +32,7 @@ class Agent:
         self.planner = SonAgentPlanner()
         # self.sync_beliefs()
 
-        self.skill_manager = None
+        self.skills = skills
 
         deployment, api_key, endpoint = sk.azure_openai_settings_from_dot_env()
         # print(deployment, api_key, endpoint)
@@ -44,6 +44,9 @@ class Agent:
             "chat_completion",
             self.chat_service
         )
+
+    def save_function_to_memory(self, function_name: str) -> None:
+        pass
 
     def get_beliefs_for_planner(self, ids: list) -> list:
         list_belief = Belief.get_belief_by_ids(ids=ids)
@@ -242,10 +245,11 @@ class Agent:
         )
         belief_text = clean_result.result.strip()
 
+        relevant_function_manual = self.skills.get_available_function_skills()
 
         variables = sk.ContextVariables()
 
-        # variables["available_functions"] = relevant_function_manual
+        variables["available_functions"] = relevant_function_manual
         variables["believe"] = belief_text
         variables["goal"] = goal
 

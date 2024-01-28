@@ -1,3 +1,4 @@
+import hashlib
 
 def read_text_from_file(file_path: str) -> str:
     f = open(file_path, "r")
@@ -5,5 +6,13 @@ def read_text_from_file(file_path: str) -> str:
     return f.read()
 
 
+def hash_str(string: str) -> str:
+    sha = hashlib.sha256()
+    sha.update(string.encode())
+    return sha.hexdigest()
+
+
 def create_github_issue():
     pass
+
+
