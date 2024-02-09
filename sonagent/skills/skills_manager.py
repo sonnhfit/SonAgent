@@ -35,7 +35,7 @@ class SkillsManager:
         skills_register = self.load_register_skills_name()
         BaseLoading.object_type = SonSkill
         for skill_name in skills_register:
-            skill = BaseLoading.load_object(object_name=skill_name, config=self.config, kwargs={}, extra_dir='user_data_example/skills')
+            skill = BaseLoading.load_object(object_name=skill_name, config=self.config, kwargs={}, extra_dir='user_data/skills')
             self.skill_object_list.append(skill)
 
     
