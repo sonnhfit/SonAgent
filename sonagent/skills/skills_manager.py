@@ -61,12 +61,25 @@ class SkillsManager:
             if is_added:
                 logger.info(f"Skill {skill.name()} added to memory.")
     
-    def get_available_function_skills(self) -> List[SonSkill]:
+    def get_available_function_skills(self, query: str, memory: Any) -> List[SonSkill]:
+
         # Search for functions that match the semantic query.
+        function_list = self.search_skill_function_by_semantic_query(query=query, memory=memory)
+
+        # WriterSkill.Translate
+        # description: translate the input to another language
+        # args:
+        # - input: the text to translate
+        # - language: the language to translate to
+        result = ""
+
+        for fun_docs in function_list:
+            result += fun_docs
+
 
         # Add functions that were found in the search results.
 
         # Add any missing functions that were included but not found in the search results.
 
-        return ""
+        return result
 
