@@ -33,6 +33,7 @@ class Agent:
         # self.sync_beliefs()
 
         self.skills = skills
+        self.skills.start_skill(memory=self.memory)
 
         deployment, api_key, endpoint = sk.azure_openai_settings_from_dot_env()
         # print(deployment, api_key, endpoint)

@@ -46,6 +46,7 @@ class SonBot(LoggingMixin):
         self.rpc: RPCManager = RPCManager(self)
 
         self.skills = SkillsManager(self)
+
         names = str(self.skills.load_register_skills_name())
         logger.info(f"SKILLLS NAME: {names}")
 

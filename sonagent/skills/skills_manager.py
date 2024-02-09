@@ -23,7 +23,7 @@ class SkillsManager:
         self.skills_area = "son_skills"
 
     def load_register_skills_name(self) -> List[str]:
-        skill_file_name = self.config.get('skills_file_path', 'skill.yaml')
+        skill_file_name = self.config.get('skills_file_path', 'skills.yaml')
         skill_file_path = Path(self.config['user_data_dir']).joinpath(skill_file_name)
         with open(skill_file_path, 'r') as file:
             skills_register = yaml.safe_load(file)
@@ -48,6 +48,10 @@ class SkillsManager:
             query=query
         )
         return results
+    
+    def start_skill(self, memory: Any) -> None:
+        self.load_skills()
+        self.save_skills_function_to_memory(memory=memory)
 
     def save_skills_function_to_memory(self, memory: Any) -> None:
         for skill in self.skill_object_list:
@@ -75,7 +79,6 @@ class SkillsManager:
 
         for fun_docs in function_list:
             result += fun_docs
-
 
         # Add functions that were found in the search results.
 
