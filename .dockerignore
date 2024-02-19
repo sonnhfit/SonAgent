@@ -35,3 +35,4 @@ db/schema.rb
 .env
 .aws
 user_data_example
+user_data
