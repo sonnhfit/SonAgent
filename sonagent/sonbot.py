@@ -15,7 +15,8 @@ from sonagent.skills.skills_manager import SkillsManager
 from sonagent.persistence.belief_models import Belief
 from sonagent.agent import Agent
 from sonagent.persistence.models import init_db
-                     
+from sonagent.rpc.schedule_worker import ScheduleProcess
+
 
 logger = logging.getLogger(__name__)
 
@@ -49,6 +50,9 @@ class SonBot(LoggingMixin):
 
         names = str(self.skills.load_register_skills_name())
         logger.info(f"SKILLLS NAME: {names}")
+
+        
+        self.sp = ScheduleProcess()
 
         self.agent = Agent(memory_path=memory_url, skills=self.skills)
 
