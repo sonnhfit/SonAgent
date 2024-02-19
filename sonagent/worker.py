@@ -159,7 +159,6 @@ class Worker:
                 f"*OperationalException:*\n```\n{tb}```\n {hint}",
                 msg_type=RPCMessageType.EXCEPTION,
             )
-
             logger.exception("OperationalException. Stopping trader ...")
             self.sonbot.state = State.STOPPED
 
@@ -178,7 +177,7 @@ class Worker:
         self._init(True)
 
         self.sonbot.notify_status("config reloaded")
-
+        
         # Tell systemd that we completed reconfiguration
         self._notify("READY=1")
 
