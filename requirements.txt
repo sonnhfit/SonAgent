@@ -22,7 +22,7 @@ orjson==3.9.10
 semantic-kernel==0.4.5.dev0
 # Notify systemd
 sdnotify==0.3.2
-
+GitPython==3.1.42
 
 # docs 
 sphinx-material

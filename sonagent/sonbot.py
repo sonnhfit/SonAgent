@@ -15,7 +15,9 @@ from sonagent.skills.skills_manager import SkillsManager
 from sonagent.persistence.belief_models import Belief
 from sonagent.agent import Agent
 from sonagent.persistence.models import init_db
-                     
+from sonagent.rpc.schedule_worker import ScheduleProcess
+from sonagent.tools import GitManager
+
 
 logger = logging.getLogger(__name__)
 
@@ -49,6 +51,22 @@ class SonBot(LoggingMixin):
 
         names = str(self.skills.load_register_skills_name())
         logger.info(f"SKILLLS NAME: {names}")
+
+        
+        self.sp = ScheduleProcess()
+
+        # git manager
+        github = self.config.get('github')
+        if github.get('enabled'):
+            self.git_manager = GitManager(
+                username=github.get('username'),
+                repo_name=github.get('repo_name'),
+                token=github.get('token'),
+                local_repo_path=github.get('local_repo_path')
+            )
+        else:
+            self.git_manager = None
+        
 
         self.agent = Agent(memory_path=memory_url, skills=self.skills)
 
