@@ -15,7 +15,7 @@ import os
 import sys
 sys.path.insert(0, os.path.abspath('../..'))
 sys.path.append(os.path.abspath(
-    os.path.join(__file__, "../../deepair")
+    os.path.join(__file__, "../../sonagent")
 ))
 
 
@@ -79,15 +79,15 @@ html_theme_options = {
 
     # Specify a base_url used to generate sitemap.xml. If not
     # specified, then no sitemap will be built.
-    'base_url': 'https://deepair.readthedocs.io',
+    'base_url': 'https://sonagent.readthedocs.io',
 
     # Set the color and the accent color
     'color_primary': 'teal',
     'color_accent': 'cyan',
 
     # Set the repo location to get a badge with stats
-    'repo_url': 'https://github.com/sonnhfit/deepair/',
-    'repo_name': 'deepair',
+    'repo_url': 'https://github.com/sonnhfit/sonagent/',
+    'repo_name': 'sonagent',
 
     # Visible levels of the global TOC; -1 means unlimited
     'globaltoc_depth': 3,
