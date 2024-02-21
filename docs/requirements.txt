@@ -1,0 +1,7 @@
+sphinx-material
+numpydoc
+nbsphinx
+recommonmark
+sphinx-markdown-tables
+sphinx_copybutton
+readthedocs-sphinx-search
