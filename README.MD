@@ -72,10 +72,6 @@ Task Update
 [] auto create pull request for add new skill
 
 
-### Contributing
-Contributions to enhance the Digital Consciousness Backup Agent are welcome! If you have ideas for improvements, bug fixes, or new features, feel free to open an issue or submit a pull request.
-
-
 ### Dev
 
 ```
@@ -86,3 +82,6 @@ if you want to build docker image
 ```
 docker build --pull --rm -f "Dockerfile" -t sonnhfit/sonagent:dev "." --platform=linux/amd64
 ```
+## Contributors
+A big thank you to all the contributors who helped improve this project
+
