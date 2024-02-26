@@ -27,6 +27,9 @@ exclude_patterns = []
 html_theme = "pydata_sphinx_theme"
 html_static_path = ['_static']
 
+
+
+
 html_theme_options = {
     "external_links": [
         {
@@ -77,10 +80,6 @@ html_theme_options = {
     "secondary_sidebar_items": {
         "**/*": ["page-toc", "edit-this-page", "sourcelink"],
         "examples/no-sidebar": [],
-    },
-    "switcher": {
-        "json_url": json_url,
-        "version_match": version_match,
     },
     # "back_to_top_button": False,
 }
