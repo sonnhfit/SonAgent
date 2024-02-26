@@ -18,9 +18,9 @@ sys.path.append(str(Path(".").resolve()))
 
 # -- Project information -----------------------------------------------------
 
-project = "PyData Theme"
-copyright = "2019, PyData Community"
-author = "PyData Community"
+project = "SonAgent Theme"
+copyright = "2019, SonAgent Community"
+author = "SonAgent Community"
 
 # -- General configuration ---------------------------------------------------
 
@@ -85,7 +85,7 @@ language = "en"
 
 blog_path = "examples/blog/index"
 blog_authors = {
-    "pydata": ("PyData", "https://pydata.org"),
+    "pydata": ("SonAgent", "https://pydata.org"),
     "jupyter": ("Jupyter", "https://jupyter.org"),
 }
 
@@ -98,7 +98,7 @@ html_sourcelink_suffix = ""
 html_last_updated_fmt = ""  # to reveal the build date in the pages meta
 
 # Define the json_url for our version switcher.
-json_url = "https://pydata-sphinx-theme.readthedocs.io/en/latest/_static/switcher.json"
+json_url = "https://sonagent.readthedocs.io/en/latest/_static/switcher.json"
 
 # Define the version we use for matching in the version switcher.
 version_match = os.environ.get("READTHEDOCS_VERSION")

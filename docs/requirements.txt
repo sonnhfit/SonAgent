@@ -1,5 +1,12 @@
-sphinx==7.2.6
-myst-parser==2.0.0
+sphinx>=5.0
+beautifulsoup4
+docutils!=0.17.0
+packaging
+Babel
+pygments>=2.7
+accessible-pygments
+typing-extensions
+
 pydata-sphinx-theme==0.7.1
 numpydoc
 linkify-it-py

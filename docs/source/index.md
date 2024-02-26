@@ -41,7 +41,6 @@ Several example pages to demonstrate the functionality of this theme when used a
 ```{toctree}
 :maxdepth: 2
 
-examples/index
 ```
 
 Comming soon!!!
