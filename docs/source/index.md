@@ -7,8 +7,9 @@ sd_hide_title: true
 
 ```{toctree}
 :hidden:
+:caption: ✏️ Intro
 intro.md
-live-preview.md
+
 ```
 
 ```{toctree}
@@ -16,10 +17,4 @@ live-preview.md
 :caption: ✏️ Authoring
 
 syntax/typography.md
-syntax/admonitions.md
-syntax/images_and_figures.md
-syntax/tables.md
-syntax/code_and_apis.md
-syntax/cross-referencing.md
-syntax/math.md
 ```
