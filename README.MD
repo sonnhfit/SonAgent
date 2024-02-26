@@ -54,22 +54,6 @@ sonagent run
 ```
 ### Some Demo 
 
-![demo_telegram](docs/source/_static/img/demo_telegram2.png)
-
-### Architecture
-#### Basic Idea
-![Architecture](docs/source/_static/img/agent_design.png)
-
-#### Detail design 
-![Detail design](docs/source/_static/img/son_agent_design.png)
-
-Task Update
-
-[x] chat with telegram for human feedback 
-[x] plannning and save plan to db and
-[] load skill from user_data folder 
-[] planning for learning skill for learn new skill
-[] auto create pull request for add new skill
 
 
 ### Dev
