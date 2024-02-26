@@ -6,16 +6,12 @@
 Welcome to SonAgent's documentation!
 ====================================
 
-.. toctree::
-   :maxdepth: 2
-   install
-   :caption: Contents:
+# SonAgent
 
-
-
-Indices and tables
-==================
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
+```{toctree}
+---
+caption: Contents
+maxdepth: 1
+---
+install
+```
