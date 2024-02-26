@@ -12,12 +12,10 @@ Simple way to start
 
 .. toctree::
    :maxdepth: 1
-
    install
    tutorial
    developer_guides
    modules
-
 
 
 

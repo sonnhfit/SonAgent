@@ -23,7 +23,7 @@ sys.path.append(os.path.abspath(
 
 project = 'SonAgent'
 copyright = '2022, Son Nguyen Huu'
-author = 'Son Nguyen Huu'
+author = 'SonAgent Team'
 
 
 # -- General configuration ---------------------------------------------------
