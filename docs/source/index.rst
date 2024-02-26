@@ -6,23 +6,19 @@
 Welcome to SonAgent's documentation!
 ===================================
 
-Simple way to start
--------------------
-
 
 .. toctree::
    :maxdepth: 1
+
    install
    tutorial
+   custom_technique
    developer_guides
    modules
 
 
 
 
+
 Indices and tables
 ==================
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
