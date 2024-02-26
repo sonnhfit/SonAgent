@@ -16,16 +16,11 @@ Install deepair with pip
 
    pip install sonagent
 
-start with gym env
+
 
 .. code-block:: python
 
-   import gym
-   from deepair.dqn import Rainbow
-
-
-
-   print("score: ", score)
+   print("hi: ")
 
 
 
@@ -35,8 +30,6 @@ start with gym env
 
    install
    tutorial
-   rlalgorithms
-   custom_technique
    developer_guides
    modules
 
