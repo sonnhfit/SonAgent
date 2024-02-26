@@ -10,7 +10,7 @@ Welcome to SonAgent's documentation!
 
 Simple way to start
 -------------------
-Install deepair with pip
+Install sonagent with pip
 
 .. code-block:: bash
 
