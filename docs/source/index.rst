@@ -8,6 +8,7 @@ Welcome to SonAgent's documentation!
 
 .. toctree::
    :maxdepth: 2
+   install
    :caption: Contents:
 
 
