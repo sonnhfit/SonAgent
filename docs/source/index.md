@@ -34,15 +34,14 @@ A clean, Bootstrap-based Sphinx theme by and for [the PyData community](https://
 If you are looking for a Sphinx theme that puts all of its sub-pages in the sidebar, the [Sphinx Book Theme](https://sphinx-book-theme.readthedocs.io/) has a similar look and feel, and [Furo](https://pradyunsg.me/furo/quickstart/) is another excellent choice. You can also see [the Sphinx Themes Gallery](https://sphinx-themes.org) for more ideas.
 ```
 
-## User Guide
+## Examples
 
-Information about using, configuration, and customizing this theme.
+Several example pages to demonstrate the functionality of this theme when used alongside other Sphinx extensions.
 
 ```{toctree}
 :maxdepth: 2
 
-intro.md
+examples/index
 ```
-
 
 Comming soon!!!
