@@ -1,3 +1,10 @@
 sphinx==7.2.6
 myst-parser==2.0.0
-pydata-sphinx-theme==0.7.1
+
+sphinx-material
+numpydoc
+nbsphinx
+recommonmark
+sphinx-markdown-tables
+sphinx_copybutton
+readthedocs-sphinx-search
