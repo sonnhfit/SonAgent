@@ -1,3 +1,4 @@
+import os
 import logging
 import traceback
 from copy import deepcopy
@@ -34,6 +35,11 @@ class SonBot(LoggingMixin):
         memory_url = self.args.get('memory-url', "user_data/memory")
         agentdb = self.args.get('agentdb', "sqlite:///user_data/agentdb.sqlite")
 
+        # get openai key 
+        openai = self.config.get('openai')
+        if openai.get('api_type', None) == 'openai':
+            os.environ["OPENAI_API_KEY"] = openai.get('api_key')
+
         if agentdb is None:
             agentdb = "sqlite:///user_data/agentdb.sqlite"
         
@@ -68,7 +74,7 @@ class SonBot(LoggingMixin):
             self.git_manager = None
         
 
-        self.agent = Agent(memory_path=memory_url, skills=self.skills)
+        self.agent = Agent(memory_path=memory_url, skills=self.skills, config=self.config)
 
         # Set initial bot state from config
         initial_state = self.config.get('initial_state')

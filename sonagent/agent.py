@@ -1,3 +1,4 @@
+import os
 import logging
 
 from sonagent.persistence import Belief, Plan
@@ -6,7 +7,7 @@ from sonagent.memory.memory import SonMemory
 from sonagent.memory.short_memory import ShortTermMemory
 from sonagent.planning.planner import SonAgentPlanner, SonAgentSequentialPlanner
 import semantic_kernel as sk
-from semantic_kernel.connectors.ai.open_ai import AzureChatCompletion
+from semantic_kernel.connectors.ai.open_ai import AzureChatCompletion, OpenAIChatCompletion
 import semantic_kernel.connectors.ai.open_ai as sk_oai
 from semantic_kernel.planning.sequential_planner.sequential_planner_parser import (
     SequentialPlanParser,
@@ -14,19 +15,20 @@ from semantic_kernel.planning.sequential_planner.sequential_planner_parser impor
 
 from sonagent.planning.prompt import PROMPT_PLAN, SEQUENCE_PLAN, CLEAN_BELIEF_PROMPT
 from sonagent.core_prompt.me import ASK_ABOUT_ME_PROMP
-
+from sonagent.coding.gencode import SonCodeAgent
 
 logger = logging.getLogger(__name__)
 
 
 class Agent:
-    def __init__(self, memory_path, skills) -> None:
+    def __init__(self, memory_path, skills, config: dict) -> None:
         # memory
         logger.debug(f"init memory with path {memory_path}.")
         self.memory = SonMemory(default_memory_path=memory_path)
         self.short_term_memory = ShortTermMemory(
             collection_name="short_term_memory", default_memory_path=memory_path
         )
+        self.config = config
 
         # planner
         self.planner = SonAgentPlanner()
@@ -34,17 +36,26 @@ class Agent:
 
         self.skills = skills
         self.skills.start_skill(memory=self.memory)
+        openai = self.config.get('openai')
+        if openai.get('api_type', None) == 'openai':
+            self.chat_service = OpenAIChatCompletion(
+                ai_model_id="gpt-4-0125-preview", api_key=os.environ["OPENAI_API_KEY"]
+            )
+        elif openai.get('api_type', None) == 'azure':
+            deployment, api_key, endpoint = sk.azure_openai_settings_from_dot_env()
+            self.chat_service = AzureChatCompletion(
+                deployment_name=deployment, endpoint=endpoint, api_key=api_key
+            )
 
-        deployment, api_key, endpoint = sk.azure_openai_settings_from_dot_env()
         # print(deployment, api_key, endpoint)
         self.kernel = sk.Kernel()
-        self.chat_service = AzureChatCompletion(
-            deployment_name=deployment, endpoint=endpoint, api_key=api_key
-        )
+        
         self.kernel.add_chat_service(
             "chat_completion",
             self.chat_service
         )
+
+        self.codeagent = SonCodeAgent()
 
     def save_function_to_memory(self, function_name: str) -> None:
         pass
