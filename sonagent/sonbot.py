@@ -49,6 +49,7 @@ class SonBot(LoggingMixin):
             init_db(agentdb)
         except Exception as e:
             logger.error(f"Error initializing database: {e}")
+            raise e
             
 
         self.rpc: RPCManager = RPCManager(self)

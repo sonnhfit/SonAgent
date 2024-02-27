@@ -257,7 +257,7 @@ class Agent:
         )
         belief_text = clean_result.result.strip()
 
-        relevant_function_manual = self.skills.get_available_function_skills()
+        relevant_function_manual = self.skills.get_available_function_skills(goal, self.memory)
 
         variables = sk.ContextVariables()
 
