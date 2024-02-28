@@ -29,6 +29,7 @@ Install sonagent with pip
    :maxdepth: 1
 
    install
+   system_design
    tutorial
    developer_guides
    modules
