@@ -52,3 +52,4 @@ def load_config_file(path: str) -> Dict[str, Any]:
             if err_range else 'Please verify your configuration file for syntax errors.'
         )
     return config
+

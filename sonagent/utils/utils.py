@@ -12,6 +12,10 @@ def hash_str(string: str) -> str:
     return sha.hexdigest()
 
 
+def hash_md5_str(string: str) -> str:
+    m = hashlib.md5(string.encode('UTF-8'))
+    return m.hexdigest()
+
 def create_github_issue():
     pass
 

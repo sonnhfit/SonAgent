@@ -8,7 +8,9 @@ from semantic_kernel.sk_pydantic import SKBaseModel
 import yaml
 from sonagent.skills.loading import BaseLoading
 from sonagent.skills.skills import SonSkill
-from sonagent.utils.utils import hash_str
+from pydantic import BaseModel
+
+from sonagent.utils.utils import hash_str, hash_md5_str
 
 logger = logging.getLogger(__name__)
 
@@ -18,7 +20,7 @@ class SkillsManager:
     # load, and get skills from config
 
     def __init__(self, sonagent) -> None:
-        self.skill_object_list: List[SonSkill] = []
+        self.skill_object_list: List[BaseModel] = []
         self.config = sonagent.config
         self.skills_area = "son_skills"
 
@@ -33,16 +35,16 @@ class SkillsManager:
 
     def load_skills(self) -> None:
         skills_register = self.load_register_skills_name()
-        BaseLoading.object_type = SonSkill
+        BaseLoading.object_type = BaseModel
         for skill_name in skills_register:
             skill = BaseLoading.load_object(object_name=skill_name, config=self.config, kwargs={}, extra_dir='user_data/skills')
             self.skill_object_list.append(skill)
 
     
-    def get_all_skills(self) -> List[SonSkill]:
+    def get_all_skills(self) -> List[BaseModel]:
         return self.skill_object_list
     
-    def search_skill_function_by_semantic_query(self, query: str, memory) -> List[SonSkill]:
+    def search_skill_function_by_semantic_query(self, query: str, memory) -> List[BaseModel]:
         results = memory.brain_area_search(
             area_collection_name=self.skills_area,
             query=query
@@ -59,13 +61,13 @@ class SkillsManager:
             is_added = memory.add(
                 document="",
                 metadata={},
-                id=skill.name(),
+                id=hash_md5_str(skill.__doc__),
                 area_collection_name=self.skills_area
             )
             if is_added:
                 logger.info(f"Skill {skill.name()} added to memory.")
     
-    def get_available_function_skills(self, query: str, memory: Any) -> List[SonSkill]:
+    def get_available_function_skills(self, query: str, memory: Any) -> List[BaseModel]:
 
         # Search for functions that match the semantic query.
         function_list = self.search_skill_function_by_semantic_query(query=query, memory=memory)
