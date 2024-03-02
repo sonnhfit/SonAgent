@@ -6,7 +6,7 @@
 Welcome to SonAgent's documentation!
 ===================================
 
-**SonAgent**
+**GET STARTED**
 
 Simple way to start
 -------------------
