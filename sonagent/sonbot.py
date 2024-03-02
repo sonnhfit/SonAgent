@@ -28,6 +28,8 @@ class SonBot(LoggingMixin):
 
 
         self.state = State.STOPPED
+        self.agent_mode = "chat"
+        
         self.args = args
 
         self.config = config
@@ -39,6 +41,7 @@ class SonBot(LoggingMixin):
         openai = self.config.get('openai')
         if openai.get('api_type', None) == 'openai':
             os.environ["OPENAI_API_KEY"] = openai.get('api_key')
+            print("----------------")
 
         if agentdb is None:
             agentdb = "sqlite:///user_data/agentdb.sqlite"
@@ -50,16 +53,11 @@ class SonBot(LoggingMixin):
         except Exception as e:
             logger.error(f"Error initializing database: {e}")
             raise e
-            
-
-        self.rpc: RPCManager = RPCManager(self)
-
+        
         self.skills = SkillsManager(self)
 
         names = str(self.skills.load_register_skills_name())
         logger.info(f"SKILLLS NAME: {names}")
-
-        
         self.sp = ScheduleProcess()
 
         # git manager
@@ -73,9 +71,9 @@ class SonBot(LoggingMixin):
             )
         else:
             self.git_manager = None
-        
 
         self.agent = Agent(memory_path=memory_url, skills=self.skills, config=self.config)
+        self.rpc: RPCManager = RPCManager(self)
 
         # Set initial bot state from config
         initial_state = self.config.get('initial_state')
@@ -84,6 +82,13 @@ class SonBot(LoggingMixin):
 
     async def chat(self, input: str) -> str:
         return await self.agent.chat(input)
+    
+    async def get_mode(self) -> str:
+        return self.agent_mode
+    
+    async def change_agent_mode(self, mode: str) -> str:
+        self.agent_mode = mode
+        return f"Agent mode changed to {mode}"
     
     async def ibelieve(self, input: str) -> str:
         return await self.agent.ibelieve(input)

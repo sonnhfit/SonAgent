@@ -1,5 +1,6 @@
 
 from sonagent.memory.memory import SonMemory
+from sonagent.llm.oai_llm import text_summary
 
 class ShortTermMemory(SonMemory):
 
@@ -7,7 +8,12 @@ class ShortTermMemory(SonMemory):
         super().__init__(collection_name=collection_name, memory_init_mode=memory_init_mode, default_memory_path=default_memory_path)
 
         self.chat_dialog = []
+        self.summerize_dialog_str = None
 
+    def summerize_dialog(self):
+        sum_text = text_summary(self.get_chat_dialog_as_string())
+        return sum_text
+    
     def add_chat_item(self, item: dict={}):
         self.chat_dialog.append(item)
 
@@ -15,7 +21,10 @@ class ShortTermMemory(SonMemory):
         return self.chat_dialog
     
     def get_chat_dialog_as_string(self):
-        return " ".join(self.chat_dialog)
+        result = ""
+        for item in self.chat_dialog:
+            result += str(item)
+        return result
     
     def clear_chat_dialog(self):
         self.chat_dialog = []

@@ -68,14 +68,14 @@ class Telegram(RPCHandler):
         section.
         """
         self._keyboard: List[List[Union[str, KeyboardButton]]] = [
-            ['/ibelieve', '/version', '/help']
+            ['/ibelieve', '/mode', '/show_mode', '/sum', '/version', '/help']
         ]
         # do not allow commands with mandatory arguments and critical cmds
         # TODO: DRY! - its not good to list all valid cmds here. But otherwise
         #       this needs refactoring of the whole telegram module (same
         #       problem in _help()).
         valid_keys: List[str] = [
-            r'/ibelieve',
+            r'/ibelieve', r'/show_mode$', r'/mode', r'/sum$',
             r'/help$', r'/version$'
         ]
         # Create keys for generation
@@ -159,6 +159,9 @@ class Telegram(RPCHandler):
             CommandHandler('reincarnate', self._reincarnate),
             CommandHandler('askme', self._askme),
             CommandHandler('ibelieve', self._ibelieve),
+            CommandHandler('show_mode', self._show_mode),
+            CommandHandler('sum', self._summerize_dialog),
+            CommandHandler('mode', self._mode),
             CommandHandler('help', self._help),
             CommandHandler('version', self._version),
             CommandHandler('sonagent', self.echo),
@@ -362,6 +365,16 @@ class Telegram(RPCHandler):
         """
         version_string = f'*Version:* `{__version__}`'
         await self._send_msg(version_string)
+    
+    async def _show_mode(self, update: Update, context: CallbackContext) -> None:
+            """
+            Handler for /_show_mode.
+            :param bot: telegram bot
+            :param update: message update
+            :return: None
+            """
+            result = await self._rpc.show_mode()
+            await update.message.reply_text(result)
 
     async def _ibelieve(self, update: Update, context: CallbackContext) -> None:
         """
@@ -378,6 +391,24 @@ class Telegram(RPCHandler):
             result = await self._rpc.ibelieve(msg)
         else:
             result = "What do you believe?"
+
+        await update.message.reply_text(result)
+
+    async def _mode(self, update: Update, context: CallbackContext) -> None:
+        """
+        Handler for /ibelieve.
+        Show version information
+        :param bot: telegram bot
+        :param update: message update
+        :return: None
+        """
+        result = ""
+        msg = update.message.text.replace('/mode', '')
+
+        if len(msg) > 0:
+            result = await self._rpc.mode(msg.strip())
+        else:
+            result = "You need give a mode like: chat, coding"
 
         await update.message.reply_text(result)
 
@@ -457,4 +488,15 @@ class Telegram(RPCHandler):
         """
 
         result = await self._rpc.show_plan()
+        await update.message.reply_text(result)
+
+    async def _summerize_dialog(self, update: Update, context: CallbackContext) -> None:
+        """
+        Handler for /summerize_dialog.
+        Show version information
+        :param bot: telegram bot
+        :param update: message update
+        :return: None
+        """
+        result = await self._rpc.summerize_dialog()
         await update.message.reply_text(result)

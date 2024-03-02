@@ -8,7 +8,7 @@ from math import isnan
 from typing import Any, Dict, Generator, List, Optional, Sequence, Tuple, Union
 
 from sonagent.rpc.rpc_types import RPCSendMsg
-
+from sonagent.constants import AGENT_MODE
 
 class RPCException(Exception):
     """
@@ -126,3 +126,15 @@ class RPC:
         :return: None
         """
         return await self.sonagent.show_plan()
+    
+    async def show_mode(self) -> str:
+        return self.sonagent.agent_mode
+    
+    async def mode(self, mode: str) -> str:
+        if mode in AGENT_MODE:
+            self.sonagent.agent_mode = mode
+            return f"set agent mode is {mode}"
+        return f'not done: agent mode is not validate ({str(AGENT_MODE)})'
+    
+    async def summerize_dialog(self) -> str:
+        return self.sonagent.agent.short_term_memory.summerize_dialog()

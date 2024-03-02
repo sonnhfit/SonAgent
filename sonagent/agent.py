@@ -25,9 +25,7 @@ class Agent:
         # memory
         logger.debug(f"init memory with path {memory_path}.")
         self.memory = SonMemory(default_memory_path=memory_path)
-        self.short_term_memory = ShortTermMemory(
-            collection_name="short_term_memory", default_memory_path=memory_path
-        )
+
         self.config = config
 
         # planner
@@ -46,6 +44,10 @@ class Agent:
             self.chat_service = AzureChatCompletion(
                 deployment_name=deployment, endpoint=endpoint, api_key=api_key
             )
+
+        self.short_term_memory = ShortTermMemory(
+            collection_name="short_term_memory", default_memory_path=memory_path
+        )
 
         # print(deployment, api_key, endpoint)
         self.kernel = sk.Kernel()
