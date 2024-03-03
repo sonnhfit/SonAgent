@@ -47,6 +47,7 @@ class SonAutoGenAgent(autogen.ConversableAgent):
             if description is not None
             else self.DEFAULT_USER_PROXY_AGENT_DESCRIPTIONS[human_input_mode],
         )
+        self.latest_code = None
 
         if logging_enabled():
             log_new_agent(self, locals())
@@ -56,7 +57,7 @@ class SonAutoGenAgent(autogen.ConversableAgent):
         # f = open(f"{localRepopath}/demofile.py", "w")
         # f.write(code)
         # f.close()
-        pass
+        self.latest_code = code
         
     def run_code(self, code, **kwargs):
         """Run the code and return the result.

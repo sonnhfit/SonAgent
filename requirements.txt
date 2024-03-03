@@ -24,6 +24,8 @@ semantic-kernel==0.4.5.dev0
 sdnotify==0.3.2
 GitPython==3.1.42
 pyautogen==0.2.15
+langchain==0.1.10
+
 # docs 
 sphinx-material
 numpydoc

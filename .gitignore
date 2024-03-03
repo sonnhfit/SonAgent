@@ -4,19 +4,19 @@ config*.json
 *.sqlite-shm
 *.sqlite-wal
 logfile.txt
-user_data/*
-!user_data/strategy/sample_strategy.py
-!user_data/notebooks
-!user_data/models
-!user_data/freqaimodels
-user_data/freqaimodels/*
-user_data/models/*
-user_data/notebooks/*
+# user_data/*
+# !user_data/strategy/sample_strategy.py
+# !user_data/notebooks
+# !user_data/models
+# !user_data/freqaimodels
+# user_data/freqaimodels/*
+# user_data/models/*
+# user_data/notebooks/*
 SonAgent-plot.html
 SonAgent-profit-plot.html
 SonAgent/rpc/api_server/ui/*
 build_helpers/ta-lib/*
-user_data/
+# user_data/
 # Macos related
 .DS_Store
 

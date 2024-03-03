@@ -1,6 +1,6 @@
 import os
 import logging
-
+import json
 from sonagent.persistence import Belief, Plan
 
 from sonagent.memory.memory import SonMemory
@@ -16,6 +16,8 @@ from semantic_kernel.planning.sequential_planner.sequential_planner_parser impor
 from sonagent.planning.prompt import PROMPT_PLAN, SEQUENCE_PLAN, CLEAN_BELIEF_PROMPT
 from sonagent.core_prompt.me import ASK_ABOUT_ME_PROMP
 from sonagent.coding.gencode import SonCodeAgent
+from sonagent.tools import GitManager
+from openai import OpenAI
 
 logger = logging.getLogger(__name__)
 
@@ -57,7 +59,26 @@ class Agent:
             self.chat_service
         )
 
-        self.codeagent = SonCodeAgent()
+        # git manager
+        github = self.config.get('github')
+        if github.get('enabled'):
+            self.git_manager = GitManager(
+                username=github.get('username'),
+                repo_name=github.get('repo_name'),
+                token=github.get('token'),
+                local_repo_path=github.get('local_repo_path')
+            )
+        else:
+            self.git_manager = None
+        
+        if self.git_manager is not None:
+            user_data_dir = self.config.get('user_data_dir')
+            self.codeagent = SonCodeAgent(
+                git_manager=self.git_manager, user_data_dir=user_data_dir
+            )
+        else:
+            self.codeagent = SonCodeAgent()
+
 
     def save_function_to_memory(self, function_name: str) -> None:
         pass
@@ -175,6 +196,67 @@ class Agent:
         logger.info(f"Finish chat: {str(response)}")
 
         return str(response)
+
+    async def chat_code(self, input: str) -> str:
+        if len(self.short_term_memory.get_chat_dialog()) == 0:
+            self.short_term_memory.add_chat_item(
+                {"role": "system", "content": "you are a sennior software engineer, expert in python, Every time you generate code, plan, or the way to done task, ask the user if he wants to compile this code"}
+            )
+
+        self.short_term_memory.add_chat_item({"role": "user", "content": input})
+        message_text = self.short_term_memory.get_chat_dialog()
+
+        logger.info(f"Start chat: {message_text}")
+        custom_functions = [
+            {
+                'name': 'run_plan_and_compile_code',
+                'description': 'run plan and compile code to done the task or requirement',
+                'parameters': {
+                    'type': 'object',
+                    'properties': {
+                        'summary_plan_or_requirement': {
+                            'type': 'string',
+                            'description': 'summary of the plan or requirement keep that clear about how it works or steps to done the task'
+                        }
+                    }
+                }
+            }
+        ]
+
+        client = OpenAI(api_key=os.environ["OPENAI_API_KEY"])
+        response = client.chat.completions.create(
+            model="gpt-4-0125-preview",
+            messages=message_text,
+            functions=custom_functions,
+            function_call='auto',
+            temperature=1,
+            max_tokens=4096,
+            top_p=1,
+            frequency_penalty=0,
+            presence_penalty=0,
+        )
+        r_str = str(response.choices[0].message.content)
+        if r_str == "None":
+
+            r_str = "I send requirment to compile code agent. Please wait for a moment."
+            function_call_chat = response.choices[0].message.function_call
+            name = function_call_chat.name
+            json_response = json.loads(response.choices[0].message.function_call.arguments)
+            print("---------------------------")
+            print(json_response)
+
+            if name == "run_plan_and_compile_code":
+                summary_plan_or_requirement = json_response.get("summary_plan_or_requirement")
+                self.codeagent.gen_code(message=summary_plan_or_requirement, is_create_pull_request=True)
+
+        print(response.choices[0].message.function_call)
+        self.short_term_memory.add_chat_item(
+            {"role":"assistant", "content": r_str}
+        )
+        logger.info(f"Finish chat: {str(response)}")
+
+        return r_str
+    
 
     async def clear_short_term_memory(self) -> str:
         self.short_term_memory.clear_chat_dialog()

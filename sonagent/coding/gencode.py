@@ -2,7 +2,10 @@ import os
 import autogen
 from typing import Dict, Union
 from sonagent.coding.sonautogen import SonAutoGenAgent
-
+from typing import Any
+from sonagent.llm.oai_llm import create_pull_request_info
+import json
+import logging
 
 # llm_config = {
 #     "config_list": [{"model": "gpt-4-0125-preview", "api_key": os.environ["OPENAI_API_KEY"]}],
@@ -12,7 +15,8 @@ from sonagent.coding.sonautogen import SonAutoGenAgent
 
 
 class SonCodeAgent:
-    def __init__(self) -> None:
+    def __init__(self, git_manager: Any = None, user_data_dir: str = '/user_data') -> None:
+        self.user_data_dir = user_data_dir
         self.config_item = {"model": "gpt-4-0125-preview", "api_key": os.environ["OPENAI_API_KEY"]}
         self.llm_config = {
             "config_list": [
@@ -20,6 +24,8 @@ class SonCodeAgent:
             ],
         }
         self.config_list = [self.config_item]
+        self.git_manager = git_manager
+        
 
         # create an AssistantAgent named "assistant"
         self.assistant = autogen.AssistantAgent(
@@ -42,15 +48,79 @@ class SonCodeAgent:
             },
         )
 
-    def gen_code(self, message: str) -> Union[str, Dict[str, str]]:
+        self.latest_code = None
+
+    def gen_code(self, message: str, is_create_pull_request: bool = False) -> Union[str, Dict[str, str]]:
         # generate code
         chat_res = self.user_proxy.initiate_chat(
             self.assistant,
             message=message,
             summary_method="reflection_with_llm",
         )
-        
-        return chat_res
+
+        self.latest_code = self.user_proxy.latest_code
+        metadata = {}
+
+        # gen metadata to request from chatgpt 
+        metadata_str = create_pull_request_info(chat_res.summary)
+
+        logging.info(f"metadata_str: {metadata_str}")
+        # Removing the triple backticks and 'json' label
+        json_str = metadata_str.replace("```json", "").replace("```", "")
+
+        # Load the JSON data
+        try:
+            metadata = json.loads(json_str)
+            print(metadata)
+        except json.JSONDecodeError as e:
+            print(f"____Error decoding JSON: {e}")
+
+
+        # metadata = json.loads(metadata_str)
+        code_branch = metadata.get("branch_name", "feature/sonagent-branch_name")
+
+        if is_create_pull_request:
+            # save code to current skill folder
+            # {
+            #     "branch_name": "feature/sonagent-google-search",
+            #     "commit_message": "add new feature to perform Google search",
+            #     "pull_request_title": "Add new skill to agent to perform Google search",
+            #     "pull_request_body": "This pull request adds a new skill to the agent to perform a Google search using the googlesearch-python library.",
+            #     "source_code_file_name": "skill_google_search.py",
+            # }
+            skill_file_name = metadata.get("source_code_file_name", "default.py")
+            skill_file_path = f"{self.user_data_dir}/skills/{skill_file_name}"
+            git_skill_file_path = f"user_data/skills/{skill_file_name}"
+
+            # save to github skill folder
+            self.save_source_code(self.latest_code, code_path=skill_file_path)
+            # user_data_dir = "user_data/skills"
+            self.git_manager.create_branch(branch_name=code_branch)
+            self.git_manager.write_code(
+                code=self.latest_code, file_name=git_skill_file_path
+            )
+            commit_message = metadata.get("commit_message", "default commit message")
+            self.git_manager.commit_and_push(code_branch, commit_message)
+            pull_title = metadata.get("pull_request_title", "default pull request title")
+            pull_body = metadata.get("pull_request_body", "default pull request body")
+
+            pull_request_message = self.git_manager.create_pull_request(
+                code_branch, pull_title, pull_body, "main"
+            )
+
+            metadata['pull_request_message'] = pull_request_message
+
+        return chat_res, metadata
+    
+    
+    def save_source_code(self, code: str, code_path) -> None:
+        # save code to user_data folder clone from github
+
+        # save file to user data skill folder
+
+        # open pull request to github
+        pass
+    
 
 
 

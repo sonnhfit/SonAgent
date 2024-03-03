@@ -17,7 +17,7 @@ from sonagent.persistence.belief_models import Belief
 from sonagent.agent import Agent
 from sonagent.persistence.models import init_db
 from sonagent.rpc.schedule_worker import ScheduleProcess
-from sonagent.tools import GitManager
+
 
 
 logger = logging.getLogger(__name__)
@@ -60,17 +60,7 @@ class SonBot(LoggingMixin):
         logger.info(f"SKILLLS NAME: {names}")
         self.sp = ScheduleProcess()
 
-        # git manager
-        github = self.config.get('github')
-        if github.get('enabled'):
-            self.git_manager = GitManager(
-                username=github.get('username'),
-                repo_name=github.get('repo_name'),
-                token=github.get('token'),
-                local_repo_path=github.get('local_repo_path')
-            )
-        else:
-            self.git_manager = None
+
 
         self.agent = Agent(memory_path=memory_url, skills=self.skills, config=self.config)
         self.rpc: RPCManager = RPCManager(self)
@@ -81,7 +71,10 @@ class SonBot(LoggingMixin):
         self.state = State[initial_state.upper()] if initial_state else State.STOPPED
 
     async def chat(self, input: str) -> str:
-        return await self.agent.chat(input)
+        if self.agent_mode == "chat":
+            return await self.agent.chat(input)
+        else:
+            return await self.agent.chat_code(input)
     
     async def get_mode(self) -> str:
         return self.agent_mode

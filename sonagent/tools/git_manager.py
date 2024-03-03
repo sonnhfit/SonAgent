@@ -2,7 +2,8 @@ import logging
 import requests
 import git
 import shutil
-
+import os
+from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
@@ -47,6 +48,11 @@ class GitManager:
     
     def write_code(self, file_name: str, code: str) -> str:
         file_path = f"{self.local_repo_path}/{file_name}"
+        path_ = Path(file_path)
+        dir_path = str(path_.parent.absolute())
+        if not os.path.exists(dir_path):
+            os.makedirs(dir_path)
+
         with open(file_path, "w") as file:
             file.write(code)
         return file_path
