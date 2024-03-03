@@ -88,7 +88,7 @@ GITHUB_PULL_REQUEST_PROMPT = """
 You are a software engineer working on a python project.
 You have been asked to create a pull request for the following changes.
 The changes are to the codebase of a project. 
-Based on the content provided below. Let's create a json file, ouput is json.
+Based on the content provided below. Let's create a json file, ouput is json that format can load by json.loads.
 
 For example:
 
@@ -103,7 +103,7 @@ from pydantic import BaseModel
 --------------------------------------------------------------------------------
 assistant (to SonAgent):
 
-To accomplish this task, we will create a Python class that extends from `BaseModel` provided by `pydantic`. 
+To accomplish this task, we will create a Python class `PlotAppleStock` that extends from `BaseModel` provided by `pydantic`. 
 This class will have a function to plot the Apple stock price from 1 year ago to the current date using Yahoo Finance data. 
 We will use the `yfinance` library to fetch the stock data and `matplotlib` for plotting. 
 If you don't have `yfinance` and `matplotlib` installed, you will need to install them using pip.
@@ -122,7 +122,8 @@ First, ensure you have `pydantic`, `yfinance`, and `matplotlib` installed. You c
     "commit_message": "add new feature to plot apple stock price",
     "pull_request_title": "Add new skill to agent to plot Apple stock price",
     "pull_request_body": "This pull request adds a new skill to the agent to plot the Apple stock price using Yahoo Finance data.",
-    "source_code_file_name": "skill_plot_apple_stock.py"
+    "source_code_file_name": "skill_plot_apple_stock.py",
+    "class_name": "PlotAppleStock"
 }}
 ```
 
@@ -130,7 +131,7 @@ Example 2:
 [SUMMARY]
 Certainly! The following is a summary of the Python function for performing a Google search using the googlesearch-python library:
 Install the googlesearch-python library using pip install googlesearch-python.
-Create a function called google_search that takes a search query and an optional parameter for the number of results to fetch.
+Create a class called `GooleSearch` have a function called google_search that takes a search query and an optional parameter for the number of results to fetch.
 Inside the function, use the search function from the library to perform the Google search with the given query and retrieve the specified number of results.
 Iterate through the search results and print the title and URL of each result.
 Handle exceptions gracefully in case of errors during the search process.
@@ -144,6 +145,7 @@ Remember to use this functionality responsibly and be aware of potential legal a
     "pull_request_title": "Add new skill to agent to perform Google search",
     "pull_request_body": "This pull request adds a new skill to the agent to perform a Google search using the googlesearch-python library.",
     "source_code_file_name": "skill_google_search.py",
+    "class_name": "GooleSearch"
 }}
 ```
 

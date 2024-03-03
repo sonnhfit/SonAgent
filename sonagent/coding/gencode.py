@@ -6,6 +6,8 @@ from typing import Any
 from sonagent.llm.oai_llm import create_pull_request_info
 import json
 import logging
+from pathlib import Path
+import yaml
 
 # llm_config = {
 #     "config_list": [{"model": "gpt-4-0125-preview", "api_key": os.environ["OPENAI_API_KEY"]}],
@@ -49,6 +51,18 @@ class SonCodeAgent:
         )
 
         self.latest_code = None
+
+    def add_skill_register_to_agent(self, skill_class: str, skill_file_path: str) -> None:
+
+        with open(skill_file_path, 'r') as file:
+            skills_register = yaml.safe_load(file)
+
+        skills_register['skills'].append(skill_class)
+
+        with open(skill_file_path, 'w') as file:
+            yaml.dump(skills_register, file)
+
+
 
     def gen_code(self, message: str, is_create_pull_request: bool = False) -> Union[str, Dict[str, str]]:
         # generate code
@@ -96,9 +110,18 @@ class SonCodeAgent:
             self.save_source_code(self.latest_code, code_path=skill_file_path)
             # user_data_dir = "user_data/skills"
             self.git_manager.create_branch(branch_name=code_branch)
+            
+            # write skill code
             self.git_manager.write_code(
                 code=self.latest_code, file_name=git_skill_file_path
             )
+
+            # write skill register to skill file
+            skill_class = metadata.get("class_name", None)
+            if skill_class != None and skill_class in str(chat_res.summary):
+                skill_file_path = f"{self.git_manager.local_repo_path}/user_data/skills/skills.yaml"
+                self.add_skill_register_to_agent(skill_class, skill_file_path)
+
             commit_message = metadata.get("commit_message", "default commit message")
             self.git_manager.commit_and_push(code_branch, commit_message)
             pull_title = metadata.get("pull_request_title", "default pull request title")
