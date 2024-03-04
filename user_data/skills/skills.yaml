@@ -1,6 +1,6 @@
 skills:
-  - MathSkill
-  - SummarySkill
-  - AppleStockPlotter
-  - NumberPrinter
-  
+- MathSkill
+- SummarySkill
+- AppleStockPlotter
+- NumberPrinter
+- OddNumberPrinter
