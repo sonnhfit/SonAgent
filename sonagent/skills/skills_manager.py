@@ -56,22 +56,26 @@ class SkillsManager:
         self.save_skills_function_to_memory(memory=memory)
 
     def save_skills_function_to_memory(self, memory: Any) -> None:
+        logger.info("Adding skills to memory.")
+        logger.info(f"Adding skills to memory. {self.skill_object_list}")
         for skill in self.skill_object_list:
+            logger.info(f"Adding skill {str(skill.__doc__)} to memory: {hash_md5_str(skill.__doc__)}")
             # skill_hash_str(skill.name())
             is_added = memory.add(
-                document="",
-                metadata={},
+                document=skill.__doc__,
+                metadata={'skill_description': skill.__doc__},
                 id=hash_md5_str(skill.__doc__),
                 area_collection_name=self.skills_area
             )
             if is_added:
-                logger.info(f"Skill {skill.name()} added to memory.")
+                logger.info(f"Skill {skill} added to memory.")
     
     def get_available_function_skills(self, query: str, memory: Any) -> List[BaseModel]:
+        logger.info(f"Searching for skills that match the query {query}")
 
         # Search for functions that match the semantic query.
         function_list = self.search_skill_function_by_semantic_query(query=query, memory=memory)
-
+        # logger.info(f"Found functions: {function_list}")
         # WriterSkill.Translate
         # description: translate the input to another language
         # args:
@@ -79,12 +83,21 @@ class SkillsManager:
         # - language: the language to translate to
         result = ""
 
-        for fun_docs in function_list:
-            result += fun_docs
+        function_list_ids = function_list["ids"][0]
+        function_list_metadatas = function_list["metadatas"][0]
+
+        # logger.info(f"Found function_list_metadatas: {function_list_metadatas}")
+
+        logger.info(f"Found function_list_ids: {function_list_ids}")
+
+        for fun_docs in function_list_metadatas:
+            # print(dir(fun_docs))
+            result += fun_docs["skill_description"]
 
         # Add functions that were found in the search results.
 
         # Add any missing functions that were included but not found in the search results.
+        logger.info(f"Found functions: {result}")
 
         return result
 

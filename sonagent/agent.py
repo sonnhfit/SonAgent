@@ -35,7 +35,9 @@ class Agent:
         # self.sync_beliefs()
 
         self.skills = skills
+        logger.info("--------- Start skill.---------")
         self.skills.start_skill(memory=self.memory)
+        logger.info("--------- Start Done.---------")
         openai = self.config.get('openai')
         if openai.get('api_type', None) == 'openai':
             self.chat_service = OpenAIChatCompletion(
@@ -174,23 +176,70 @@ class Agent:
     def get_tools(self) -> list:
         return []
 
+
     async def chat(self, input: str) -> str:
+
+        belief = self.memory.brain_area_search(
+            area_collection_name="belief_base", query=input
+        )
+
+        belief_ids = belief["ids"][0]
+
+        logger.debug(f"belief_ids: {belief_ids}")
+
+        result_list = self.get_beliefs_for_planner(belief_ids)
+
+        logger.debug(f"result_list: {result_list}")
+
+        belief_text = ""
+        for item in result_list:
+            belief_text += str("-" + item.text + "\n")
+        
+        logger.info(f"Belief_text: \n{belief_text}")
+        if len(self.short_term_memory.get_chat_dialog()) == 0:
+            self.short_term_memory.add_chat_item(
+                {"role": "system", "content": f"As a reliable assistant with the ability to create plans for executing tasks using the create_plan_with_skills function, you can answer user questions based on the your data. If the user's question falls outside the scope of the provided data, you can respond based on my understanding or ask clarifying questions to gather more information from the user. #YOUR DATA\n\n{belief_text}"}
+            )
+        
         self.short_term_memory.add_chat_item({"role": "user", "content": input})
         message_text = self.short_term_memory.get_chat_dialog()
 
-        logger.info(f"Start chat: {message_text}")
-        res = await self.chat_service.complete_chat_async(
+        custom_functions = [
+            {
+                'name': 'create_plan_with_skills',
+                'description': 'run plan and compile code to done the task or requirement',
+                'parameters': {
+                    'type': 'object',
+                    'properties': {
+                        'dialog_summary': {
+                            'type': 'string',
+                            'description': 'summary of the dialog keep that clear about how it works or steps to done the task'
+                        }
+                    }
+                }
+            }
+        ]
+
+        client = OpenAI(api_key=os.environ["OPENAI_API_KEY"])
+        response = client.chat.completions.create(
+            model="gpt-4-0125-preview",
             messages=message_text,
-            settings=sk_oai.AzureChatRequestSettings(
-                temperature=0.7,
-                max_tokens=2500,
-                top_p=0.8,
-                frequency_penalty=0.0,
-                presence_penalty=0.0,
-                stop=[],
-            ),
+            functions=custom_functions,
+            function_call='auto',
+            temperature=1,
+            max_tokens=4096,
+            top_p=1,
+            frequency_penalty=0,
+            presence_penalty=0,
         )
-        response = str(res[0])
+        r_str = str(response.choices[0].message.content)
+        if r_str == "None":
+
+            logger.info(f"***response.choices[0].message chat: {str(response.choices[0].message)}")
+            json_response = json.loads(response.choices[0].message.function_call.arguments)
+            r_str = await self.planning(goal=json_response.get("dialog_summary"))
+        
+        response = str(r_str)
         
         self.short_term_memory.add_chat_item({"role":"assistant","content":str(response)})
         logger.info(f"Finish chat: {str(response)}")
@@ -346,10 +395,14 @@ class Agent:
         variables = sk.ContextVariables()
 
         variables["available_functions"] = relevant_function_manual
-        variables["believe"] = belief_text
+        variables["believe"] = ""
         variables["goal"] = goal
 
+        logger.info(f"available_functions {relevant_function_manual}")
+
         semantic_function = self.kernel.create_semantic_function(PROMPT_PLAN)
+
+        
 
         result = await self.kernel.run_async(
             semantic_function,

@@ -6,7 +6,9 @@ from datetime import datetime, timedelta
 
 class AppleStockPlotter(BaseModel):
     """
-    Description: AppleStockPlotter provides a set of functions to plot Apple stock data.
+    AppleStockPlotter.plot_stock_price
+    description: provides a set of functions to plot Apple stock data.
+    args:
     """
     def plot_stock_price(self):
         # Calculate the date 1 year ago from today
