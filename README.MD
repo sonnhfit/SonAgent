@@ -33,6 +33,14 @@ pip install sonagent
 python main.py
 ```
 output
+
+3. Run bot 
+
+```
+sonagent run
+```
+### Some Demo 
+
 ```
 {
     "input": "Train neural network for image classification of digits 0-9",
@@ -46,14 +54,6 @@ output
     ]
 }
 ```
-
-3. Run bot 
-
-```
-sonagent run
-```
-### Some Demo 
-
 
 
 ### Dev
