@@ -30,7 +30,12 @@ pip install sonagent
 
 2. Test the Agent:
 ```
-sonagent run --config /path/to/user_data/config.json --agentdb sqlite:///user_data/tradesv3.sqlite --memory-url /path/to/user_data/memory --datadir /path/to/user_data/  --user-data-dir /path/to/user_data/
+sonagent run 
+--config /path/to/user_data/config.json 
+--agentdb sqlite:///user_data/tradesv3.sqlite 
+--memory-url /path/to/user_data/memory 
+--datadir /path/to/user_data/  
+--user-data-dir /path/to/user_data/
 ```
 output
 
