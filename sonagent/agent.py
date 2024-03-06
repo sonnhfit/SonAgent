@@ -35,8 +35,10 @@ class Agent:
         # self.sync_beliefs()
 
         self.skills = skills
+
         logger.info("--------- Start skill.---------")
         self.skills.start_skill(memory=self.memory)
+        self.skills_dict = {}
         logger.info("--------- Start Done.---------")
         openai = self.config.get('openai')
         if openai.get('api_type', None) == 'openai':
@@ -81,9 +83,16 @@ class Agent:
         else:
             self.codeagent = SonCodeAgent()
 
+        # load skill dict 
+        self.init_skills_dict()
+
 
     def save_function_to_memory(self, function_name: str) -> None:
         pass
+
+    def init_skills_dict(self) -> None:
+        for skill in self.skills.get_all_skills():
+            self.skills_dict[str(skill.__class__.__name__)] = skill
 
     def get_beliefs_for_planner(self, ids: list) -> list:
         list_belief = Belief.get_belief_by_ids(ids=ids)
@@ -176,6 +185,30 @@ class Agent:
     def get_tools(self) -> list:
         return []
 
+    async def excute_plan_task(self, task: dict) -> str: 
+        task_intance = str(task['function']).split('.')
+        class_name = task_intance[0]
+        function_name = task_intance[1]
+        task_func = getattr(self.skills_dict[class_name], function_name)
+        if 'args' in task:
+            result = task_func(**task['args'])
+        
+        result = task_func()
+        return result
+
+    async def create_plan_and_running(self, goal_plan: str) -> str:
+        plan_json = await self.planning(goal=goal_plan)
+
+        # replace ```json to empty string
+        plan_json = plan_json.replace("```json", "").replace("```", "")
+        plan_json = json.loads(plan_json)
+        tasks = plan_json.get("subtasks", [])
+
+        result = ""
+        for task in tasks:
+            result += str(await self.excute_plan_task(task))
+
+        return result
 
     async def chat(self, input: str) -> str:
 
@@ -185,11 +218,11 @@ class Agent:
 
         belief_ids = belief["ids"][0]
 
-        logger.debug(f"belief_ids: {belief_ids}")
+        logger.info(f"belief_ids: {belief_ids}")
 
         result_list = self.get_beliefs_for_planner(belief_ids)
 
-        logger.debug(f"result_list: {result_list}")
+        logger.info(f"result_list: {result_list}")
 
         belief_text = ""
         for item in result_list:
@@ -198,8 +231,9 @@ class Agent:
         logger.info(f"Belief_text: \n{belief_text}")
         if len(self.short_term_memory.get_chat_dialog()) == 0:
             self.short_term_memory.add_chat_item(
-                {"role": "system", "content": f"As a reliable assistant with the ability to create plans for executing tasks using the create_plan_with_skills function, you can answer user questions based on the your data. If the user's question falls outside the scope of the provided data, you can respond based on my understanding or ask clarifying questions to gather more information from the user. #YOUR DATA\n\n{belief_text}"}
+                {"role": "system", "content": f"You are a virtual assistant with the ability to create plans for executing tasks using the create_plan_with_skills function if user need you do something. If the user's question falls outside the scope of the provided data."}
             )
+            logger.info(self.short_term_memory.get_chat_dialog())
         
         self.short_term_memory.add_chat_item({"role": "user", "content": input})
         message_text = self.short_term_memory.get_chat_dialog()
@@ -237,7 +271,7 @@ class Agent:
 
             logger.info(f"***response.choices[0].message chat: {str(response.choices[0].message)}")
             json_response = json.loads(response.choices[0].message.function_call.arguments)
-            r_str = await self.planning(goal=json_response.get("dialog_summary"))
+            r_str = await self.create_plan_and_running(goal_plan=json_response.get("dialog_summary"))
         
         response = str(r_str)
         

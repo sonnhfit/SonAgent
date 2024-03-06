@@ -4,34 +4,21 @@ import yfinance as yf
 import matplotlib.pyplot as plt
 from datetime import datetime, timedelta
 
-class AppleStockPlotter(BaseModel):
+class GetAppleStockPlotter(BaseModel):
     """
-    AppleStockPlotter.plot_stock_price
-    description: provides a set of functions to plot Apple stock data.
+    GetAppleStockPlotter.stock_price
+    description: get latest Apple stock price from yahoo finace.
     args:
     """
-    def plot_stock_price(self):
+    def stock_price(self):
         # Calculate the date 1 year ago from today
         end_date = datetime.now()
-        start_date = end_date - timedelta(days=365)
+        start_date = end_date - timedelta(days=30)
         
         # Format dates in YYYY-MM-DD format
         start_date_str = start_date.strftime('%Y-%m-%d')
         end_date_str = end_date.strftime('%Y-%m-%d')
-        
         # Fetch Apple stock data from Yahoo Finance
         apple_stock_data = yf.download('AAPL', start=start_date_str, end=end_date_str)
-        
-        # Plot the closing prices
-        plt.figure(figsize=(10, 6))
-        plt.plot(apple_stock_data['Close'], label='Apple Stock Price')
-        plt.title('Apple Stock Price (1 Year)')
-        plt.xlabel('Date')
-        plt.ylabel('Price')
-        plt.legend()
-        plt.show()
+        return f"apple stock price {end_date_str} is: " + str(apple_stock_data['Close'][-1]) + " USD"
 
-# Example usage
-if __name__ == "__main__":
-    plotter = AppleStockPlotter()
-    plotter.plot_stock_price()

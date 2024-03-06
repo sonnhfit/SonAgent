@@ -8,10 +8,12 @@ class NumberPrinter(BaseModel):
     """
     start: int = 1  # Giá trị bắt đầu mặc định
     end: int = 10   # Giá trị kết thúc mặc định
-
+    
     def print_numbers(self):
+        rs = ""
         for i in range(self.start, self.end + 1):
-            print(i)
+            rs += str(i) + " "
+        return rs
 
 # Example usage
 if __name__ == "__main__":
