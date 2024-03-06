@@ -41,6 +41,11 @@ class SkillsManager:
             self.skill_object_list.append(skill)
 
     
+    def reload_skills(self) -> None:
+        self.skill_object_list = []
+        self.load_skills()
+
+
     def get_all_skills(self) -> List[BaseModel]:
         return self.skill_object_list
     

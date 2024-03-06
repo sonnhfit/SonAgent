@@ -60,8 +60,6 @@ class SonBot(LoggingMixin):
         logger.info(f"SKILLLS NAME: {names}")
         self.sp = ScheduleProcess()
 
-
-
         self.agent = Agent(memory_path=memory_url, skills=self.skills, config=self.config)
         self.rpc: RPCManager = RPCManager(self)
 
@@ -100,6 +98,12 @@ class SonBot(LoggingMixin):
 
     async def show_plan(self) -> str:
         return await self.agent.show_plan()
+    
+    def show_skills(self) -> str:
+        return self.agent.show_skills()
+    
+    def reload_skills(self) -> str:
+        return self.agent.reload_skills()
     
     def cleanup(self) -> None:
         """

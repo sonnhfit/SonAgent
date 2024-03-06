@@ -75,7 +75,8 @@ class Telegram(RPCHandler):
         #       this needs refactoring of the whole telegram module (same
         #       problem in _help()).
         valid_keys: List[str] = [
-            r'/ibelieve', r'/show_mode$', r'/mode', r'/sum$',
+            r'/ibelieve', r'/show_mode$', r'/mode', r'/sum$', r'/show_skills$',
+            r'/reload_skills$',
             r'/help$', r'/version$'
         ]
         # Create keys for generation
@@ -161,6 +162,8 @@ class Telegram(RPCHandler):
             CommandHandler('ibelieve', self._ibelieve),
             CommandHandler('show_mode', self._show_mode),
             CommandHandler('sum', self._summerize_dialog),
+            CommandHandler('show_skills', self._show_skills),
+            CommandHandler('reload_skills', self._reload_skills),
             CommandHandler('mode', self._mode),
             CommandHandler('help', self._help),
             CommandHandler('version', self._version),
@@ -366,6 +369,28 @@ class Telegram(RPCHandler):
         version_string = f'*Version:* `{__version__}`'
         await self._send_msg(version_string)
     
+    async def _show_skills(self, update: Update, context: CallbackContext) -> None:
+        """
+        Handler for /show_skills.
+        Show version information
+        :param bot: telegram bot
+        :param update: message update
+        :return: None
+        """
+        result = await self._rpc.show_skills()
+        await update.message.reply_text(result)
+
+    async def _reload_skills(self, update: Update, context: CallbackContext) -> None:
+        """
+        Handler for /reload_skills.
+        Show version information
+        :param bot: telegram bot
+        :param update: message update
+        :return: None
+        """
+        result = await self._rpc.reload_skills()
+        await update.message.reply_text(result)
+
     async def _show_mode(self, update: Update, context: CallbackContext) -> None:
             """
             Handler for /_show_mode.

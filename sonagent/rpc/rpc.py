@@ -130,6 +130,12 @@ class RPC:
     async def show_mode(self) -> str:
         return self.sonagent.agent_mode
     
+    async def show_skills(self) -> str:
+        return self.sonagent.show_skills()
+    
+    async def reload_skills(self) -> str:
+        return self.sonagent.reload_skills()
+    
     async def mode(self, mode: str) -> str:
         if mode in AGENT_MODE:
             self.sonagent.agent_mode = mode

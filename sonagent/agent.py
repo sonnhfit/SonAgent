@@ -98,6 +98,22 @@ class Agent:
         list_belief = Belief.get_belief_by_ids(ids=ids)
         return list_belief
 
+    def show_skills(self) -> str:
+        self.skills.reload_skills()
+        return ", ".join(self.skills_dict.keys())
+
+    def _reload_skills(self):
+        logger.info("--------- reload skill.---------")
+        self.skills.start_skill(memory=self.memory)
+        self.skills_dict = {}
+        self.init_skills_dict()
+        
+        logger.info("--------- reload Done.---------")
+
+    def reload_skills(self) -> str:
+        self._reload_skills()
+        return self.show_skills()
+
     async def run(self, input) -> None:
         # get belief -> thinking, planning -> acting
 
@@ -343,7 +359,6 @@ class Agent:
 
         return r_str
     
-
     async def clear_short_term_memory(self) -> str:
         self.short_term_memory.clear_chat_dialog()
         return "Clear short term memory successfully."
