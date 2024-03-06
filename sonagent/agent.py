@@ -190,10 +190,11 @@ class Agent:
         class_name = task_intance[0]
         function_name = task_intance[1]
         task_func = getattr(self.skills_dict[class_name], function_name)
-        if 'args' in task:
+        logger.info(f"task_func: {task}")
+        if 'args' in task.keys():
             result = task_func(**task['args'])
-        
-        result = task_func()
+        else:
+            result = task_func()
         return result
 
     async def create_plan_and_running(self, goal_plan: str) -> str:
@@ -202,6 +203,8 @@ class Agent:
         # replace ```json to empty string
         plan_json = plan_json.replace("```json", "").replace("```", "")
         plan_json = json.loads(plan_json)
+
+        logger.info(f"plan_json: {plan_json}")
         tasks = plan_json.get("subtasks", [])
 
         result = ""
@@ -256,7 +259,7 @@ class Agent:
 
         client = OpenAI(api_key=os.environ["OPENAI_API_KEY"])
         response = client.chat.completions.create(
-            model="gpt-4-0125-preview",
+            model="gpt-3.5-turbo",
             messages=message_text,
             functions=custom_functions,
             function_call='auto',

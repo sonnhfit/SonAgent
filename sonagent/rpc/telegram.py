@@ -34,7 +34,7 @@ from sonagent.__init__ import __version__
 
 
 logger = logging.getLogger(__name__)
-
+logging.getLogger("httpx").setLevel(logging.WARNING)
 logger.debug('Included module rpc.telegram ...')
 
 MAX_MESSAGE_LENGTH = MessageLimit.MAX_TEXT_LENGTH
