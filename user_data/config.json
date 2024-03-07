@@ -1,0 +1,36 @@
+{
+    "initial_state": "running",
+    "api_server": {
+        "enabled": true,
+        "listen_ip_address": "0.0.0.0",
+        "listen_port": 8080,
+        "verbosity": "error",
+        "enable_openapi": true,
+        "jwt_secret_key": "secret",
+        "ws_token": "4IvjuMcs3MsVRYcMcl-3UXfZuWX3oNvbrQ",
+        "CORS_origins": [],
+        "username": "admin",
+        "password": "admin"
+    },
+    "internals": {
+        "sd_notify": true
+    },
+    "telegram": {
+        "enabled": true,
+        "token": "",
+        "chat_id": ""
+    },
+    "openai": {
+        "enabled": true,
+        "api_type": "openai",
+        "api_key": ""
+    },
+    "skills_file_path": "skills/skills.yaml",
+    "github": {
+        "enabled": true,
+        "username": "sonnhfit",
+        "repo_name": "SonAgent",
+        "token": "",
+        "local_repo_path": ""
+    }
+}
