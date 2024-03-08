@@ -27,7 +27,7 @@
     },
     "skills_file_path": "skills/skills.yaml",
     "github": {
-        "enabled": true,
+        "enabled": false,
         "username": "sonnhfit",
         "repo_name": "SonAgent",
         "token": "",
