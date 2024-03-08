@@ -155,3 +155,140 @@ Remember to use this functionality responsibly and be aware of potential legal a
 [OUTPUT]
 
 """
+
+
+def rewrite_code_with_docstring(input_code: str) -> str:
+    ADD_DOCSTRING_TO_CLASS = f'''
+        You are a software engineer working on a Python project. You need to add  or rewrite docs string to Python classes following the following rules:
+        - Classes must have docstrings listing all the parameters of a function, as shown in the example
+        - If the function call to execute the code is not placed within the if name == "main": block, please move the code execution into the if name == "main": block. This is because this code block is intended for use when importing into other modules
+        - Please note that the syntax for the class docs string should follow the format as follows: ClassName.function_name after that followed by a description of the function's parameters in the args section
+        - if source code not have class, you need to create a class and move the function into the class that class need to extend from `BaseModel` provided by `pydantic`
+        - function inside a class need self as first argument
+        ### example 1
+        [INPUT]
+
+        ```python
+        from pydantic import BaseModel
+
+        class NumberPrinter(BaseModel):
+            def print_numbers(self, start, end):
+                rs = ""
+                for i in range(start, end + 1):
+                    rs += str(i) + " "
+                return rs
+
+        # Example usage
+        if __name__ == "__main__":
+            printer = NumberPrinter()
+            printer.print_numbers()
+        ```
+
+        [OUTPUT]
+
+        ```python
+        from pydantic import BaseModel
+
+        class NumberPrinter(BaseModel):
+            """
+            NumberPrinter.print_numbers
+            description: print from start to end
+            args:
+                start: int start number
+                end: int end number
+            """
+
+            def print_numbers(self, start, end):
+                # print number from start to end
+                rs = ""
+                for i in range(start, end + 1):
+                    rs += str(i) + " "
+                return rs
+
+        # Example usage
+        if __name__ == "__main__":
+            printer = NumberPrinter()
+            printer.print_numbers()
+        ```
+
+        ### example 2
+        [INPUT]
+        ```python
+        # filename: apple_stock_plotter.py
+        from pydantic import BaseModel
+        import yfinance as yf
+        import matplotlib.pyplot as plt
+        from datetime import datetime, timedelta
+
+        class GetAppleStockPlotter(BaseModel):
+
+            def stock_price(self):
+                # Calculate the date 1 year ago from today
+                end_date = datetime.now()
+                start_date = end_date - timedelta(days=30)
+                start_date_str = start_date.strftime('%Y-%m-%d')
+                end_date_str = end_date.strftime('%Y-%m-%d')
+                apple_stock_data = yf.download('AAPL', start=start_date_str, end=end_date_str)
+                return str(apple_stock_data['Close'][-1])
+
+            def plot_stock(self, plot_days=30):
+                end_date = datetime.now()
+                start_date = end_date - timedelta(days=plot_days)
+                start_date_str = start_date.strftime('%Y-%m-%d')
+                end_date_str = end_date.strftime('%Y-%m-%d')
+                apple_stock_data = yf.download('AAPL', start=start_date_str, end=end_date_str)
+                apple_stock_data['Close'].plot(title="Apple Stock Price")
+                plt.show()
+        ```
+
+        [OUTPUT]
+
+        ```python
+        # filename: apple_stock_plotter.py
+        from pydantic import BaseModel
+        import yfinance as yf
+        import matplotlib.pyplot as plt
+        from datetime import datetime, timedelta
+
+        class GetAppleStockPlotter(BaseModel):
+            """
+            GetAppleStockPlotter.stock_price
+            description: get latest Apple stock price from yahoo finace.
+            args:
+
+            ----
+            GetAppleStockPlotter.plot_stock
+            description: plot the latest Apple stock price from yahoo finace.
+            args:
+                plot_days: int number of days to plot
+            
+            """
+            def stock_price(self):
+                # Calculate the date 1 year ago from today
+                end_date = datetime.now()
+                start_date = end_date - timedelta(days=30)
+                start_date_str = start_date.strftime('%Y-%m-%d')
+                end_date_str = end_date.strftime('%Y-%m-%d')
+                apple_stock_data = yf.download('AAPL', start=start_date_str, end=end_date_str)
+                return str(apple_stock_data['Close'][-1])
+
+            def plot_stock(self, plot_days=30):
+                end_date = datetime.now()
+                start_date = end_date - timedelta(days=plot_days)
+                start_date_str = start_date.strftime('%Y-%m-%d')
+                end_date_str = end_date.strftime('%Y-%m-%d')
+                apple_stock_data = yf.download('AAPL', start=start_date_str, end=end_date_str)
+                apple_stock_data['Close'].plot(title="Apple Stock Price")
+                plt.show()
+        ```
+        [INPUT]
+        ```python
+        {input_code}
+        ```
+        [OUTPUT]
+
+    '''
+
+    return ADD_DOCSTRING_TO_CLASS
+
+

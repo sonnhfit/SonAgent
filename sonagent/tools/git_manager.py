@@ -4,11 +4,13 @@ import git
 import shutil
 import os
 from pathlib import Path
+from sonagent.tools.code_manager import CodeManager
 
 logger = logging.getLogger(__name__)
 
 
-class GitManager:
+class GitManager(CodeManager):
+
     def __init__(
         self, username: str, repo_name: str,
         token: str, local_repo_path: str
@@ -37,6 +39,9 @@ class GitManager:
                 self.remote_repo_path,
                 self.local_repo_path
             )
+
+    def name(self) -> str:
+        return "github"
 
     def create_branch(self, branch_name: str) -> None:
         origin = self.repo.remote(name="origin")

@@ -57,7 +57,8 @@ class SonAutoGenAgent(autogen.ConversableAgent):
         # f = open(f"{localRepopath}/demofile.py", "w")
         # f.write(code)
         # f.close()
-        self.latest_code = code
+        if "class" in code or "def" in code or "import" in code or "=" in code:
+            self.latest_code = code
         
     def run_code(self, code, **kwargs):
         """Run the code and return the result.

@@ -16,7 +16,7 @@ from semantic_kernel.planning.sequential_planner.sequential_planner_parser impor
 from sonagent.planning.prompt import PROMPT_PLAN, SEQUENCE_PLAN, CLEAN_BELIEF_PROMPT
 from sonagent.core_prompt.me import ASK_ABOUT_ME_PROMP
 from sonagent.coding.gencode import SonCodeAgent
-from sonagent.tools import GitManager
+from sonagent.tools import GitManager, LocalCodeManager
 from openai import OpenAI
 
 logger = logging.getLogger(__name__)
@@ -73,7 +73,7 @@ class Agent:
                 local_repo_path=github.get('local_repo_path')
             )
         else:
-            self.git_manager = None
+            self.git_manager = LocalCodeManager(local_repo_path=self.config.get('user_data_dir'))
         
         if self.git_manager is not None:
             user_data_dir = self.config.get('user_data_dir')
@@ -107,7 +107,7 @@ class Agent:
         self.skills.start_skill(memory=self.memory)
         self.skills_dict = {}
         self.init_skills_dict()
-        
+
         logger.info("--------- reload Done.---------")
 
     def reload_skills(self) -> str:
