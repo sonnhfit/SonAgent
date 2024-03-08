@@ -77,6 +77,11 @@ class SonBot(LoggingMixin):
     async def get_mode(self) -> str:
         return self.agent_mode
     
+    async def remove_skill(self, skill_name: str) -> str:
+        result = self.agent.remove_skill(skill_name)
+        self.reload_skills()
+        return result
+    
     async def change_agent_mode(self, mode: str) -> str:
         self.agent_mode = mode
         return f"Agent mode changed to {mode}"

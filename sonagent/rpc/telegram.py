@@ -76,7 +76,7 @@ class Telegram(RPCHandler):
         #       problem in _help()).
         valid_keys: List[str] = [
             r'/ibelieve', r'/show_mode$', r'/mode', r'/sum$', r'/show_skills$',
-            r'/reload_skills$',
+            r'/reload_skills$', r'/remove_skill',
             r'/help$', r'/version$'
         ]
         # Create keys for generation
@@ -164,6 +164,7 @@ class Telegram(RPCHandler):
             CommandHandler('sum', self._summerize_dialog),
             CommandHandler('show_skills', self._show_skills),
             CommandHandler('reload_skills', self._reload_skills),
+            CommandHandler('remove_skill', self._remove_skill),
             CommandHandler('mode', self._mode),
             CommandHandler('help', self._help),
             CommandHandler('version', self._version),
@@ -389,6 +390,28 @@ class Telegram(RPCHandler):
         :return: None
         """
         result = await self._rpc.reload_skills()
+        await update.message.reply_text(result)
+
+    async def _remove_skill(self, update: Update, context: CallbackContext) -> None:
+        """
+        Handler for /remove_skill.
+        Show version information
+        :param bot: telegram bot
+        :param update: message update
+        :return: None
+        """
+
+        result = "remove your ai skill!"
+
+        skill_name = update.message.text.replace('/remove_skill', '')
+
+        if len(skill_name) > 0:
+            result = await self._rpc.remove_skill(skill_name=skill_name.strip())
+        else:
+            result = "What skill you want to remove?"
+
+        # result = "remove your ai skill!"
+
         await update.message.reply_text(result)
 
     async def _show_mode(self, update: Update, context: CallbackContext) -> None:

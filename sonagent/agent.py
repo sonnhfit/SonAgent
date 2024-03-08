@@ -1,6 +1,7 @@
 import os
 import logging
 import json
+import yaml
 from sonagent.persistence import Belief, Plan
 
 from sonagent.memory.memory import SonMemory
@@ -41,7 +42,7 @@ class Agent:
         self.skills_dict = {}
         logger.info("--------- Start Done.---------")
 
-        
+
         openai = self.config.get('openai')
         if openai.get('api_type', None) == 'openai':
             self.chat_service = OpenAIChatCompletion(
@@ -87,6 +88,28 @@ class Agent:
 
         # load skill dict 
         self.init_skills_dict()
+
+    def remove_skill(self, skill_name):
+        # remove skill_name from yaml 
+
+        skill_file_path = f"{self.git_manager.local_repo_path}/skills/skills.yaml"
+
+        with open(skill_file_path, 'r') as file:
+            skills_register = yaml.safe_load(file)
+        try:
+            skills_register['skills'].remove(skill_name)
+        except Exception as e:
+            return f"skill doesn't exist: {e}"
+
+        with open(skill_file_path, 'w') as file:
+            yaml.dump(skills_register, file)
+    
+
+        # reload skill
+        self.reload_skills()
+
+        return f"Remove skill {skill_name} successfully."
+
 
 
     def save_function_to_memory(self, function_name: str) -> None:

@@ -136,6 +136,9 @@ class RPC:
     async def reload_skills(self) -> str:
         return self.sonagent.reload_skills()
     
+    async def remove_skill(self, skill_name: str) -> str:
+        return await self.sonagent.remove_skill(skill_name)
+    
     async def mode(self, mode: str) -> str:
         if mode in AGENT_MODE:
             self.sonagent.agent_mode = mode
