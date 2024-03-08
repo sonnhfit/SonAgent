@@ -37,6 +37,11 @@ class SonMemory:
         else:
             self.memory_collection = None
 
+    def delete_memory_collection(self, collection_name=None):
+        if self.chroma_client != None:
+            self.chroma_client.delete_collection(name=collection_name)
+            return True
+        return False
 
     def search(self, query, n_results=10):
         results = self.memory_collection.query(

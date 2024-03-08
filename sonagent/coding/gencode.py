@@ -4,6 +4,7 @@ from typing import Dict, Union
 from sonagent.coding.sonautogen import SonAutoGenAgent
 from typing import Any
 from sonagent.llm.oai_llm import create_pull_request_info, rewrite_python_code_docs_string
+from sonagent.llm.prompt import DEFAULT_SYSTEM_MESSAGE_AUTO_GEN
 import json
 import logging
 from pathlib import Path
@@ -32,11 +33,13 @@ class SonCodeAgent:
         # create an AssistantAgent named "assistant"
         self.assistant = autogen.AssistantAgent(
             name="assistant",
+            system_message=DEFAULT_SYSTEM_MESSAGE_AUTO_GEN,
             llm_config={
                 "cache_seed": 41,  # seed for caching and reproducibility
                 "config_list": self.config_list,  # a list of OpenAI API configurations
                 "temperature": 0,  # temperature for sampling
             },  # configuration for autogen's enhanced inference API which is compatible with OpenAI API
+
         )
 
         self.user_proxy = SonAutoGenAgent(
@@ -82,7 +85,8 @@ class SonCodeAgent:
             )
         
         metadata = {}
-        metadata_str = create_pull_request_info(chat_res.summary)
+        pull_str = str(chat_res.summary) + "-- final code --" + str(self.latest_code)
+        metadata_str = create_pull_request_info(pull_str)
         logging.info(f"metadata_str: {metadata_str}")
         
         # Removing the triple backticks and 'json' label
@@ -153,7 +157,7 @@ class SonCodeAgent:
 
             # write skill register to skill file
             skill_class = metadata.get("class_name", None)
-            if skill_class != None and skill_class in str(chat_res.summary):
+            if skill_class != None and skill_class in str(pull_str):
                 skill_file_path = f"{self.git_manager.local_repo_path}/skills/skills.yaml"
                 self.add_skill_register_to_agent(skill_class, skill_file_path)
 

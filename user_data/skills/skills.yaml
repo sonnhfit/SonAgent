@@ -1,3 +1,6 @@
 skills:
-  - GetAppleStockPlotter
-  - NumberPrinter
+- GetAppleStockPlotter
+- NumberPrinter
+- ExpressLove
+- ReverseString
+- StringCapitalizer

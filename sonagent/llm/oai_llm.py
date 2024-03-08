@@ -107,12 +107,15 @@ def rewrite_python_code_docs_string(code: str):
             {"role": "user", "content": prompt},
         ],
         temperature=1,
-        max_tokens=1024,
+        max_tokens=2048,
         top_p=1,
         frequency_penalty=0,
         presence_penalty=0,
     )
     code = str(response.choices[0].message.content)
+    logger.info(f"---------------")
+    logging.info(f"Rewrite Python Code: {code}")
+    logger.info(f"---------------")
 
     # get ```python ``` block
     try:
@@ -127,6 +130,6 @@ def rewrite_python_code_docs_string(code: str):
         python_code = string_a
 
     except Exception as e:
-        logger.error(f"Error: {e}")
+        logger.error(f"--- Error: {e}")
         python_code = code
     return python_code

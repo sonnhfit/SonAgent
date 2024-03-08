@@ -57,6 +57,12 @@ class SkillsManager:
         return results
     
     def start_skill(self, memory: Any) -> None:
+        # clear memory collection 
+        try:
+            memory.delete_memory_collection(self.skills_area)
+        except Exception as e:
+            logger.info(f"Error deleting memory collection: {e}")
+
         self.load_skills()
         self.save_skills_function_to_memory(memory=memory)
 
