@@ -6,8 +6,8 @@
 Welcome to SonAgent! Please follow the Installation guide to get started.
 It is recommended to use a virtual machine for tasks that require high security measures to prevent any potential harm to the main computer's system and data.
 ===================================
-
-# **What is SonAgent? Autonomous Agent for Digital Consciousness Backup**
+-----------------
+**What is SonAgent? Autonomous Agent for Digital Consciousness Backup**
 
 ----------------
 
