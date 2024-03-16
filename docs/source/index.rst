@@ -29,13 +29,14 @@ The Digital Consciousness Backup Agent is an autonomous system designed to safeg
 
 **✈️ Quickstart:**
 
-1.	Get an OpenAI API Key [(opens in a new tab)](https://platform.openai.com/api-keys)
+1.	Get an `OpenAI API Key <https://platform.openai.com/api-keys>`_
 
-2.	Download the latest release [(opens in a new tab)](https://github.com/sonnhfit/SonAgent)
+2.	Download the latest release `here <https://github.com/sonnhfit/SonAgent>`_
 
 3.	Follow the installation instructions
 
 5.	Run the app
+
 Please see the documentation for full setup instructions and configuration options.
 
 
