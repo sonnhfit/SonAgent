@@ -1,8 +1,11 @@
 # Setting up SonAgent
 **📋 Requirements**
 Choose an environment to run SonAgent in (pick one):
+
 •	Docker (opens in a new tab) (coming soon)
+
 •	Python 3.11 or later [(opens in a new tab)](https://www.tutorialspoint.com/how-to-install-python-in-windows)
+
 
 **🗝️ Getting an API key**
 Get your OpenAI API key from: OpenAI [(opens in a new tab)](https://platform.openai.com/account/api-keys)
@@ -19,21 +22,37 @@ Warning
 We recommend to use Git or Docker, to make updating easier.
 
 1. Clone the SonAgent repository from GitHub using the command:
-   ```git clone https://github.com/sonnhfit/SonAgent.git```
-2. Navigate to the cloned directory:
-   ```cd SonAgent```
-3. Create a new Python environment using conda with the specified version:
-   ```conda create --name SonAgentenv python=3.11```
-4. Activate the newly created environment:
-   ```conda activate SonAgentenv```
-5. Install the package manager pip within the conda environment:
-   ```conda install pip```
-6. Install all the required dependencies listed in the requirements.txt file:
-   ```pip install -r requirements.txt```
-7. Install the SonAgent package in editable mode to allow changes:
-   ```pip install --editable .```
-8. To run SonAgent, use the following command with the appropriate configurations:
-   ```sonagent run --config /path/to/user_data/config.json --agentdb sqlite:///user_data/myagentdb.sqlite --memory-url /path/to/user_data/memory --datadir /path/to/user_data/  --user-data-dir /path/to/user_data/```
+   ```
+   git clone https://github.com/sonnhfit/SonAgent.git
+   ```
+3. Navigate to the cloned directory:
+   ```
+   cd SonAgent
+   ```
+5. Create a new Python environment using conda with the specified version:
+   ```
+   conda create --name SonAgentenv python=3.11
+   ```
+7. Activate the newly created environment:
+   ```
+   conda activate SonAgentenv
+   ```
+9. Install the package manager pip within the conda environment:
+   ```
+   conda install pip
+   ```
+11. Install all the required dependencies listed in the requirements.txt file:
+   ```
+pip install -r requirements.txt
+```
+13. Install the SonAgent package in editable mode to allow changes:
+   ```
+pip install --editable .
+```
+15. To run SonAgent, use the following command with the appropriate configurations:
+   ```
+sonagent run --config /path/to/user_data/config.json --agentdb sqlite:///user_data/myagentdb.sqlite --memory-url /path/to/user_data/memory --datadir /path/to/user_data/  --user-data-dir /path/to/user_data/
+```
 
 Remember to replace placeholder text such as path/to with your actual path to the SonAgent folder you clone from git
 Setup the configuration file:
@@ -84,11 +103,15 @@ By following these steps, your config.json file should be properly set up with y
 **Running SonAgent**
 Simply run the startup script in your terminal. This will install any necessary Python packages and launch SonAgent.
 1.	Navigate to the cloned directory:
-   ```cd SonAgent```
-2.	Activate the newly created environment:
-   ```conda activate SonAgentenv```
-3.	Init SonAgent:
-```sonagent run --config /path/to/user_data/config.json --agentdb sqlite:///user_data/myagentdb.sqlite --memory-url /path/to/user_data/memory --datadir /path/to/user_data/  --user-data-dir /path/to/user_data/```
+   ```
+  	cd SonAgent
+```
+3.	Activate the newly created environment:
+   ```
+  	conda activate SonAgentenv
+```
+5.	Init SonAgent:
+```
+sonagent run --config /path/to/user_data/config.json --agentdb sqlite:///user_data/myagentdb.sqlite --memory-url /path/to/user_data/memory --datadir /path/to/user_data/  --user-data-dir /path/to/user_data/
+```
 Make sure you have a compatible Python version installed. See also the requirements.
-
-![image](https://github.com/sonnhfit/SonAgent/assets/122015850/03109970-1f26-4d43-b85e-c3204d6758ac)
