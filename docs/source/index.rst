@@ -45,6 +45,7 @@ This is a paragraph that contains `a link`_.
    install
    system_design
    tutorial
+   faq
    developer_guides
    modules
 
