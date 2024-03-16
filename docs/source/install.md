@@ -22,9 +22,9 @@ You can set up a paid account at [Manage account > Billing > Overview](https://p
 
 It's highly recommended that you keep keep track of your API costs on the [Usage page](https://platform.openai.com/usage). You can also set limits on how much you spend on the [Usage limits page](https://platform.openai.com/account/limits).
  
-**🔌 Configuration**
-Warning
-We recommend to use Git or Docker, to make updating easier.
+**🔌 Configuration:**
+
+Warning: We recommend to use Git or Docker, to make updating easier.
 
 1. Clone the SonAgent repository from GitHub using the command:
 
