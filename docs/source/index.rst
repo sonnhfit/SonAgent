@@ -48,7 +48,6 @@ Please see the documentation for full setup instructions and configuration optio
 * **SonAgent**, as an independent experiment, might produce content or actions that may not conform to real-world business or legal norms. Users are responsible for ensuring that any actions or decisions stemming from the use of this software are lawful and ethically sound. The developers and contributors will not be liable for any repercussions from using **SonAgent**.
 * In using **SonAgent**, you agree to protect, defend, and absolve the developers, contributors, and related entities from any claims, damages, losses, liabilities, costs, and expenses, including legal fees, that come about as a result of using this software or breaching these terms.
 
-This is a paragraph that contains `a link`_.
 
 
 .. toctree::
