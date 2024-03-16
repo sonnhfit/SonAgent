@@ -144,4 +144,4 @@ Simply run the startup script in your terminal. This will install any necessary 
 sonagent run --config /path/to/user_data/config.json --agentdb sqlite:///user_data/myagentdb.sqlite --memory-url /path/to/user_data/memory --datadir /path/to/user_data/  --user-data-dir /path/to/user_data/
 ```
 
-Make sure you have a compatible Python version installed. See also the requirements(../requirements.txt)
+Make sure you have a compatible Python version installed. See also the [requirements](../requirements.txt)
