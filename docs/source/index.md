@@ -3,7 +3,7 @@ It is recommended to use a virtual machine for tasks that require high security 
 
 
 # What is SonAgent? 
-# Autonomous Agent for Digital Consciousness Backup
+**Autonomous Agent for Digital Consciousness Backup**
 
 The Digital Consciousness Backup Agent is an autonomous system designed to safeguard your digital consciousness on the internet using Large Language Models (LLMs). As we navigate the vast landscape of the digital realm, preserving and securing our digital consciousness becomes paramount. This project employs advanced techniques to ensure the protection and backup of your digital self.
 
@@ -15,8 +15,8 @@ The Digital Consciousness Backup Agent is an autonomous system designed to safeg
 * 🔌 Self-Repairing source code
 
 **Quickstart**
-1.	Get an OpenAI API Key(opens in a new tab)
-2.	Download the latest release(opens in a new tab)
+1.	Get an OpenAI API Key (opens in a new tab)
+2.	Download the latest release (opens in a new tab)
 3.	Follow the installation instructions
 4.	Configure any additional features you want, or install some plugins
 5.	Run the app
