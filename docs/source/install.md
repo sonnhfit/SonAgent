@@ -59,20 +59,20 @@ Warning: We recommend to use Git or Docker, to make updating easier.
 11. Install all the required dependencies listed in the requirements.txt file:
 
    ```
-pip install -r requirements.txt
-```
+   pip install -r requirements.txt
+   ```
 
 13. Install the SonAgent package in editable mode to allow changes:
     
    ```
-pip install --editable .
-```
+   pip install --editable .
+   ```
 
 15. To run SonAgent, use the following command with the appropriate configurations:
     
    ```
-sonagent run --config /path/to/user_data/config.json --agentdb sqlite:///user_data/myagentdb.sqlite --memory-url /path/to/user_data/memory --datadir /path/to/user_data/  --user-data-dir /path/to/user_data/
-```
+   sonagent run --config /path/to/user_data/config.json --agentdb sqlite:///user_data/myagentdb.sqlite --memory-url /path/to/user_data/memory --datadir /path/to/user_data/  --user-data-dir /path/to/user_data/
+   ```
 Remember to replace placeholder text such as path/to with your actual path to the SonAgent folder you clone from git.
 
 **🛠️ Setup the configuration file:**
