@@ -6,11 +6,8 @@
 Welcome to SonAgent! Please follow the Installation guide to get started.
 It is recommended to use a virtual machine for tasks that require high security measures to prevent any potential harm to the main computer's system and data.
 
------------------
-**What is SonAgent? Autonomous Agent for Digital Consciousness Backup**
 
-----------------
-
+# What is SonAgent? Autonomous Agent for Digital Consciousness Backup
 
 The Digital Consciousness Backup Agent is an autonomous system designed to safeguard your digital consciousness on the internet using Large Language Models (LLMs). As we navigate the vast landscape of the digital realm, preserving and securing our digital consciousness becomes paramount. This project employs advanced techniques to ensure the protection and backup of your digital self.
 
