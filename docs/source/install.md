@@ -123,7 +123,8 @@ To get the agent up and run, you need to insert OpenAi key and the chatbot key i
 
 By following these steps, your config.json file should be properly set up with your OpenAI API key and Telegram bot information. Remember to replace placeholder text such as **your_openai_api_key_here**, **your_telegram_bot_token_here**, and **your_telegram_user_id_here** with your actual credentials.
 
-**Running SonAgent**
+**🎊 Running SonAgent:**
+
 Simply run the startup script in your terminal. This will install any necessary Python packages and launch SonAgent.
 1.	Navigate to the cloned directory:
 
@@ -131,13 +132,13 @@ Simply run the startup script in your terminal. This will install any necessary 
   	cd SonAgent
 ```
 
-3.	Activate the newly created environment:
+2.	Activate the newly created environment:
    
    ```
   	conda activate SonAgentenv
 ```
 
-5.	Init SonAgent:
+3.	Init SonAgent:
    
 ```
 sonagent run --config /path/to/user_data/config.json --agentdb sqlite:///user_data/myagentdb.sqlite --memory-url /path/to/user_data/memory --datadir /path/to/user_data/  --user-data-dir /path/to/user_data/
