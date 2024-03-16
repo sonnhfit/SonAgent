@@ -12,7 +12,7 @@ Choose an environment to run SonAgent in (pick one):
 
 Get your OpenAI API key from: OpenAI [(opens in a new tab)](https://platform.openai.com/account/api-keys)
 
-**⚠️ Attention**
+**⚠️ Attention:**
 
 * To use the OpenAI API with SonAgent, we strongly recommend setting up billing (AKA paid account). Free accounts are [limited](https://platform.openai.com/docs/guides/rate-limits/overview?context=tier-free) to 3 API calls per minute, which can cause the application to crash.
 You can set up a paid account at [Manage account > Billing > Overview](https://platform.openai.com/account/billing/overview)
