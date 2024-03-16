@@ -14,12 +14,12 @@ It is recommended to use a virtual machine for tasks that require high security 
 
 The Digital Consciousness Backup Agent is an autonomous system designed to safeguard your digital consciousness on the internet using Large Language Models (LLMs). As we navigate the vast landscape of the digital realm, preserving and securing our digital consciousness becomes paramount. This project employs advanced techniques to ensure the protection and backup of your digital self.
 
-**🚀 Features**
-•	🙋‍♂️ Learning with Human Feedback
-•	🧠  Belief-Based Thinking with Large Language Models (LLMs)
-•	🗃️Autonomous Operation
-•	🔗 Secure Backup
-•	🔌 Self-Repairing source code
+## **🚀 Features**
+*	🙋‍♂️ Learning with Human Feedback
+*	🧠  Belief-Based Thinking with Large Language Models (LLMs)
+*	🗃️Autonomous Operation
+*	🔗 Secure Backup
+*	🔌 Self-Repairing source code
 
 **Quickstart**
 1.	Get an OpenAI API Key(opens in a new tab)
