@@ -60,6 +60,9 @@ class SonCodeAgent:
         with open(skill_file_path, 'r') as file:
             skills_register = yaml.safe_load(file)
 
+        if skills_register['skills'] is None:
+            skills_register['skills'] = []
+
         skills_register['skills'].append(skill_class)
 
         with open(skill_file_path, 'w') as file:
