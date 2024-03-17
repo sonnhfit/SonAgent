@@ -34,7 +34,8 @@ pip install sonagent
 ```
 sonagent init
 ```
-- 2.2 run agent with file path param from step 2.1
+- 2.2 Please fill in the API key of openai, telegram, and github if you want the agent to create a pull request in the `user_data/config.json` file
+- 2.3 run agent with file path param from step 2.1
 ```
 sonagent run 
 --config /path/to/user_data/config.json 
