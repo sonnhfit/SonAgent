@@ -17,14 +17,38 @@ Get your OpenAI API key from: OpenAI [(opens in a new tab)](https://platform.ope
 
 * To use the OpenAI API with SonAgent, we strongly recommend setting up billing (AKA paid account). Free accounts are [limited](https://platform.openai.com/docs/guides/rate-limits/overview?context=tier-free) to 3 API calls per minute, which can cause the application to crash.
 You can set up a paid account at [Manage account > Billing > Overview](https://platform.openai.com/account/billing/overview)
+## Quick Start 
+
+### 1. Install Dependencies
+
+```
+pip install sonagent
+```
+
+#### 2. Run agent
+
+- 2.1 create `user_data` folder that will save agent skill, and user database
+```
+sonagent init
+```
+- 2.2 Please fill in the API key of openai, telegram, and github if you want the agent to create a pull request in the `user_data/config.json` file
+- 2.3 run agent with file path param from step 2.1
+```
+sonagent run 
+--config /path/to/user_data/config.json 
+--agentdb sqlite:///user_data/myagentdb.sqlite 
+--memory-url /path/to/user_data/memory 
+--datadir /path/to/user_data/  
+--user-data-dir /path/to/user_data/
+```
+
 
 **🚀 Important:**
 
 It's highly recommended that you keep keep track of your API costs on the [Usage page](https://platform.openai.com/usage). You can also set limits on how much you spend on the [Usage limits page](https://platform.openai.com/account/limits).
  
 **🔌 Configuration:**
-
-Warning: We recommend to use Git or Docker, to make updating easier.
+To install the latest version and understand more about installation details. follow step bellow 
 
 1. Clone the SonAgent repository from GitHub using the command:
 
