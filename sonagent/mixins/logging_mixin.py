@@ -1,6 +1,6 @@
 from typing import Callable
 
-from cachetools import TTLCache, cached
+# from cachetools import TTLCache, cached
 
 
 class LoggingMixin:
@@ -17,7 +17,7 @@ class LoggingMixin:
         """
         self.logger = logger
         self.refresh_period = refresh_period
-        self._log_cache: TTLCache = TTLCache(maxsize=1024, ttl=self.refresh_period)
+        # self._log_cache: TTLCache = TTLCache(maxsize=1024, ttl=self.refresh_period)
 
     def log_once(self, message: str, logmethod: Callable) -> None:
         """
@@ -27,7 +27,7 @@ class LoggingMixin:
         :param logmethod: Function that'll be called. Most likely `logger.info`.
         :return: None.
         """
-        @cached(cache=self._log_cache)
+        # @cached(cache=self._log_cache)
         def _log_once(message: str):
             logmethod(message)
 
