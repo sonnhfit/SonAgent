@@ -105,7 +105,7 @@ class Arguments:
 
         # Add create subcommand
 
-        start_create_cmd = subparsers.add_parser('create', help='create run.',
+        start_create_cmd = subparsers.add_parser('init', help='first time init sonagent.',
                                           parents=[_common_parser])
         start_create_cmd.set_defaults(func=create_user_data_dir)
         self._build_args(optionlist=ARGS_RUN, parser=start_create_cmd)

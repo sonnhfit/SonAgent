@@ -23,9 +23,9 @@ def start_sonagent(args: Dict[str, Any]) -> int:
     worker = None
     try:
         signal.signal(signal.SIGTERM, term_handler)
-        
+
         config = {
-            'initial_state': 'running',
+            "initial_state": "running",
             "api_server": {
                 "enabled": True,
                 "listen_ip_address": "0.0.0.0",
@@ -36,15 +36,13 @@ def start_sonagent(args: Dict[str, Any]) -> int:
                 "ws_token": "4IvjuMcs3MsVRYcMcl-3UXfZuWX3oNvbrQ",
                 "CORS_origins": [],
                 "username": "sonnh",
-                "password": "son123"
+                "password": "son123",
             },
-            'internals': {
-                'sd_notify': True
-            }
+            "internals": {"sd_notify": True},
         }
 
         try:
-            config = load_config_file(args['config'][0])
+            config = load_config_file(args["config"][0])
         except Exception as e:
             config = config
             raise OperationalException("Error loading config file: " + str(e))
@@ -52,14 +50,14 @@ def start_sonagent(args: Dict[str, Any]) -> int:
         print(config)
 
         print(args)
-        config['user_data_dir'] = args['user_data_dir']
+        config["user_data_dir"] = args["user_data_dir"]
         worker = Worker(args, config=config)
         worker.run()
     except Exception as e:
         logger.error(str(e))
         logger.exception("Fatal exception!")
-    except (KeyboardInterrupt):
-        logger.info('SIGINT received, aborting ...')
+    except KeyboardInterrupt:
+        logger.info("SIGINT received, aborting ...")
     finally:
         if worker:
             logger.info("worker found ... calling exit")
@@ -74,18 +72,61 @@ def create_user_data_dir(args: Dict[str, Any]) -> None:
     print("Creating user data directory")
     # print("user_data_dir: ", args)
     current_path = str(os.getcwd())
-    user_data_dir = args['user_data_dir']
+    user_data_dir = args["user_data_dir"]
     if user_data_dir == None:
         print(current_path)
-        user_data_dir = "user_data"
+        user_data_dir = "user_data2"
         if not os.path.exists(current_path + "/" + user_data_dir):
             os.mkdir(current_path + "/" + user_data_dir)
-        
+
         if not os.path.exists(current_path + f"/{user_data_dir}/skills"):
             os.mkdir(current_path + f"/{user_data_dir}/skills")
 
         # creaet skills.yaml with content is skills:
         with open(current_path + f"/{user_data_dir}/skills/skills.yaml", "w") as file:
             file.write("skills:\n")
+
+        # create config.json file with string
+        config_exampe = """
+{
+    "initial_state": "running",
+    "api_server": {
+        "enabled": true,
+        "listen_ip_address": "0.0.0.0",
+        "listen_port": 8080,
+        "verbosity": "error",
+        "enable_openapi": true,
+        "jwt_secret_key": "secret",
+        "ws_token": "4IvjuMcs3MsVRYcMcl-3UXfZuWX3oNvbrQ",
+        "CORS_origins": [],
+        "username": "admin",
+        "password": "admin"
+    },
+    "internals": {
+        "sd_notify": true
+    },
+    "telegram": {
+        "enabled": true,
+        "token": "",
+        "chat_id": ""
+    },
+    "openai": {
+        "enabled": true,
+        "api_type": "openai",
+        "api_key": ""
+    },
+    "skills_file_path": "skills/skills.yaml",
+    "github": {
+        "enabled": false,
+        "username": "sonnhfit",
+        "repo_name": "SonAgent",
+        "token": "",
+        "local_repo_path": ""
+    }
+}
+        """
+        with open(current_path + f"/{user_data_dir}/config.json", "w") as file:
+            file.write(config_exampe)
+
     logger.info(f"[DONE] User data directory created at {current_path}/{user_data_dir}")
     return None
