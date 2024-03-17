@@ -28,7 +28,8 @@ The Digital Consciousness Backup Agent is an autonomous system designed to safeg
 pip install sonagent
 ```
 
-2. Test the Agent:
+2. Test the Agent
+
 2.1 create `user_data` folder that will save agent skill, and user database
 ```
 sonagent create
