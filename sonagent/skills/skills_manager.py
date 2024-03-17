@@ -30,6 +30,8 @@ class SkillsManager:
         with open(skill_file_path, 'r') as file:
             skills_register = yaml.safe_load(file)
 
+        if skills_register['skills'] == None:
+            return []
         return skills_register['skills']
     
 
