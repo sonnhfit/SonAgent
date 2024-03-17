@@ -22,19 +22,19 @@ The Digital Consciousness Backup Agent is an autonomous system designed to safeg
 
 ### Getting Started
 
-1. Install Dependencies
+#### 1. Install Dependencies
 
 ```
 pip install sonagent
 ```
 
-2. Test the Agent
+#### 2. Test the Agent
 
-2.1 create `user_data` folder that will save agent skill, and user database
+- 2.1 create `user_data` folder that will save agent skill, and user database
 ```
 sonagent create
 ```
-2.2 run agent with file path param from step 2.1
+- 2.2 run agent with file path param from step 2.1
 ```
 sonagent run 
 --config /path/to/user_data/config.json 
@@ -43,9 +43,8 @@ sonagent run
 --datadir /path/to/user_data/  
 --user-data-dir /path/to/user_data/
 ```
-output
 
-3. check rpc channal  
+#### 3. check rpc channal  
 
 ```
 ```
