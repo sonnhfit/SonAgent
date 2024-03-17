@@ -47,7 +47,8 @@ sonagent run \
 
 It's highly recommended that you keep keep track of your API costs on the [Usage page](https://platform.openai.com/usage). You can also set limits on how much you spend on the [Usage limits page](https://platform.openai.com/account/limits).
  
-**🔌 Configuration:**
+## Configuration
+
 To install the latest version and understand more about installation details. follow step bellow 
 
 1. Clone the SonAgent repository from GitHub using the command:
