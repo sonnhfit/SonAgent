@@ -75,7 +75,7 @@ def create_user_data_dir(args: Dict[str, Any]) -> None:
     user_data_dir = args["user_data_dir"]
     if user_data_dir == None:
         print(current_path)
-        user_data_dir = "user_data2"
+        user_data_dir = "user_data"
         if not os.path.exists(current_path + "/" + user_data_dir):
             os.mkdir(current_path + "/" + user_data_dir)
 
