@@ -25,7 +25,7 @@ You can set up a paid account at [Manage account > Billing > Overview](https://p
 pip install sonagent
 ```
 
-#### 2. Run agent
+### 2. Run agent
 
 - 2.1 create `user_data` folder that will save agent skill, and user database
 ```
