@@ -1,3 +1,4 @@
+import os
 import logging
 import signal
 from typing import Any, Dict
@@ -64,3 +65,27 @@ def start_sonagent(args: Dict[str, Any]) -> int:
             logger.info("worker found ... calling exit")
             worker.exit()
     return 0
+
+
+def create_user_data_dir(args: Dict[str, Any]) -> None:
+    """
+    Create user data directory
+    """
+    print("Creating user data directory")
+    # print("user_data_dir: ", args)
+    current_path = str(os.getcwd())
+    user_data_dir = args['user_data_dir']
+    if user_data_dir == None:
+        print(current_path)
+        user_data_dir = "user_data"
+        if not os.path.exists(current_path + "/" + user_data_dir):
+            os.mkdir(current_path + "/" + user_data_dir)
+        
+        if not os.path.exists(current_path + f"/{user_data_dir}/skills"):
+            os.mkdir(current_path + f"/{user_data_dir}/skills")
+
+        # creaet skills.yaml with content is skills:
+        with open(current_path + f"/{user_data_dir}/skills/skills.yaml", "w") as file:
+            file.write("skills:\n")
+    logger.info(f"[DONE] User data directory created at {current_path}/{user_data_dir}")
+    return None

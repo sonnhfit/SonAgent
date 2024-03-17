@@ -86,10 +86,10 @@ class Arguments:
         group = _common_parser.add_argument_group("Common arguments")
         self._build_args(optionlist=ARGS_COMMON, parser=group)
 
-        self.parser = argparse.ArgumentParser(description='SonAgent')
+        self.parser = argparse.ArgumentParser(description='sonagent')
         self._build_args(optionlist=['version'], parser=self.parser)
 
-        from sonagent.commands import (start_sonagent)
+        from sonagent.commands import (start_sonagent, create_user_data_dir)
 
         subparsers = self.parser.add_subparsers(dest='command',
                                         # Use custom message when no subhandler is added
@@ -98,7 +98,15 @@ class Arguments:
                                         )
         
         # Add trade subcommand
-        start_cmd = subparsers.add_parser('run', help='SonAgent run.',
+        start_cmd = subparsers.add_parser('run', help='sonagent run.',
                                           parents=[_common_parser])
         start_cmd.set_defaults(func=start_sonagent)
         self._build_args(optionlist=ARGS_RUN, parser=start_cmd)
+
+        # Add create subcommand
+
+        start_create_cmd = subparsers.add_parser('create', help='create run.',
+                                          parents=[_common_parser])
+        start_create_cmd.set_defaults(func=create_user_data_dir)
+        self._build_args(optionlist=ARGS_RUN, parser=start_create_cmd)
+        
