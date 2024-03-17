@@ -32,7 +32,7 @@ pip install sonagent
 
 - 2.1 create `user_data` folder that will save agent skill, and user database
 ```
-sonagent create
+sonagent init
 ```
 - 2.2 run agent with file path param from step 2.1
 ```
