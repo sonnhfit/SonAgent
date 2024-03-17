@@ -34,12 +34,12 @@ sonagent init
 - 2.2 Please fill in the API key of openai, telegram, and github if you want the agent to create a pull request in the `user_data/config.json` file
 - 2.3 run agent with file path param from step 2.1
 ```
-sonagent run 
---config /path/to/user_data/config.json 
---agentdb sqlite:///user_data/myagentdb.sqlite 
---memory-url /path/to/user_data/memory 
---datadir /path/to/user_data/  
---user-data-dir /path/to/user_data/
+sonagent run \
+--config ./user_data/config.json \
+--agentdb sqlite:///user_data/agentdb.sqlite \
+--memory-url ./user_data/memory \
+--datadir ./user_data/ \
+--user-data-dir ./user_data/
 ```
 
 
@@ -165,7 +165,12 @@ Simply run the startup script in your terminal. This will install any necessary 
 3.	Init SonAgent:
    
 ```
-sonagent run --config /path/to/user_data/config.json --agentdb sqlite:///user_data/myagentdb.sqlite --memory-url /path/to/user_data/memory --datadir /path/to/user_data/  --user-data-dir /path/to/user_data/
+sonagent run \
+--config /path/to/user_data/config.json \
+--agentdb sqlite:///user_data/myagentdb.sqlite \
+--memory-url /path/to/user_data/memory \
+--datadir /path/to/user_data/  \
+--user-data-dir /path/to/user_data/ 
 ```
 
 Make sure you have a compatible Python version installed. See also the [requirements](../requirements.txt)
