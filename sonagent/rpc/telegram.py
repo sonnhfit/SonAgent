@@ -379,6 +379,8 @@ class Telegram(RPCHandler):
         :return: None
         """
         result = await self._rpc.show_skills()
+        if result is None or len(result) == 0:
+            result = "Agent doesn't have any available skills."
         await update.message.reply_text(result)
 
     async def _reload_skills(self, update: Update, context: CallbackContext) -> None:
