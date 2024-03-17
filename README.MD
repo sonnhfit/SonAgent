@@ -29,6 +29,11 @@ pip install sonagent
 ```
 
 2. Test the Agent:
+2.1 create `user_data` folder that will save agent skill, and user database
+```
+sonagent create
+```
+2.2 run agent with file path param from step 2.1
 ```
 sonagent run 
 --config /path/to/user_data/config.json 
@@ -39,10 +44,9 @@ sonagent run
 ```
 output
 
-3. Run bot 
+3. check rpc channal  
 
 ```
-sonagent run
 ```
 ### Some Demo 
 
@@ -69,7 +73,7 @@ pip install --editable .
 
 if you want to build docker image 
 ```
-docker build --pull --rm -f "Dockerfile" -t sonnhfit/sonagent:dev "." --platform=linux/amd64
+soon
 ```
 ## Contributors
 A big thank you to all the contributors who helped improve this project
