@@ -2,6 +2,9 @@
 
 ### Autonomous Agent for Digital Consciousness Backup Using Large Language Models (LLM) 
 
+[![](https://dcbadge.vercel.app/api/server/XZ8reU9z3T)](https://discord.gg/XZ8reU9z3T) 
+
+
 ### Overview
 The Digital Consciousness Backup Agent is an autonomous system designed to safeguard your digital consciousness on the internet using Large Language Models (LLMs). As we navigate the vast landscape of the digital realm, preserving and securing our digital consciousness becomes paramount. This project employs advanced techniques to ensure the protection and backup of your digital self. Powerful code generation capability, self-editing source code
 > What shapes individuals is their own beliefs. by Son Nguyen Huu
