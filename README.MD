@@ -22,6 +22,8 @@ The Digital Consciousness Backup Agent is an autonomous system designed to safeg
 - **Self-Repairing source code**  edits its own source code and compiles itself under human approval
 
 - **Many tools and skills:** Train neural network, Search, write file, ...
+### Into and demo 
+[![SonAgent Demo](https://img.youtube.com/vi/l_aQ2RG9Np0/0.jpg)](https://www.youtube.com/watch?v=l_aQ2RG9Np0)
 
 ### Getting Started
 
