@@ -32,5 +32,12 @@
         "repo_name": "SonAgent",
         "token": "",
         "local_repo_path": ""
+    },
+    "webhook": {
+        "enabled": false,
+        "url": "",
+        "chat": {
+            "message": "{message}"
+        }
     }
 }
