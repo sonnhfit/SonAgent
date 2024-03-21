@@ -25,7 +25,6 @@ class RPCManager:
             from sonagent.rpc.telegram import Telegram
             self.registered_modules.append(Telegram(self._rpc, config))
 
-
         # Enable local rest api server for cmd line control
         if config.get('api_server', {}).get('enabled', False):
             logger.info('Enabling rpc.api_server')
@@ -33,6 +32,15 @@ class RPCManager:
             apiserver = ApiServer(config)
             apiserver.add_rpc_handler(self._rpc)
             self.registered_modules.append(apiserver)
+
+        if config.get('webhook', {}).get('enabled', False):
+            logger.info('Enabling webhook ...')
+            from sonagent.rpc.webhook import Webhook
+            self.registered_modules.append(Webhook(self._rpc, config))
+        
+
+
+        
 
 
 

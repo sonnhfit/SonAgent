@@ -70,7 +70,13 @@ class SonBot(LoggingMixin):
 
     async def chat(self, input: str) -> str:
         if self.agent_mode == "chat":
-            return await self.agent.chat(input)
+
+            chat = await self.agent.chat(input)
+            try:
+                self.notify_chat_event(chat)
+            except Exception as e:
+                logger.error(f"Error notifying chat event: {e}")
+            return chat
         else:
             return await self.agent.chat_code(input)
     
@@ -152,6 +158,13 @@ class SonBot(LoggingMixin):
         """
         pass
 
+    def notify_chat_event(self, msg: str, msg_type=RPCMessageType.CHAT) -> None:
+        self.rpc.send_msg({
+            'type': msg_type,
+            'message': msg
+        })
+
+
     def notify_status(self, msg: str, msg_type=RPCMessageType.STATUS) -> None:
         """
         Public method for users of this class (worker, etc.) to send notifications
@@ -161,4 +174,7 @@ class SonBot(LoggingMixin):
             'type': msg_type,
             'status': msg
         })
+
+
+
 

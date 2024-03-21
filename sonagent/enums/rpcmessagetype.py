@@ -6,6 +6,7 @@ class RPCMessageType(str, Enum):
     WARNING = 'warning'
     EXCEPTION = 'exception'
     STARTUP = 'startup'
+    CHAT = 'chat'
 
     def __repr__(self):
         return self.value
