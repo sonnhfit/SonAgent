@@ -122,6 +122,13 @@ def create_user_data_dir(args: Dict[str, Any]) -> None:
         "repo_name": "SonAgent",
         "token": "",
         "local_repo_path": ""
+    },
+    "webhook": {
+        "enabled": false,
+        "url": "",
+        "chat": {
+            "message": "{message}"
+        }
     }
 }
         """

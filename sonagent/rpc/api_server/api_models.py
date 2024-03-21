@@ -18,3 +18,6 @@ class AccessAndRefreshToken(AccessToken):
 
 class Version(BaseModel):
     version: str
+
+class ChatMsg(BaseModel):
+    message: str
