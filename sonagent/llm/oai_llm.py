@@ -7,8 +7,12 @@ from sonagent.llm.prompt import (
     summary_doc, create_git_pull_request_param, 
     GITHUB_PULL_REQUEST_PROMPT, rewrite_code_with_docstring
 )
+from sonagent.llm.prompt_auto_docs import (
+    auto_skill_docs
+)
 
 logger = logging.getLogger(__name__)
+
 
 def text_summary(docs):
     client = OpenAI(api_key=os.environ["OPENAI_API_KEY"])
@@ -33,9 +37,9 @@ def text_summary(docs):
 
 
 def create_pull_request_info(docs):
-    client = OpenAI(api_key=os.environ["OPENAI_API_KEY"])
     # prompt = create_git_pull_request_param(docs)
-    
+    client = OpenAI(api_key=os.environ["OPENAI_API_KEY"])
+
     prompt_temp = PromptTemplate(
         template=GITHUB_PULL_REQUEST_PROMPT,
         input_variables=["sumary_text"],
@@ -61,11 +65,10 @@ def create_pull_request_info(docs):
     return response.choices[0].message.content
 
 
-
 def create_chat_with_function(docs):
-    client = OpenAI(api_key=os.environ["OPENAI_API_KEY"])
     # prompt = create_git_pull_request_param(docs)
-    
+    client = OpenAI(api_key=os.environ["OPENAI_API_KEY"])
+
     prompt_temp = PromptTemplate(
         template=GITHUB_PULL_REQUEST_PROMPT,
         input_variables=["sumary_text"],
@@ -133,3 +136,26 @@ def rewrite_python_code_docs_string(code: str):
         logger.error(f"--- Error: {e}")
         python_code = code
     return python_code
+
+
+def auto_create_skill_docs(skill_code: str):
+    client = OpenAI(api_key=os.environ["OPENAI_API_KEY"])
+
+    system_prompt, user_prompt = auto_skill_docs(skill_code)
+    response = client.chat.completions.create(
+        model="gpt-3.5-turbo",
+        messages=[
+            {
+                "role": "system",
+                "content": system_prompt,
+            },
+            {"role": "user", "content": user_prompt},
+        ],
+        temperature=1,
+        max_tokens=1000,
+        top_p=1,
+        frequency_penalty=0,
+        presence_penalty=0,
+    )
+    return response.choices[0].message.content
+
