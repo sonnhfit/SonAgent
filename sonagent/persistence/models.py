@@ -12,6 +12,7 @@ from sonagent.persistence.base import ModelBase
 from sonagent.persistence.migrations import check_migrate
 from sonagent.persistence.belief_models import Belief
 from sonagent.persistence.planning_models import Plan
+from sonagent.persistence.skill_models import SkillDocs
 
 
 _SQL_DOCS_URL = 'http://docs.sqlalchemy.org/en/latest/core/engines.html#database-urls'
@@ -49,6 +50,9 @@ def init_db(db_url: str) -> None:
 
     Plan.session = scoped_session(sessionmaker(bind=engine, autoflush=False))
     Plan.query = Plan.session.query_property()
+
+    SkillDocs.session = scoped_session(sessionmaker(bind=engine, autoflush=False))
+    SkillDocs.query = SkillDocs.session.query_property()
     
     try:
         previous_tables = inspect(engine).get_table_names()

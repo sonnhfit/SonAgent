@@ -5,6 +5,7 @@ from sqlalchemy import inspect, select, text, tuple_, update
 
 from sonagent.persistence.belief_models import Belief
 from sonagent.persistence.planning_models import Plan
+from sonagent.persistence.skill_models import SkillDocs
 
 logger = logging.getLogger(__name__)
 

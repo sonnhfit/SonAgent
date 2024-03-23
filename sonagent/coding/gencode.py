@@ -3,8 +3,9 @@ import autogen
 from typing import Dict, Union
 from sonagent.coding.sonautogen import SonAutoGenAgent
 from typing import Any
-from sonagent.llm.oai_llm import create_pull_request_info, rewrite_python_code_docs_string
+from sonagent.llm.oai_llm import create_pull_request_info, rewrite_python_code_docs_string, auto_create_skill_docs
 from sonagent.llm.prompt import DEFAULT_SYSTEM_MESSAGE_AUTO_GEN
+from sonagent.persistence.models import SkillDocs
 import json
 import logging
 from pathlib import Path
@@ -68,8 +69,6 @@ class SonCodeAgent:
         with open(skill_file_path, 'w') as file:
             yaml.dump(skills_register, file)
 
-
-
     def gen_code(self, message: str, is_create_pull_request: bool = False) -> Union[str, Dict[str, str]]:
         # generate code
         chat_res = self.user_proxy.initiate_chat(
@@ -79,6 +78,7 @@ class SonCodeAgent:
         )
 
         self.latest_code = self.user_proxy.latest_code
+        skill_name = ""
 
         if self.latest_code == None:
             logging.error("No code generated")
@@ -139,7 +139,7 @@ class SonCodeAgent:
                 if skill_class != None and skill_class in str(chat_res.summary):
                     skill_file_path = f"{self.git_manager.local_repo_path}/user_data/skills/skills.yaml"
                     self.add_skill_register_to_agent(skill_class, skill_file_path)
-
+                skill_name = skill_class
                 commit_message = metadata.get("commit_message", "default commit message")
                 self.git_manager.commit_and_push(code_branch, commit_message)
                 pull_title = metadata.get("pull_request_title", "default pull request title")
@@ -163,9 +163,11 @@ class SonCodeAgent:
             if skill_class != None and skill_class in str(pull_str):
                 skill_file_path = f"{self.git_manager.local_repo_path}/skills/skills.yaml"
                 self.add_skill_register_to_agent(skill_class, skill_file_path)
+            skill_name = skill_class
+        if self.latest_code != None and skill_name != "":
+            self.create_and_save_code_docs(skill_name, self.latest_code)
 
         return chat_res, metadata
-    
     
     def save_source_code(self, code: str, code_path) -> None:
         # save code to user_data folder clone from github
@@ -175,8 +177,18 @@ class SonCodeAgent:
         # open pull request to github
         pass
     
+    def create_and_save_code_docs(self, skill_name: str, code: str) -> None:
+        try:
+            docs = auto_create_skill_docs(code)
+            logging.info(f"Docs: {docs}")
+            # save docs to models
+            plan = SkillDocs(skill_name=skill_name, docs=docs)
+            SkillDocs.session.add(plan)
+            SkillDocs.session.commit()
 
 
-
+        except Exception as e:
+            logging.error(f"Error creating code docs: {e}")
+            return None
 
 
