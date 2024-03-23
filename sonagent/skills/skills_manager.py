@@ -7,7 +7,7 @@ from typing import Any, Dict, Iterator, List, Optional, Tuple, Type, Union
 from semantic_kernel.sk_pydantic import SKBaseModel
 import yaml
 from sonagent.skills.loading import BaseLoading
-from sonagent.skills.skills import SonSkill
+from sonagent.skills import GSkill
 from pydantic import BaseModel
 
 from sonagent.utils.utils import hash_str, hash_md5_str
@@ -115,3 +115,27 @@ class SkillsManager:
 
         return result
 
+
+class GskillManager(SkillsManager):
+    def __init__(self, sonagent) -> None:
+        super().__init__(sonagent)
+        self.gskills_area = "son_gskills"
+        self.gskill_object_list: List[GSkill] = []
+
+    def load_register_gskills_name(self) -> List[str]:
+        gskill_file_name = self.config.get('gskills_file_path', 'gskills.yaml')
+        gskill_file_path = Path(self.config['user_data_dir']).joinpath(gskill_file_name)
+        with open(gskill_file_path, 'r') as file:
+            gskills_register = yaml.safe_load(file)
+
+        if gskills_register['skills'] is None:
+            gskills_register['skills'] = []
+            
+        return gskills_register['skills']
+    
+    def load_gskills(self) -> None:
+        gskills_register = self.load_register_gskills_name()
+        BaseLoading.object_type = GSkill
+        for gskill_name in gskills_register:
+            gskill = BaseLoading.load_object(object_name=gskill_name, config=self.config, kwargs={}, extra_dir='user_data/gskills')
+            self.gskill_object_list.append(gskill)
