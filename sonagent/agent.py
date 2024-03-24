@@ -24,7 +24,7 @@ logger = logging.getLogger(__name__)
 
 
 class Agent:
-    def __init__(self, memory_path, skills, config: dict) -> None:
+    def __init__(self, memory_path, skills, gskills, config: dict) -> None:
         # memory
         logger.debug(f"init memory with path {memory_path}.")
         self.memory = SonMemory(default_memory_path=memory_path)
@@ -36,10 +36,12 @@ class Agent:
         # self.sync_beliefs()
 
         self.skills = skills
+        self.gskills = gskills
 
         logger.info("--------- Start skill.---------")
         self.skills.start_skill(memory=self.memory)
         self.skills_dict = {}
+        self.skills_dict_func = {}
         logger.info("--------- Start Done.---------")
 
 
@@ -88,6 +90,17 @@ class Agent:
 
         # load skill dict 
         self.init_skills_dict()
+        self.init_gskill_dict()
+        self.init_skills_dict_with_func()
+
+    def init_gskill_dict(self):
+        self.gskills.load_gskills()
+
+    def run_gskill(self, gskill_name: str, args: dict) -> str:
+        gskill_name = gskill_name.strip()
+        self.gskills.gskill_object_dict[gskill_name].reload_skills(self.gskills.gskill_object_dict[gskill_name].plans, self.skills_dict_func, {})
+        self.gskills.run_gskills(gskill_name)
+        return "Run gskill successfully."
 
     def remove_skill(self, skill_name):
         # remove skill_name from yaml 
@@ -118,6 +131,14 @@ class Agent:
     def init_skills_dict(self) -> None:
         for skill in self.skills.get_all_skills():
             self.skills_dict[str(skill.__class__.__name__)] = skill
+
+    def init_skills_dict_with_func(self) -> None:
+        for skill in self.skills.get_all_skills():
+            print("------")
+            print(type(skill))
+            method_list = [func for func in dir(skill) if not func.startswith("__") and callable(getattr(skill, func))]
+            for m in method_list:
+                self.skills_dict_func[f"{str(skill.__class__.__name__)}.{m}"] = getattr(self.skills_dict[str(skill.__class__.__name__)], m)
 
     def get_beliefs_for_planner(self, ids: list) -> list:
         list_belief = Belief.get_belief_by_ids(ids=ids)

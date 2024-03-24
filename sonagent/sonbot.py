@@ -12,7 +12,7 @@ from sonagent.mixins import LoggingMixin
 from sonagent.enums.enums import State
 from sonagent.enums.rpcmessagetype import RPCMessageType
 from sonagent.rpc import RPCManager
-from sonagent.skills.skills_manager import SkillsManager
+from sonagent.skills.skills_manager import SkillsManager, GskillManager
 from sonagent.persistence.belief_models import Belief
 from sonagent.agent import Agent
 from sonagent.persistence.models import init_db
@@ -55,18 +55,23 @@ class SonBot(LoggingMixin):
             raise e
         
         self.skills = SkillsManager(self)
+        self.gskills = GskillManager(self, {})
 
         names = str(self.skills.load_register_skills_name())
         logger.info(f"SKILLLS NAME: {names}")
         self.sp = ScheduleProcess()
 
-        self.agent = Agent(memory_path=memory_url, skills=self.skills, config=self.config)
+        self.agent = Agent(memory_path=memory_url, skills=self.skills, gskills=self.gskills, config=self.config)
         self.rpc: RPCManager = RPCManager(self)
 
         # Set initial bot state from config
         initial_state = self.config.get('initial_state')
 
         self.state = State[initial_state.upper()] if initial_state else State.STOPPED
+
+    
+    async def run_gskill(self, input: str) -> str:
+        return self.agent.run_gskill(input, {})
 
     async def chat(self, input: str) -> str:
         if self.agent_mode == "chat":
