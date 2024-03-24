@@ -82,9 +82,15 @@ def create_user_data_dir(args: Dict[str, Any]) -> None:
         if not os.path.exists(current_path + f"/{user_data_dir}/skills"):
             os.mkdir(current_path + f"/{user_data_dir}/skills")
 
+        if not os.path.exists(current_path + f"/{user_data_dir}/gskills"):
+            os.mkdir(current_path + f"/{user_data_dir}/gskills")
+
         # creaet skills.yaml with content is skills:
         with open(current_path + f"/{user_data_dir}/skills/skills.yaml", "w") as file:
             file.write("skills:\n")
+
+        with open(current_path + f"/{user_data_dir}/gskills/gskills.yaml", "w") as file:
+            file.write("gskills:\n")
 
         # create config.json file with string
         config_exampe = """
@@ -116,6 +122,7 @@ def create_user_data_dir(args: Dict[str, Any]) -> None:
         "api_key": ""
     },
     "skills_file_path": "skills/skills.yaml",
+    "gskills_file_path": "gskills/gskills.yaml",
     "github": {
         "enabled": false,
         "username": "sonnhfit",
