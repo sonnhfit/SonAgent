@@ -75,6 +75,18 @@ class RPC:
         """
         return await self.sonagent.chat(msg)
     
+    async def run_gskill(self, msg: str) -> bool:
+        """
+        Send a chat message to all registered rpc modules.
+        :param msg: Message to send
+        :return: None
+        """
+        output = await self.sonagent.run_gskill(msg)
+        if output:
+            return output
+        return "None"
+
+
     async def ibelieve(self, msg: str) -> bool:
         """
         Send a chat message to all registered rpc modules.

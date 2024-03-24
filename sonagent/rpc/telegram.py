@@ -75,7 +75,7 @@ class Telegram(RPCHandler):
         #       this needs refactoring of the whole telegram module (same
         #       problem in _help()).
         valid_keys: List[str] = [
-            r'/ibelieve', r'/show_mode$', r'/mode', r'/sum$', r'/show_skills$',
+            r'/ibelieve', r'/run_gskill', r'/show_mode$', r'/mode', r'/sum$', r'/show_skills$',
             r'/reload_skills$', r'/remove_skill',
             r'/help$', r'/version$'
         ]
@@ -163,6 +163,7 @@ class Telegram(RPCHandler):
             CommandHandler('show_mode', self._show_mode),
             CommandHandler('sum', self._summerize_dialog),
             CommandHandler('show_skills', self._show_skills),
+            CommandHandler('run_gskill', self._run_gskill),
             CommandHandler('reload_skills', self._reload_skills),
             CommandHandler('remove_skill', self._remove_skill),
             CommandHandler('mode', self._mode),
@@ -234,6 +235,7 @@ class Telegram(RPCHandler):
             return None
         return message
     
+    
     def send_msg(self, msg: RPCSendMsg) -> None:
         """ Send a message to telegram channel """
 
@@ -286,6 +288,23 @@ class Telegram(RPCHandler):
         except TelegramError as telegram_err:
             logger.warning('TelegramError: %s! Giving up on that message.', telegram_err.message)
 
+    async def _run_gskill(self, update: Update, context: CallbackContext) -> None:
+        """
+        Handler for /run_gskills.
+        Show version information
+        :param bot: telegram bot
+        :param update: message update
+        :return: None
+        """
+        result = "running!"
+        msg = update.message.text.replace('/run_gskill', '')
+
+        if len(msg) > 0:
+            result = await self._rpc.run_gskill(msg)
+        else:
+            result = "What do you believe?"
+
+        await update.message.reply_text(result)
     async def _send_msg(self, msg: str, parse_mode: str = ParseMode.MARKDOWN,
                         disable_notification: bool = False,
                         keyboard: Optional[List[List[InlineKeyboardButton]]] = None,
