@@ -48,7 +48,8 @@ required = [
     'GitPython==3.1.42',
     'pyautogen==0.2.15',
     'langchain==0.1.10',
-    'cachetools==5.3.2'
+    'cachetools==5.3.2',
+    'schedule==1.2.1'
 ]
 
 # print(f"Required: {required}")

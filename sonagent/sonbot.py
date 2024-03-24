@@ -17,7 +17,7 @@ from sonagent.persistence.belief_models import Belief
 from sonagent.agent import Agent
 from sonagent.persistence.models import init_db
 from sonagent.rpc.schedule_worker import ScheduleProcess
-
+from schedule import Scheduler
 
 
 logger = logging.getLogger(__name__)
@@ -58,15 +58,29 @@ class SonBot(LoggingMixin):
 
         names = str(self.skills.load_register_skills_name())
         logger.info(f"SKILLLS NAME: {names}")
-        self.sp = ScheduleProcess()
+        self._schedule = Scheduler()
 
         self.agent = Agent(memory_path=memory_url, skills=self.skills, config=self.config)
         self.rpc: RPCManager = RPCManager(self)
+
+        def update():
+            self.update_schedule_jobs()
+    
+        self._schedule.every(1).minutes.do(update)
 
         # Set initial bot state from config
         initial_state = self.config.get('initial_state')
 
         self.state = State[initial_state.upper()] if initial_state else State.STOPPED
+
+    def update_schedule_jobs(self) -> None:
+        """
+        Update the schedule jobs for the bot
+        :param jobs: List of jobs to update
+        :return: None
+        """
+        logger.info('Updating schedule jobs ...')
+        pass
 
     async def chat(self, input: str) -> str:
         if self.agent_mode == "chat":
@@ -150,7 +164,7 @@ class SonBot(LoggingMixin):
 
     def process(self) -> None:
         # print("process")
-        pass
+        self._schedule.run_pending()
 
     def process_stopped(self) -> None:
         """
