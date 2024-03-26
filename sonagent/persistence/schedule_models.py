@@ -28,12 +28,15 @@ class ScheduleJob(ModelBase):
     __allow_unmapped__ = True
     session: ClassVar[SessionType]
 
-    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     description: Mapped[str] = mapped_column(String(1024), nullable=True)
     is_recurring: Mapped[bool] = mapped_column(Integer, nullable=False, default=False)
     max_retry: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     plan: Mapped[str] = mapped_column(String(1024), nullable=True)
+    schedule_start_at: Mapped[datetime] = mapped_column(nullable=True, default=None)
+    schedule_end_at: Mapped[datetime] = mapped_column(nullable=True, default=None)
+    schedule_interval: Mapped[str] = mapped_column(nullable=True)
     status: Mapped[str] = mapped_column(
         Enum("pending", "running", "completed", "failed", name="job_status"),
         nullable=False,
@@ -55,3 +58,8 @@ class ScheduleJob(ModelBase):
         if not isinstance(value, int) or value < 0:
             raise ValueError("max_retry must be a non-negative integer")
         return value
+    
+    @staticmethod
+    def get_all_schedule_not_completed_jobs(*, created_at: Optional[str] = None) -> List["ScheduleJob"]:
+        return ScheduleJob.session.scalars(
+            select(ScheduleJob).filter(ScheduleJob.status != "completed")).all()

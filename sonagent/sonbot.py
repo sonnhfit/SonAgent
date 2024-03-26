@@ -124,6 +124,9 @@ class SonBot(LoggingMixin):
     async def show_plan(self) -> str:
         return await self.agent.show_plan()
     
+    async def show_schedule(self) -> str:
+        return await self.agent.show_schedule()
+    
     def show_skills(self) -> str:
         return self.agent.show_skills()
     

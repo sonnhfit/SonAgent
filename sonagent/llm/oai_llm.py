@@ -10,6 +10,10 @@ from sonagent.llm.prompt import (
 from sonagent.llm.prompt_auto_docs import (
     auto_skill_docs
 )
+from sonagent.llm.prompt_create_schedule import (
+    create_schedule_llm
+)
+
 
 logger = logging.getLogger(__name__)
 
@@ -142,6 +146,28 @@ def auto_create_skill_docs(skill_code: str):
     client = OpenAI(api_key=os.environ["OPENAI_API_KEY"])
 
     system_prompt, user_prompt = auto_skill_docs(skill_code)
+    response = client.chat.completions.create(
+        model="gpt-3.5-turbo",
+        messages=[
+            {
+                "role": "system",
+                "content": system_prompt,
+            },
+            {"role": "user", "content": user_prompt},
+        ],
+        temperature=1,
+        max_tokens=1000,
+        top_p=1,
+        frequency_penalty=0,
+        presence_penalty=0,
+    )
+    return response.choices[0].message.content
+
+
+def auto_create_schedule_json_llm(goal: str):
+    client = OpenAI(api_key=os.environ["OPENAI_API_KEY"])
+
+    system_prompt, user_prompt = create_schedule_llm(goal)
     response = client.chat.completions.create(
         model="gpt-3.5-turbo",
         messages=[

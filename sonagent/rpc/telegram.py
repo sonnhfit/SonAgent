@@ -76,7 +76,7 @@ class Telegram(RPCHandler):
         #       problem in _help()).
         valid_keys: List[str] = [
             r'/ibelieve', r'/show_mode$', r'/mode', r'/sum$', r'/show_skills$',
-            r'/reload_skills$', r'/remove_skill',
+            r'/reload_skills$', r'/remove_skill', r'/show_schedule$',
             r'/help$', r'/version$'
         ]
         # Create keys for generation
@@ -163,6 +163,7 @@ class Telegram(RPCHandler):
             CommandHandler('show_mode', self._show_mode),
             CommandHandler('sum', self._summerize_dialog),
             CommandHandler('show_skills', self._show_skills),
+            CommandHandler('show_schedule', self._show_schedule),
             CommandHandler('reload_skills', self._reload_skills),
             CommandHandler('remove_skill', self._remove_skill),
             CommandHandler('mode', self._mode),
@@ -382,6 +383,18 @@ class Telegram(RPCHandler):
         if result is None or len(result) == 0:
             result = "Agent doesn't have any available skills."
         await update.message.reply_text(result)
+
+    async def _show_schedule(self, update: Update, context: CallbackContext) -> None:
+        """
+        Handler for /show_schedule.
+        Show version information
+        :param bot: telegram bot
+        :param update: message update
+        :return: None
+        """
+        result = await self._rpc.show_schedule()
+        await self._send_msg(result, parse_mode=ParseMode.MARKDOWN)
+        # await update.message.reply_text(result, parse_mode=ParseMode.MARKDOWN)
 
     async def _reload_skills(self, update: Update, context: CallbackContext) -> None:
         """

@@ -133,6 +133,9 @@ class RPC:
     async def show_skills(self) -> str:
         return self.sonagent.show_skills()
     
+    async def show_schedule(self) -> str:
+        return await self.sonagent.show_schedule()
+    
     async def reload_skills(self) -> str:
         return self.sonagent.reload_skills()
     
