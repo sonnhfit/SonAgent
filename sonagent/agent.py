@@ -2,7 +2,7 @@ import os
 import logging
 import json
 import yaml
-from sonagent.persistence import Belief, Plan
+from sonagent.persistence import Belief, Plan, ScheduleJob
 
 from sonagent.memory.memory import SonMemory
 from sonagent.memory.short_memory import ShortTermMemory
@@ -19,6 +19,8 @@ from sonagent.core_prompt.me import ASK_ABOUT_ME_PROMP
 from sonagent.coding.gencode import SonCodeAgent
 from sonagent.tools import GitManager, LocalCodeManager
 from openai import OpenAI
+from sonagent.llm.oai_llm import auto_create_schedule_json_llm
+from datetime import datetime
 
 logger = logging.getLogger(__name__)
 
@@ -253,6 +255,46 @@ class Agent:
 
         return result
 
+    async def create_schedule_for_task_or_plan(self, goal_plan: str) -> str:
+        plan_json = await self.planning(goal=goal_plan)
+
+        # replace ```json to empty string
+        plan_json = plan_json.replace("```json", "").replace("```", "")
+        plan_json = json.loads(plan_json)
+        logger.info(f"sk planner schedule json: {plan_json}")
+
+        json_data_schedule = auto_create_schedule_json_llm(goal=goal_plan)
+        json_data_schedule = json_data_schedule.replace("```json", "").replace("```", "")
+        schedule_plan_json = json.loads(json_data_schedule)
+        logger.info(f"plan schedule json: {schedule_plan_json}")
+        try:
+            schedule_start_at = None
+            schedule_end_at = None
+            if len(schedule_plan_json['schedule_start_at']) > 1:
+                schedule_start_at = datetime.strptime(schedule_plan_json['schedule_start_at'], "%Y-%m-%d %H:%M:%S")
+            
+            if len(schedule_plan_json['schedule_end_at']) > 1:
+                schedule_end_at = datetime.strptime(schedule_plan_json['schedule_end_at'], "%Y-%m-%d %H:%M:%S")
+
+            schedule_job = ScheduleJob(
+                name=schedule_plan_json['name'],
+                description=schedule_plan_json['description'],
+                is_recurring=schedule_plan_json['is_recurring'],
+                schedule_interval=schedule_plan_json['schedule_interval'],
+                schedule_start_at=schedule_start_at,
+                schedule_end_at=schedule_end_at,
+                max_retry=3,
+                plan=json.dumps(plan_json),
+            )
+            ScheduleJob.session.add(schedule_job)
+            ScheduleJob.session.commit()
+        except Exception as e:
+            logger.error(f"Error create schedule job: {e}")
+            return str(e)
+        
+        return "Schedule job created successfully."
+
+
     async def chat(self, input: str) -> str:
 
         belief = self.memory.brain_area_search(
@@ -294,6 +336,19 @@ class Agent:
                         }
                     }
                 }
+            },
+            {
+                'name': 'create_schedule_for_task_or_plan',
+                'description': 'When a user needs to schedule a recurring task or an event, plan for a future time, they require a system that allows them to do so efficiently. This system should have the capability to set up recurring events if necessary and provide reminders if requested by the user',
+                'parameters': {
+                    'type': 'object',
+                    'properties': {
+                        'dialog_summary': {
+                            'type': 'string',
+                            'description': 'summary of the dialog keep that clear about schedule a recurring task or an event, time, provide reminders if requested by the user'
+                        }
+                    }
+                }
             }
         ]
 
@@ -311,10 +366,19 @@ class Agent:
         )
         r_str = str(response.choices[0].message.content)
         if r_str == "None":
+            function_call_chat = response.choices[0].message.function_call
+            name = function_call_chat.name
 
-            logger.info(f"***response.choices[0].message chat: {str(response.choices[0].message)}")
-            json_response = json.loads(response.choices[0].message.function_call.arguments)
-            r_str = await self.create_plan_and_running(goal_plan=json_response.get("dialog_summary"))
+            if name == "create_plan_with_skills":
+                logger.info(f"***response.choices[0].message chat: {str(response.choices[0].message)}")
+                json_response = json.loads(response.choices[0].message.function_call.arguments)
+                r_str = await self.create_plan_and_running(goal_plan=json_response.get("dialog_summary"))
+            elif name == "create_schedule_for_task_or_plan":
+
+                logger.info("run function create_schedule_for_task_or_plan")
+
+                json_response = json.loads(response.choices[0].message.function_call.arguments)
+                r_str = await self.create_schedule_for_task_or_plan(goal_plan=json_response.get("dialog_summary"))
         
         response = str(r_str)
         
@@ -501,3 +565,15 @@ class Agent:
         for plan in plan_list:
             plan_text += str("-" + plan.goal + "\n")
         return plan_text
+
+    async def show_schedule(self) -> str:
+        schedule_jobs = ScheduleJob.get_all_schedule_not_completed_jobs()
+        schedule_text = ""
+        for job in schedule_jobs:
+            schedule_text += "-----------------\n"
+            schedule_text += f"**Task**: **{job.name}** \n"
+            schedule_text += f"Description: {job.description}\n"
+            schedule_text += f"Plan: {job.plan}\n"
+            schedule_text += f"Recurrence: {job.is_recurring}\n\n"
+
+        return schedule_text
