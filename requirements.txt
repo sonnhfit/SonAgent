@@ -27,11 +27,4 @@ pyautogen==0.2.15
 langchain==0.1.10
 cachetools==5.3.2
 schedule==1.2.1
-# docs 
-sphinx-material
-numpydoc
-nbsphinx
-recommonmark
-sphinx-markdown-tables
-sphinx_copybutton
-readthedocs-sphinx-search
+
