@@ -14,9 +14,9 @@ from sonagent.enums.rpcmessagetype import RPCMessageType
 from sonagent.rpc import RPCManager
 from sonagent.skills.skills_manager import SkillsManager
 from sonagent.persistence.belief_models import Belief
+from sonagent.persistence.models import ScheduleJob
 from sonagent.agent import Agent
 from sonagent.persistence.models import init_db
-from sonagent.rpc.schedule_worker import ScheduleProcess
 from schedule import Scheduler
 
 
@@ -25,7 +25,6 @@ logger = logging.getLogger(__name__)
 
 class SonBot(LoggingMixin):
     def __init__(self, config: dict, args: Any = None) -> None:
-
 
         self.state = State.STOPPED
         self.agent_mode = "chat"
@@ -80,6 +79,13 @@ class SonBot(LoggingMixin):
         :return: None
         """
         logger.info('Updating schedule jobs ...')
+        # TODO: get all job to run from memory
+        schedule_list = ScheduleJob.get_all_schedule_not_completed_jobs()
+        logger.info(f"Schedule list: {schedule_list[0].plan}")
+
+        # TODO: run planner from schedule jobs
+
+        
         pass
 
     async def chat(self, input: str) -> str:

@@ -37,11 +37,6 @@ class RPCManager:
             logger.info('Enabling webhook ...')
             from sonagent.rpc.webhook import Webhook
             self.registered_modules.append(Webhook(self._rpc, config))
-        
-
-
-        
-
 
 
     def send_msg(self, msg: RPCSendMsg) -> None:

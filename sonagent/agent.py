@@ -535,7 +535,7 @@ class Agent:
         variables = sk.ContextVariables()
 
         variables["available_functions"] = relevant_function_manual
-        variables["believe"] = ""
+        variables["believe"] = belief_text
         variables["goal"] = goal
 
         logger.info(f"available_functions {relevant_function_manual}")

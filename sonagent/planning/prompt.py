@@ -6,7 +6,7 @@ Create a list of subtasks based off the [GOAL] provided.
 Each subtask must be from within the [AVAILABLE FUNCTIONS] list. Do not use any functions that are not in the list.
 Base your decisions on which functions to use from the description and the name of the function.
 Sometimes, a function may take arguments. Provide them if necessary.
-The plan should be as short as possible. If you dont have available functions to satisfy the goal, return an empty plan.
+The plan should be as short as possible. If you dont have available functions to satisfy the goal, Please name that function with the prefix `unknow_skill_[function_name]`.
 For example:
 
 [AVAILABLE FUNCTIONS]
