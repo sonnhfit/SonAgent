@@ -21,6 +21,9 @@ from sonagent.tools import GitManager, LocalCodeManager
 from openai import OpenAI
 from sonagent.llm.oai_llm import auto_create_schedule_json_llm
 from datetime import datetime
+from croniter import croniter
+from sonagent.utils.datetime_helpers import dt_now
+
 
 logger = logging.getLogger(__name__)
 
@@ -229,6 +232,8 @@ class Agent:
 
     async def excute_plan_task(self, task: dict) -> str: 
         task_intance = str(task['function']).split('.')
+        if len(task_intance) < 2:
+            return "Error: function name is not valid."
         class_name = task_intance[0]
         function_name = task_intance[1]
         task_func = getattr(self.skills_dict[class_name], function_name)
@@ -239,6 +244,12 @@ class Agent:
             result = task_func()
         return result
 
+    def execute_plan(self, plan: any) -> str:
+        # print("execute:  ", plan)
+        logger.info(f"execute plan: {plan}")
+        status = "success"
+        return status
+    
     async def create_plan_and_running(self, goal_plan: str) -> str:
         plan_json = await self.planning(goal=goal_plan)
 
@@ -275,6 +286,11 @@ class Agent:
             
             if len(schedule_plan_json['schedule_end_at']) > 1:
                 schedule_end_at = datetime.strptime(schedule_plan_json['schedule_end_at'], "%Y-%m-%d %H:%M:%S")
+            timenow = dt_now()
+
+            cron = croniter(schedule_plan_json['schedule_interval'], timenow)
+            next_run_at = cron.get_next(datetime)
+            logger.info(f"Create schedule with next run is: {next_run_at} and timenow: {timenow}")
 
             schedule_job = ScheduleJob(
                 name=schedule_plan_json['name'],
@@ -283,6 +299,7 @@ class Agent:
                 schedule_interval=schedule_plan_json['schedule_interval'],
                 schedule_start_at=schedule_start_at,
                 schedule_end_at=schedule_end_at,
+                next_run_at=next_run_at,
                 max_retry=3,
                 plan=json.dumps(plan_json),
             )
