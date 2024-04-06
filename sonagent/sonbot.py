@@ -18,6 +18,10 @@ from sonagent.persistence.models import ScheduleJob
 from sonagent.agent import Agent
 from sonagent.persistence.models import init_db
 from schedule import Scheduler
+from croniter import croniter
+from sonagent.utils.datetime_helpers import dt_now
+
+# import threading
 
 
 logger = logging.getLogger(__name__)
@@ -30,6 +34,7 @@ class SonBot(LoggingMixin):
         self.agent_mode = "chat"
         
         self.args = args
+        os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
         self.config = config
         
@@ -65,7 +70,7 @@ class SonBot(LoggingMixin):
         def update():
             self.update_schedule_jobs()
     
-        self._schedule.every(1).minutes.do(update)
+        self._schedule.every(15).seconds.do(update)
 
         # Set initial bot state from config
         initial_state = self.config.get('initial_state')
@@ -78,16 +83,28 @@ class SonBot(LoggingMixin):
         :param jobs: List of jobs to update
         :return: None
         """
-        logger.info('Updating schedule jobs ...')
-        # TODO: get all job to run from memory
-        schedule_list = ScheduleJob.get_all_schedule_not_completed_jobs()
-        logger.info(f"Schedule list: {schedule_list[0].plan}")
+        # logger.info('Updating schedule jobs ...')
+        # get job for run now 
+        job_list = ScheduleJob.get_job_with_next_run_at_now()
+        if job_list and len(job_list) > 0:
+            logger.info(f"Found {len(job_list)} jobs to run now")
+            for job in job_list:
+                # job.run()
+                self.agent.execute_plan(job.plan)
+                if job.is_recurring:
+                    cron_expression = job.schedule_interval
 
-        # TODO: run planner from schedule jobs
-
-        
-        pass
-
+                    cron = croniter(cron_expression, dt_now())
+                    cron_time = cron.get_next(datetime)
+                    job.last_run_at = job.next_run_at
+                    job.next_run_at = cron_time
+                    job.status = "pending"
+                    ScheduleJob.session.commit()
+                else:
+                    job.status = "completed"
+                    job.last_run_at = job.next_run_at
+                    ScheduleJob.session.commit()
+    
     async def chat(self, input: str) -> str:
         if self.agent_mode == "chat":
 
@@ -197,7 +214,3 @@ class SonBot(LoggingMixin):
             'type': msg_type,
             'status': msg
         })
-
-
-
-

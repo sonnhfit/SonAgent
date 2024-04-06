@@ -49,7 +49,8 @@ required = [
     'pyautogen==0.2.15',
     'langchain==0.1.10',
     'cachetools==5.3.2',
-    'schedule==1.2.1'
+    'schedule==1.2.1',
+    'croniter==2.0.3',
 ]
 
 # print(f"Required: {required}")

@@ -7,6 +7,7 @@ Each subtask must be from within the [AVAILABLE FUNCTIONS] list. Do not use any 
 Base your decisions on which functions to use from the description and the name of the function.
 Sometimes, a function may take arguments. Provide them if necessary.
 The plan should be as short as possible. If you dont have available functions to satisfy the goal, Please name that function with the prefix `unknow_skill_[function_name]`.
+
 For example:
 
 [AVAILABLE FUNCTIONS]
@@ -38,7 +39,7 @@ args:
 - input: the input to generate a joke about
 
 [GOAL]
-"Tell a joke about cars. Translate it to Spanish"
+"Tell a joke about cars at 9h am everyday. Translate it to Spanish"
 
 [BELIEVE]
 - cars can be used to transport people

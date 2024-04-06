@@ -37,6 +37,8 @@ class ScheduleJob(ModelBase):
     schedule_start_at: Mapped[datetime] = mapped_column(nullable=True, default=None)
     schedule_end_at: Mapped[datetime] = mapped_column(nullable=True, default=None)
     schedule_interval: Mapped[str] = mapped_column(nullable=True)
+    last_run_at: Mapped[datetime] = mapped_column(nullable=True, default=None)
+    next_run_at: Mapped[datetime] = mapped_column(nullable=True, default=None)
     status: Mapped[str] = mapped_column(
         Enum("pending", "running", "completed", "failed", name="job_status"),
         nullable=False,
@@ -63,3 +65,22 @@ class ScheduleJob(ModelBase):
     def get_all_schedule_not_completed_jobs(*, created_at: Optional[str] = None) -> List["ScheduleJob"]:
         return ScheduleJob.session.scalars(
             select(ScheduleJob).filter(ScheduleJob.status != "completed")).all()
+    
+    @staticmethod
+    def update_schedule_job_status(job_id: int, status: str) -> None:
+        ScheduleJob.session.execute(
+            ScheduleJob.update().where(ScheduleJob.id == job_id).values(status=status)
+        )
+        next_run_at = dt_now() + timedelta(minutes=10)
+        ScheduleJob.session.execute(
+            ScheduleJob.update().where(ScheduleJob.id == job_id).values(status=status, next_run_at=next_run_at)
+        )
+
+    @staticmethod
+    def get_job_with_next_run_at_now() -> List["ScheduleJob"]:
+        now = dt_now()
+        sql = select(ScheduleJob).filter(ScheduleJob.next_run_at <= now).order_by(
+                desc(ScheduleJob.next_run_at)
+        )
+        return ScheduleJob.session.scalars(
+            sql).all()
