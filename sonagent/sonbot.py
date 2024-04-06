@@ -90,7 +90,7 @@ class SonBot(LoggingMixin):
             logger.info(f"Found {len(job_list)} jobs to run now")
             for job in job_list:
                 # job.run()
-                self.agent.execute_plan(job.plan)
+                result = self.agent.execute_plan(job.plan)
                 if job.is_recurring:
                     cron_expression = job.schedule_interval
 

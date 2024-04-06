@@ -115,7 +115,6 @@ class Agent:
 
         return f"Remove skill {skill_name} successfully."
 
-
     def save_function_to_memory(self, function_name: str) -> None:
         pass
 
@@ -244,12 +243,14 @@ class Agent:
             result = task_func()
         return result
 
-    def execute_plan(self, plan: any) -> str:
-        # print("execute:  ", plan)
+    def execute_plan(self, plan: dict) -> str:
         logger.info(f"execute plan: {plan}")
-        status = "success"
-        return status
-    
+        tasks = plan.get("subtasks", [])
+        result = ""
+        for task in tasks:
+            result += str(self.excute_plan_task(task))
+        return result
+
     async def create_plan_and_running(self, goal_plan: str) -> str:
         plan_json = await self.planning(goal=goal_plan)
 
