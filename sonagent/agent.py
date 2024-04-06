@@ -115,7 +115,6 @@ class Agent:
 
         return f"Remove skill {skill_name} successfully."
 
-
     def save_function_to_memory(self, function_name: str) -> None:
         pass
 
@@ -244,12 +243,30 @@ class Agent:
             result = task_func()
         return result
 
-    def execute_plan(self, plan: any) -> str:
-        # print("execute:  ", plan)
+    def excute_subtask(self, task: dict) -> str: 
+        task_intance = str(task['function']).split('.')
+        if len(task_intance) < 2:
+            return "Error: function name is not valid."
+        class_name = task_intance[0]
+        function_name = task_intance[1]
+        task_func = getattr(self.skills_dict[class_name], function_name)
+        logger.info(f"task_func: {task}")
+        if 'args' in task.keys():
+            result = task_func(**task['args'])
+        else:
+            result = task_func()
+        return result
+
+    def execute_plan(self, plan: dict) -> str:
         logger.info(f"execute plan: {plan}")
-        status = "success"
-        return status
-    
+        tasks = plan.get("subtasks", [])
+        result = ""
+        for task in tasks:
+            if task.get("function", "").startswith("unknow_"):
+                continue
+            result += str(self.excute_subtask(task))
+        return result
+
     async def create_plan_and_running(self, goal_plan: str) -> str:
         plan_json = await self.planning(goal=goal_plan)
 

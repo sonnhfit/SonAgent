@@ -1,4 +1,5 @@
 import os
+import ast
 import logging
 import traceback
 from copy import deepcopy
@@ -11,7 +12,7 @@ from typing import Any, Dict, List, Optional, Tuple
 from sonagent.mixins import LoggingMixin
 from sonagent.enums.enums import State
 from sonagent.enums.rpcmessagetype import RPCMessageType
-from sonagent.rpc import RPCManager
+from sonagent.rpc import RPCManager, IOMsg
 from sonagent.skills.skills_manager import SkillsManager
 from sonagent.persistence.belief_models import Belief
 from sonagent.persistence.models import ScheduleJob
@@ -76,6 +77,9 @@ class SonBot(LoggingMixin):
         initial_state = self.config.get('initial_state')
 
         self.state = State[initial_state.upper()] if initial_state else State.STOPPED
+        
+        IOMsg.rpc = self.rpc
+
 
     def update_schedule_jobs(self) -> None:
         """
@@ -90,7 +94,8 @@ class SonBot(LoggingMixin):
             logger.info(f"Found {len(job_list)} jobs to run now")
             for job in job_list:
                 # job.run()
-                self.agent.execute_plan(job.plan)
+                job_dict = ast.literal_eval(job.plan)
+                result = self.agent.execute_plan(job_dict)
                 if job.is_recurring:
                     cron_expression = job.schedule_interval
 
