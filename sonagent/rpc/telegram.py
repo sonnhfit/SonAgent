@@ -232,6 +232,8 @@ class Telegram(RPCHandler):
 
         elif msg['type'] == RPCMessageType.STARTUP:
             message = f"{msg['status']}"
+        elif msg['type'] == RPCMessageType.CHAT:
+            message = msg['message']
         else:
             logger.debug("Unknown message type: %s", msg['type'])
             return None
@@ -254,10 +256,12 @@ class Telegram(RPCHandler):
             return
 
         message = self.compose_message(deepcopy(msg))
+        logger.info(f"Sending message: {message}")
         if message:
             asyncio.run_coroutine_threadsafe(
-                self._send_msg(message, disable_notification=(noti == 'silent')),
+                self._send_msg(message, parse_mode=ParseMode.MARKDOWN),
                 self._loop)
+        # self._send_msg(message, disable_notification=(noti == 'silent')),
 
     async def _update_msg(self, query: CallbackQuery, msg: str, callback_path: str = "",
                           reload_able: bool = False, parse_mode: str = ParseMode.MARKDOWN) -> None:

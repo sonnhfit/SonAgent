@@ -6,7 +6,7 @@ Create a list of subtasks based off the [GOAL] provided.
 Each subtask must be from within the [AVAILABLE FUNCTIONS] list. Do not use any functions that are not in the list.
 Base your decisions on which functions to use from the description and the name of the function.
 Sometimes, a function may take arguments. Provide them if necessary.
-The plan should be as short as possible. If you dont have available functions to satisfy the goal, Please name that function with the prefix `unknow_skill_[function_name]`.
+The plan should be as short as possible. If you dont have available functions to satisfy the goal, Please name that function with the prefix `unknow_[function_name]`.
 
 For example:
 
@@ -72,12 +72,6 @@ args:
 - input: the input to write about
 - recipient: the recipient's email address.
 
-WriterSkill.Translate
-description: translate the input to another language
-args:
-- input: the text to translate
-- language: the language to translate to
-
 [GOAL]
 "Tomorrow is Valentine's day. I need to come up with a few date ideas.
 She likes Edgar Allen Poe so write using his style.
@@ -90,9 +84,10 @@ E-mail these ideas to my significant other. Translate it to French."
             {"function": "WriterSkill.Brainstorm", "description": "Brainstorm ideas for Valentine's Day"},
             {"function": "EdgarAllenPoeSkill.Poe", "description": "Write in the style of Edgar Allen Poe"},
             {"function": "WriterSkill.EmailTo", "args": {"recipient": "significant_other"}, "description": "Email the ideas to my significant other"},
-            {"function": "WriterSkill.Translate", "args": {"language": "French"}, description: "Translate the ideas to French"}
+            {"function": "unknow_WriterSkill.Translate", "args": {"language": "French"}, description: "Translate the ideas to French"}
         ]
     }
+
 
 [AVAILABLE FUNCTIONS]
 {{$available_functions}}

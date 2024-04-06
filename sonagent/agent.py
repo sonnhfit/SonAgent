@@ -243,12 +243,28 @@ class Agent:
             result = task_func()
         return result
 
+    def excute_subtask(self, task: dict) -> str: 
+        task_intance = str(task['function']).split('.')
+        if len(task_intance) < 2:
+            return "Error: function name is not valid."
+        class_name = task_intance[0]
+        function_name = task_intance[1]
+        task_func = getattr(self.skills_dict[class_name], function_name)
+        logger.info(f"task_func: {task}")
+        if 'args' in task.keys():
+            result = task_func(**task['args'])
+        else:
+            result = task_func()
+        return result
+
     def execute_plan(self, plan: dict) -> str:
         logger.info(f"execute plan: {plan}")
         tasks = plan.get("subtasks", [])
         result = ""
         for task in tasks:
-            result += str(self.excute_plan_task(task))
+            if task.get("function", "").startswith("unknow_"):
+                continue
+            result += str(self.excute_subtask(task))
         return result
 
     async def create_plan_and_running(self, goal_plan: str) -> str:
