@@ -1,12 +1,12 @@
 
 import logging
+import os
+import shutil
+from pathlib import Path
+
 import requests
 
-import shutil
-import os
-from pathlib import Path
 from sonagent.tools.code_manager import CodeManager
-
 
 logger = logging.getLogger(__name__)
 

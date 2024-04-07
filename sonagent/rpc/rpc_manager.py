@@ -9,7 +9,6 @@ from sonagent.enums import RPCMessageType
 from sonagent.rpc import RPC, RPCHandler
 from sonagent.rpc.rpc_types import RPCSendMsg
 
-
 logger = logging.getLogger(__name__)
 
 

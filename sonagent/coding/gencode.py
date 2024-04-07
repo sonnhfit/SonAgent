@@ -1,15 +1,18 @@
-import os
-import autogen
-from typing import Dict, Union
-from sonagent.coding.sonautogen import SonAutoGenAgent
-from typing import Any
-from sonagent.llm.oai_llm import create_pull_request_info, rewrite_python_code_docs_string, auto_create_skill_docs
-from sonagent.llm.prompt import DEFAULT_SYSTEM_MESSAGE_AUTO_GEN
-from sonagent.persistence.models import SkillDocs
 import json
 import logging
+import os
 from pathlib import Path
+from typing import Any, Dict, Union
+
+import autogen
 import yaml
+
+from sonagent.coding.sonautogen import SonAutoGenAgent
+from sonagent.llm.oai_llm import (auto_create_skill_docs,
+                                  create_pull_request_info,
+                                  rewrite_python_code_docs_string)
+from sonagent.llm.prompt import DEFAULT_SYSTEM_MESSAGE_AUTO_GEN
+from sonagent.persistence.models import SkillDocs
 
 # llm_config = {
 #     "config_list": [{"model": "gpt-4-0125-preview", "api_key": os.environ["OPENAI_API_KEY"]}],

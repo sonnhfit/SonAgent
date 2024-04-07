@@ -1,6 +1,7 @@
 
-from sonagent.memory.memory import SonMemory
 from sonagent.llm.oai_llm import text_summary
+from sonagent.memory.memory import SonMemory
+
 
 class ShortTermMemory(SonMemory):
 

@@ -1,6 +1,6 @@
 from argparse import SUPPRESS, ArgumentTypeError
-from sonagent import __version__
-from sonagent import constants
+
+from sonagent import __version__, constants
 
 
 def check_int_positive(value: str) -> int:

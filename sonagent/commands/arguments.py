@@ -6,7 +6,6 @@ from typing import Any, Dict, List, Optional
 from sonagent.commands.cli_options import AVAILABLE_CLI_OPTIONS
 from sonagent.constants import DEFAULT_CONFIG
 
-
 ARGS_COMMON = ["verbosity", "logfile", "version", "config", "datadir", "agentdb", "memory-url", "user_data_dir"]
 ARGS_BUILD_CONFIG = ["config"]
 ARGS_RUN = ["sd_notify"]
@@ -89,7 +88,7 @@ class Arguments:
         self.parser = argparse.ArgumentParser(description='sonagent')
         self._build_args(optionlist=['version'], parser=self.parser)
 
-        from sonagent.commands import (start_sonagent, create_user_data_dir)
+        from sonagent.commands import create_user_data_dir, start_sonagent
 
         subparsers = self.parser.add_subparsers(dest='command',
                                         # Use custom message when no subhandler is added

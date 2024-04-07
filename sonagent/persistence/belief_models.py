@@ -1,23 +1,14 @@
 import logging
-from sonagent.persistence.base import ModelBase, SessionType
-from sonagent.utils.datetime_helpers import dt_now
+from datetime import datetime, timedelta, timezone
 from typing import Any, ClassVar, Dict, List, Optional, Sequence, cast
 
-from sqlalchemy import (
-    Enum,
-    Float,
-    ForeignKey,
-    Integer,
-    ScalarResult,
-    Select,
-    String,
-    UniqueConstraint,
-    desc,
-    func,
-    select,
-)
-from sqlalchemy.orm import Mapped, lazyload, mapped_column, relationship, validates
-from datetime import datetime, timedelta, timezone
+from sqlalchemy import (Enum, Float, ForeignKey, Integer, ScalarResult, Select,
+                        String, UniqueConstraint, desc, func, select)
+from sqlalchemy.orm import (Mapped, lazyload, mapped_column, relationship,
+                            validates)
+
+from sonagent.persistence.base import ModelBase, SessionType
+from sonagent.utils.datetime_helpers import dt_now
 
 logger = logging.getLogger(__name__)
 

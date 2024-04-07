@@ -8,13 +8,11 @@ from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.responses import JSONResponse
 
+from sonagent.configuration import running_in_docker
+from sonagent.exceptions import OperationalException
+from sonagent.rpc.api_server.uvicorn_threaded import UvicornServer
 from sonagent.rpc.rpc import RPC, RPCException, RPCHandler
 from sonagent.rpc.rpc_types import RPCSendMsg
-from sonagent.exceptions import OperationalException
-from sonagent.configuration import running_in_docker
-
-from sonagent.rpc.api_server.uvicorn_threaded import UvicornServer
-
 
 logger = logging.getLogger(__name__)
 
@@ -106,7 +104,8 @@ class ApiServer(RPCHandler):
 
     def configure_app(self, app: FastAPI, config):
         from sonagent.rpc.api_server.api_v1 import router as api_v1
-        from sonagent.rpc.api_server.api_v1 import router_public as api_v1_public
+        from sonagent.rpc.api_server.api_v1 import \
+            router_public as api_v1_public
 
         app.include_router(api_v1_public, prefix="/api/v1")
 

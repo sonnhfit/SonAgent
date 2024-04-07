@@ -12,7 +12,6 @@ from typing import Any, Dict, Iterator, List, Optional, Tuple, Type, Union
 
 from sonagent.exceptions import OperationalException
 
-
 logger = logging.getLogger(__name__)
 
 

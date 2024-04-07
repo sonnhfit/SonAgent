@@ -1,7 +1,8 @@
+import logging
 import os
+
 import chromadb
 from chromadb.config import Settings
-import logging
 
 logger = logging.getLogger(__name__)
 class SonMemory:

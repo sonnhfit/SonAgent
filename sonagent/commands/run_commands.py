@@ -1,7 +1,8 @@
-import os
 import logging
+import os
 import signal
 from typing import Any, Dict
+
 from sonagent.configuration import load_config_file
 from sonagent.exceptions import OperationalException
 

@@ -15,23 +15,24 @@ from html import escape
 from itertools import chain
 from math import isnan
 from threading import Thread
-from typing import Any, Callable, Coroutine, Dict, List, Literal, Optional, Union
+from typing import (Any, Callable, Coroutine, Dict, List, Literal, Optional,
+                    Union)
 
-
-from telegram import (CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup, KeyboardButton,
+from telegram import (CallbackQuery, InlineKeyboardButton,
+                      InlineKeyboardMarkup, KeyboardButton,
                       ReplyKeyboardMarkup, Update)
 from telegram.constants import MessageLimit, ParseMode
 from telegram.error import BadRequest, NetworkError, TelegramError
-from telegram.ext import Application, CallbackContext, CallbackQueryHandler, CommandHandler, MessageHandler, ContextTypes
+from telegram.ext import (Application, CallbackContext, CallbackQueryHandler,
+                          CommandHandler, ContextTypes, MessageHandler,
+                          filters)
 from telegram.helpers import escape_markdown
-from telegram.ext import filters
 
+from sonagent.__init__ import __version__
+from sonagent.enums import RPCMessageType
 from sonagent.exceptions import OperationalException
 from sonagent.rpc import RPC, RPCException, RPCHandler
 from sonagent.rpc.rpc_types import RPCSendMsg
-from sonagent.enums import RPCMessageType
-from sonagent.__init__ import __version__
-
 
 logger = logging.getLogger(__name__)
 logging.getLogger("httpx").setLevel(logging.WARNING)

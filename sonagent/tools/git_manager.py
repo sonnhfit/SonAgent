@@ -1,9 +1,11 @@
 import logging
-import requests
-import git
-import shutil
 import os
+import shutil
 from pathlib import Path
+
+import git
+import requests
+
 from sonagent.tools.code_manager import CodeManager
 
 logger = logging.getLogger(__name__)

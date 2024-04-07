@@ -6,8 +6,8 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 import rapidjson
-from sonagent.exceptions import OperationalException
 
+from sonagent.exceptions import OperationalException
 
 CONFIG_PARSE_MODE = rapidjson.PM_COMMENTS | rapidjson.PM_TRAILING_COMMAS
 

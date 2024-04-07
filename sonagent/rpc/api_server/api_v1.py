@@ -6,14 +6,11 @@ from fastapi import APIRouter, Depends, Query
 from fastapi.exceptions import HTTPException
 
 from sonagent import __version__
-
 from sonagent.exceptions import OperationalException
 from sonagent.rpc import RPC
-
-from sonagent.rpc.rpc import RPCException
-from sonagent.rpc.api_server.api_models import (Ping, Version, ChatMsg)
+from sonagent.rpc.api_server.api_models import ChatMsg, Ping, Version
 from sonagent.rpc.api_server.utils import get_rpc
-
+from sonagent.rpc.rpc import RPCException
 
 logger = logging.getLogger(__name__)
 
