@@ -83,7 +83,7 @@ jobs:
       with:
           severity: error
           details: SonAgent CI failed on ${{ matrix.os }}
-          webhookUrl: ${{ DISCORD_WEBHOOK }}
+          webhookUrl: ${{ secrets.DISCORD_WEBHOOK }}
   # Notify only once - when CI completes (and after deploy) in case it's successfull
   notify-complete:
     needs: [
