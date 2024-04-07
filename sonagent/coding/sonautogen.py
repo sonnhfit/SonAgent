@@ -1,7 +1,7 @@
 from typing import Callable, Dict, List, Literal, Optional, Union
 
 import autogen
-from autogen.code_utils import (execute_code)
+from autogen.code_utils import execute_code
 from autogen.runtime_logging import log_new_agent, logging_enabled
 
 

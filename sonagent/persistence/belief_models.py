@@ -2,8 +2,8 @@ import logging
 from datetime import datetime
 from typing import ClassVar, List, Optional
 
-from sqlalchemy import (Integer, String, select)
-from sqlalchemy.orm import (Mapped, mapped_column)
+from sqlalchemy import Integer, String, select
+from sqlalchemy.orm import Mapped, mapped_column
 
 from sonagent.persistence.base import ModelBase, SessionType
 from sonagent.utils.datetime_helpers import dt_now

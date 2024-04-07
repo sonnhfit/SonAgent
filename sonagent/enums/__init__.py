@@ -1,1 +1,1 @@
-from sonagent.enums.rpcmessagetype import RPCMessageType # noqa: F401
+from sonagent.enums.rpcmessagetype import RPCMessageType  # noqa: F401

@@ -1,3 +1,3 @@
-from .io import IOMsg # noqa: F401
+from .io import IOMsg  # noqa: F401
 from .rpc import RPC, RPCException, RPCHandler  # noqa: F401
-from .rpc_manager import RPCManager # noqa: F401
+from .rpc_manager import RPCManager  # noqa: F401

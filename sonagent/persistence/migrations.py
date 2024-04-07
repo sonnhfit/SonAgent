@@ -2,7 +2,6 @@ import logging
 
 from sqlalchemy import inspect
 
-
 logger = logging.getLogger(__name__)
 
 def check_migrate(engine, decl_base, previous_tables) -> None:

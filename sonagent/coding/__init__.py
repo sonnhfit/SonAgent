@@ -1,1 +1,1 @@
-from sonagent.coding.gencode import SonCodeAgent # noqa: F401
+from sonagent.coding.gencode import SonCodeAgent  # noqa: F401

@@ -10,16 +10,15 @@ from copy import deepcopy
 from datetime import datetime
 from itertools import chain
 from threading import Thread
-from typing import (List, Optional,
-                    Union)
+from typing import List, Optional, Union
 
 from telegram import (CallbackQuery, InlineKeyboardButton,
                       InlineKeyboardMarkup, KeyboardButton,
                       ReplyKeyboardMarkup, Update)
 from telegram.constants import MessageLimit, ParseMode
 from telegram.error import BadRequest, NetworkError, TelegramError
-from telegram.ext import (Application, CallbackContext, CommandHandler, ContextTypes, MessageHandler,
-                          filters)
+from telegram.ext import (Application, CallbackContext, CommandHandler,
+                          ContextTypes, MessageHandler, filters)
 
 from sonagent.__init__ import __version__
 from sonagent.enums import RPCMessageType

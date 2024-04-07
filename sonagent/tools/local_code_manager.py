@@ -3,7 +3,6 @@ import logging
 import os
 from pathlib import Path
 
-
 from sonagent.tools.code_manager import CodeManager
 
 logger = logging.getLogger(__name__)

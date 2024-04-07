@@ -1,6 +1,5 @@
 from typing import AsyncIterator, Optional
 
-
 from sonagent.rpc.rpc import RPC, RPCException
 
 from .webserver import ApiServer
