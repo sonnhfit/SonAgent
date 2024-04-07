@@ -1,8 +1,6 @@
-import logging
-from typing import Any, Dict, Final, Optional
+from typing import Any, Dict
 
 from sqlalchemy import create_engine, inspect
-from sqlalchemy.exc import NoSuchModuleError
 from sqlalchemy.orm import scoped_session, sessionmaker
 from sqlalchemy.pool import StaticPool
 
@@ -58,7 +56,7 @@ def init_db(db_url: str) -> None:
     
     try:
         previous_tables = inspect(engine).get_table_names()
-    except Exception as e:
+    except Exception:
         print("okii")
     
     ModelBase.metadata.create_all(engine)

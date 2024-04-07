@@ -1,9 +1,7 @@
-import logging
 import re
 import sys
-from copy import deepcopy
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict
 
 import rapidjson
 

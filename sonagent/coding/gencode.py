@@ -1,7 +1,6 @@
 import json
 import logging
 import os
-from pathlib import Path
 from typing import Any, Dict, Union
 
 import autogen
@@ -83,7 +82,7 @@ class SonCodeAgent:
         self.latest_code = self.user_proxy.latest_code
         skill_name = ""
 
-        if self.latest_code == None:
+        if self.latest_code is None:
             logging.error("No code generated")
         else:
             self.latest_code = rewrite_python_code_docs_string(
@@ -139,7 +138,7 @@ class SonCodeAgent:
 
                 # write skill register to skill file
                 skill_class = metadata.get("class_name", None)
-                if skill_class != None and skill_class in str(chat_res.summary):
+                if skill_class is not None and skill_class in str(chat_res.summary):
                     skill_file_path = f"{self.git_manager.local_repo_path}/user_data/skills/skills.yaml"
                     self.add_skill_register_to_agent(skill_class, skill_file_path)
                 skill_name = skill_class
@@ -163,11 +162,11 @@ class SonCodeAgent:
 
             # write skill register to skill file
             skill_class = metadata.get("class_name", None)
-            if skill_class != None and skill_class in str(pull_str):
+            if skill_class is not None and skill_class in str(pull_str):
                 skill_file_path = f"{self.git_manager.local_repo_path}/skills/skills.yaml"
                 self.add_skill_register_to_agent(skill_class, skill_file_path)
             skill_name = skill_class
-        if self.latest_code != None and skill_name != "":
+        if self.latest_code is not None and skill_name != "":
             self.create_and_save_code_docs(skill_name, self.latest_code)
 
         return chat_res, metadata

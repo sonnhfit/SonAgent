@@ -4,18 +4,13 @@
 This module manage Telegram communication
 """
 import asyncio
-import json
 import logging
 import re
 from copy import deepcopy
-from dataclasses import dataclass
-from datetime import date, datetime, timedelta
-from functools import partial, wraps
-from html import escape
+from datetime import datetime
 from itertools import chain
-from math import isnan
 from threading import Thread
-from typing import (Any, Callable, Coroutine, Dict, List, Literal, Optional,
+from typing import (List, Optional,
                     Union)
 
 from telegram import (CallbackQuery, InlineKeyboardButton,
@@ -23,15 +18,13 @@ from telegram import (CallbackQuery, InlineKeyboardButton,
                       ReplyKeyboardMarkup, Update)
 from telegram.constants import MessageLimit, ParseMode
 from telegram.error import BadRequest, NetworkError, TelegramError
-from telegram.ext import (Application, CallbackContext, CallbackQueryHandler,
-                          CommandHandler, ContextTypes, MessageHandler,
+from telegram.ext import (Application, CallbackContext, CommandHandler, ContextTypes, MessageHandler,
                           filters)
-from telegram.helpers import escape_markdown
 
 from sonagent.__init__ import __version__
 from sonagent.enums import RPCMessageType
 from sonagent.exceptions import OperationalException
-from sonagent.rpc import RPC, RPCException, RPCHandler
+from sonagent.rpc import RPC, RPCHandler
 from sonagent.rpc.rpc_types import RPCSendMsg
 
 logger = logging.getLogger(__name__)

@@ -4,14 +4,11 @@ import os
 from datetime import datetime
 
 import semantic_kernel as sk
-import semantic_kernel.connectors.ai.open_ai as sk_oai
 import yaml
 from croniter import croniter
 from openai import OpenAI
 from semantic_kernel.connectors.ai.open_ai import (AzureChatCompletion,
                                                    OpenAIChatCompletion)
-from semantic_kernel.planning.sequential_planner.sequential_planner_parser import \
-    SequentialPlanParser
 
 from sonagent.coding.gencode import SonCodeAgent
 from sonagent.core_prompt.me import ASK_ABOUT_ME_PROMP
@@ -19,10 +16,8 @@ from sonagent.llm.oai_llm import auto_create_schedule_json_llm
 from sonagent.memory.memory import SonMemory
 from sonagent.memory.short_memory import ShortTermMemory
 from sonagent.persistence import Belief, Plan, ScheduleJob
-from sonagent.planning.planner import (SonAgentPlanner,
-                                       SonAgentSequentialPlanner)
-from sonagent.planning.prompt import (CLEAN_BELIEF_PROMPT, PROMPT_PLAN,
-                                      SEQUENCE_PLAN)
+from sonagent.planning.planner import (SonAgentPlanner)
+from sonagent.planning.prompt import (CLEAN_BELIEF_PROMPT, PROMPT_PLAN)
 from sonagent.tools import GitManager, LocalCodeManager
 from sonagent.utils.datetime_helpers import dt_now
 
@@ -351,7 +346,7 @@ class Agent:
         logger.info(f"Belief_text: \n{belief_text}")
         if len(self.short_term_memory.get_chat_dialog()) == 0:
             self.short_term_memory.add_chat_item(
-                {"role": "system", "content": f"You are a virtual assistant with the ability to create plans for executing tasks using the create_plan_with_skills function if user need you do something. If the user's question falls outside the scope of the provided data."}
+                {"role": "system", "content": "You are a virtual assistant with the ability to create plans for executing tasks using the create_plan_with_skills function if user need you do something. If the user's question falls outside the scope of the provided data."}
             )
             logger.info(self.short_term_memory.get_chat_dialog())
         

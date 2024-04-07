@@ -1,10 +1,10 @@
 import logging
 from ipaddress import IPv4Address
-from typing import Any, Optional
+from typing import Any
 
 import orjson
 import uvicorn
-from fastapi import Depends, FastAPI
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.responses import JSONResponse
 
@@ -12,7 +12,6 @@ from sonagent.configuration import running_in_docker
 from sonagent.exceptions import OperationalException
 from sonagent.rpc.api_server.uvicorn_threaded import UvicornServer
 from sonagent.rpc.rpc import RPC, RPCException, RPCHandler
-from sonagent.rpc.rpc_types import RPCSendMsg
 
 logger = logging.getLogger(__name__)
 
@@ -103,7 +102,6 @@ class ApiServer(RPCHandler):
         )
 
     def configure_app(self, app: FastAPI, config):
-        from sonagent.rpc.api_server.api_v1 import router as api_v1
         from sonagent.rpc.api_server.api_v1 import \
             router_public as api_v1_public
 

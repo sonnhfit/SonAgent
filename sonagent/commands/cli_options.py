@@ -1,4 +1,4 @@
-from argparse import SUPPRESS, ArgumentTypeError
+from argparse import ArgumentTypeError
 
 from sonagent import __version__, constants
 

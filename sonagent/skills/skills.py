@@ -1,5 +1,4 @@
 
-import logging
 from abc import ABC, abstractmethod
 
 from semantic_kernel.sk_pydantic import SKBaseModel

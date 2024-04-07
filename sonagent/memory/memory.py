@@ -1,5 +1,4 @@
 import logging
-import os
 
 import chromadb
 from chromadb.config import Settings
@@ -26,20 +25,20 @@ class SonMemory:
             self.chroma_client = chromadb.Client()
 
         
-        if self.chroma_client != None:
+        if self.chroma_client is not None:
             self.memory_collection = self.chroma_client.get_or_create_collection(name=collection_name)
         else:
             self.memory_collection = None
 
 
     def set_memory_collection(self, collection_name=None):
-        if self.chroma_client != None:
+        if self.chroma_client is not None:
             self.memory_collection = self.chroma_client.get_collection(name=collection_name)
         else:
             self.memory_collection = None
 
     def delete_memory_collection(self, collection_name=None):
-        if self.chroma_client != None:
+        if self.chroma_client is not None:
             self.chroma_client.delete_collection(name=collection_name)
             return True
         return False

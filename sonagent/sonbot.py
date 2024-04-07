@@ -1,13 +1,8 @@
 import ast
 import logging
 import os
-import traceback
-from copy import deepcopy
-from datetime import datetime, time, timedelta, timezone
-from math import isclose
-from threading import Lock
-from time import sleep
-from typing import Any, Dict, List, Optional, Tuple
+from datetime import datetime
+from typing import Any
 
 from croniter import croniter
 from schedule import Scheduler
@@ -95,7 +90,7 @@ class SonBot(LoggingMixin):
             for job in job_list:
                 # job.run()
                 job_dict = ast.literal_eval(job.plan)
-                result = self.agent.execute_plan(job_dict)
+                self.agent.execute_plan(job_dict)
                 if job.is_recurring:
                     cron_expression = job.schedule_interval
 

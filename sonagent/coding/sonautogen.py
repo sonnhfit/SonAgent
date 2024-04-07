@@ -1,10 +1,7 @@
 from typing import Callable, Dict, List, Literal, Optional, Union
 
 import autogen
-from autogen import ConversableAgent
-from autogen.code_utils import (UNKNOWN, check_can_use_docker_or_throw,
-                                content_str, decide_use_docker, execute_code,
-                                extract_code, infer_lang)
+from autogen.code_utils import (execute_code)
 from autogen.runtime_logging import log_new_agent, logging_enabled
 
 

@@ -1,10 +1,8 @@
 
 import logging
 import os
-import shutil
 from pathlib import Path
 
-import requests
 
 from sonagent.tools.code_manager import CodeManager
 

@@ -1,12 +1,7 @@
 import logging
-from typing import List, Optional
 
-from sqlalchemy import inspect, select, text, tuple_, update
+from sqlalchemy import inspect
 
-from sonagent.persistence.belief_models import Belief
-from sonagent.persistence.planning_models import Plan
-from sonagent.persistence.schedule_models import ScheduleJob
-from sonagent.persistence.skill_models import SkillDocs
 
 logger = logging.getLogger(__name__)
 
@@ -14,7 +9,7 @@ def check_migrate(engine, decl_base, previous_tables) -> None:
     """
     Checks if migration is necessary and migrates if necessary
     """
-    inspector = inspect(engine)
+    inspect(engine)
     migrating = False
 
     if migrating:
