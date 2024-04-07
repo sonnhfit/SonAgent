@@ -86,5 +86,6 @@ A big thank you to all the contributors who helped improve this project.
 - Thank you from the freqtrade community, I learned a lot while contributing to it
 - @kkmeansnt has made major contributions to documentation as well as testing
 - Another colleague had interesting discussions and suggestions about autogen. thank @trungtv
+- And you who have been paying attention, users and error reporting.
 
 
