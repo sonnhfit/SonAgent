@@ -85,7 +85,7 @@ soon
 A big thank you to all the contributors who helped improve this project. 
 - Thank you from the freqtrade community, i learned a lot during my time contributing to it
 - @kkmeansnt has made major contributions to documentation as well as testing
-- Another colleague had interesting discussions and suggestions about autogen. thank @trungtv
+- Another colleague i learned a lot of interesting things from him, I know about autogen through him. thank @trungtv
 - And other contributors in the [contribute tab](https://github.com/sonnhfit/SonAgent/graphs/contributors) 
 - And you who have been paying attention, users and error reporting.
 
