@@ -50,7 +50,7 @@ class RPCManager:
 
         logger.info('Sending rpc message: %s', msg)
         for mod in self.registered_modules:
-            logger.debug('Forwarding message to rpc.%s', mod.name)
+            logger.info('Forwarding message to rpc.%s', mod.name)
             try:
                 mod.send_msg(msg)
             except NotImplementedError:

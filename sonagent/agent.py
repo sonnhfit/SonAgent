@@ -16,8 +16,9 @@ from semantic_kernel.planning.sequential_planner.sequential_planner_parser impor
 from sonagent.coding.gencode import SonCodeAgent
 from sonagent.core_prompt.me import ASK_ABOUT_ME_PROMP
 from sonagent.llm.oai_llm import auto_create_schedule_json_llm
-from sonagent.memory.memory import Belief, Plan, ScheduleJob
+from sonagent.memory.memory import SonMemory
 from sonagent.memory.short_memory import ShortTermMemory
+from sonagent.persistence import Belief, Plan, ScheduleJob
 from sonagent.planning.planner import (SonAgentPlanner,
                                        SonAgentSequentialPlanner)
 from sonagent.planning.prompt import (CLEAN_BELIEF_PROMPT, PROMPT_PLAN,

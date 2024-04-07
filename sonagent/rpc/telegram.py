@@ -138,7 +138,7 @@ class Telegram(RPCHandler):
                 # await update.message.reply_text(msg_part)
                 await self._send_msg(msg_part, parse_mode=ParseMode.MARKDOWN)
         # await update.message.reply_text(chat_result)
-        await self._send_msg(chat_result, parse_mode=ParseMode.MARKDOWN)
+        # await self._send_msg(chat_result, parse_mode=ParseMode.MARKDOWN)
 
     def _init(self) -> None:
         """
