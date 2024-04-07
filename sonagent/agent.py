@@ -473,7 +473,7 @@ class Agent:
             {"role":"assistant", "content": r_str}
         )
         logger.info(f"Finish chat: {str(response)}")
-
+        logger.info(f"Chat return: {r_str}")
         return r_str
     
     async def clear_short_term_memory(self) -> str:

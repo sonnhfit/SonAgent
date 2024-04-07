@@ -123,12 +123,15 @@ class Telegram(RPCHandler):
             msg = "Hello, I'm SonAgent"
         
         chat_result = await self._rpc.chat(msg)
+        logger.info(f"telegram chat_result: {chat_result}")
 
         if len(chat_result) > MAX_MESSAGE_LENGTH:
             msg_parts = self.split_message_parts(chat_result)
             for msg_part in msg_parts:
                 # await update.message.reply_text(msg_part)
                 await self._send_msg(msg_part, parse_mode=ParseMode.MARKDOWN)
+        else:
+            await self._send_msg(chat_result, parse_mode=ParseMode.MARKDOWN)
         # await update.message.reply_text(chat_result)
         # await self._send_msg(chat_result, parse_mode=ParseMode.MARKDOWN)
 
