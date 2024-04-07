@@ -138,3 +138,33 @@ jobs:
         path: |
           dist
         retention-days: 10
+
+  deploy-pypi:
+    name: "Deploy to PyPI"
+    needs: [ build ]
+    runs-on: ubuntu-22.04
+    if: (github.event_name == 'release')
+    environment:
+      name: release
+      url: https://pypi.org/p/sonagent
+    permissions:
+      id-token: write
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Download artifact  📦
+      uses: actions/download-artifact@v4
+      with:
+        pattern: sonagent*-build
+        path: dist
+        merge-multiple: true
+
+
+    - name: Publish to PyPI (Test)
+      uses: pypa/gh-action-pypi-publish@v1.8.14
+      with:
+        repository-url: https://test.pypi.org/legacy/
+
+    - name: Publish to PyPI
+      uses: pypa/gh-action-pypi-publish@v1.8.14
