@@ -312,4 +312,6 @@ follow coding conventions and best practices bellow:
 - if source code not have class, you need to create a class and move the function into the class that class need to extend from `BaseModel` provided by `pydantic`
 - function inside a class need self as first argument
 - keep import statement at the top of the file dont remove import becauset that will make code wrong
+- For IO operations when required to print or notify the user, use the following method instead of the print function `from sonagent.rpc import IOMsg` IOMsg.send_msg(text) with text is str type message you want to send, or print 
+- For Input operations when required to get input from the user, use the following method instead of the input function `from sonagent.rpc import IOMsg` IOMsg.get_input() and store the result in a variable, dont use input function
     """
