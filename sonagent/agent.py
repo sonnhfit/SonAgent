@@ -43,7 +43,6 @@ class Agent:
         self.skills_dict = {}
         logger.info("--------- Start Done.---------")
 
-
         openai = self.config.get('openai')
         if openai.get('api_type', None) == 'openai':
             self.chat_service = OpenAIChatCompletion(
