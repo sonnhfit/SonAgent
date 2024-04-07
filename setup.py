@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 
-# import os
-from setuptools import setup, find_packages
-from sonagent.version import __version__
 from pathlib import Path
+
+from setuptools import find_packages, setup
+
+from sonagent.version import __version__
 
 this_directory = Path(__file__).parent
 long_description = """

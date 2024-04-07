@@ -1,4 +1,4 @@
-name: Freqtrade CI
+name: SonAgent CI
 
 on:
   push:
@@ -47,37 +47,16 @@ jobs:
         path: ~/.cache/pip
         key: test-${{ matrix.os }}-${{ matrix.python-version }}-pip
 
-    - name: TA binary *nix
-      if: steps.cache.outputs.cache-hit != 'true'
-      run: |
-        cd build_helpers && ./install_ta-lib.sh ${HOME}/dependencies/; cd ..
 
     - name: Installation - *nix
       run: |
         python -m pip install --upgrade pip wheel
-        export LD_LIBRARY_PATH=${HOME}/dependencies/lib:$LD_LIBRARY_PATH
-        export TA_LIBRARY_PATH=${HOME}/dependencies/lib
-        export TA_INCLUDE_PATH=${HOME}/dependencies/include
         pip install -r requirements-dev.txt
-        pip install -e ft_client/
         pip install -e .
-
-    - name: Check for version alignment
-      run: |
-        python build_helpers/freqtrade_client_version_align.py
 
     - name: Tests
       run: |
-        pytest --random-order --cov=freqtrade --cov=freqtrade_client --cov-config=.coveragerc
-
-    - name: Coveralls
-      if: (runner.os == 'Linux' && matrix.python-version == '3.10' && matrix.os == 'ubuntu-22.04')
-      env:
-        # Coveralls token. Not used as secret due to github not providing secrets to forked repositories
-        COVERALLS_REPO_TOKEN: 6D1m0xupS3FgutfuGao8keFf9Hc0FpIXu
-      run: |
-        # Allow failure for coveralls
-        coveralls || true
+        pytest --random-order --cov=sonagent --cov-config=.coveragerc
 
     - name: Check for repository changes
       run: |
@@ -90,20 +69,6 @@ jobs:
           echo "Repository is clean, no changes detected."
         fi
 
-    - name: Backtesting (multi)
-      run: |
-        cp tests/testdata/config.tests.json config.json
-        freqtrade create-userdir --userdir user_data
-        freqtrade new-strategy -s AwesomeStrategy
-        freqtrade new-strategy -s AwesomeStrategyMin --template minimal
-        freqtrade backtesting --datadir tests/testdata --strategy-list AwesomeStrategy AwesomeStrategyMin -i 5m
-
-    - name: Hyperopt
-      run: |
-        cp tests/testdata/config.tests.json config.json
-        freqtrade create-userdir --userdir user_data
-        freqtrade hyperopt --datadir tests/testdata -e 6 --strategy SampleStrategy --hyperopt-loss SharpeHyperOptLossDaily --print-all
-
     - name: Sort imports (isort)
       run: |
         isort --check .
@@ -112,16 +77,12 @@ jobs:
       run: |
         ruff check --output-format=github .
 
-    - name: Mypy
-      run: |
-        mypy freqtrade scripts tests
-
     - name: Discord notification
       uses: rjstone/discord-webhook-notify@v1
       if: failure() && ( github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork == false)
       with:
           severity: error
-          details: Freqtrade CI failed on ${{ matrix.os }}
+          details: SonAgent CI failed on ${{ matrix.os }}
           webhookUrl: ${{ secrets.DISCORD_WEBHOOK }}
   # Notify only once - when CI completes (and after deploy) in case it's successfull
   notify-complete:
@@ -130,7 +91,7 @@ jobs:
     ]
     runs-on: ubuntu-22.04
     # Discord notification can't handle schedule events
-    if: github.event_name != 'schedule' && github.repository == 'freqtrade/freqtrade'
+    if: github.event_name != 'schedule' && github.repository == 'sonnhfit/SonAgent'
     permissions:
       repository-projects: read
     steps:

@@ -4,16 +4,14 @@ import traceback
 from os import getpid
 from typing import Any, Callable, Dict, Optional
 
-
 import sdnotify
 
 from sonagent import __version__
-from sonagent.sonbot import SonBot
+from sonagent.constants import PROCESS_THROTTLE_SECS, RETRY_TIMEOUT
 from sonagent.enums.enums import State
 from sonagent.enums.rpcmessagetype import RPCMessageType
-from sonagent.constants import PROCESS_THROTTLE_SECS, RETRY_TIMEOUT
 from sonagent.exceptions import OperationalException, TemporaryError
-
+from sonagent.sonbot import SonBot
 
 logger = logging.getLogger(__name__)
 
