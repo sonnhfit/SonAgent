@@ -1,17 +1,9 @@
-import autogen
 from typing import Callable, Dict, List, Literal, Optional, Union
-from autogen import ConversableAgent
 
-from autogen.runtime_logging import logging_enabled, log_new_agent
-from autogen.code_utils import (
-    UNKNOWN,
-    content_str,
-    check_can_use_docker_or_throw,
-    decide_use_docker,
-    execute_code,
-    extract_code,
-    infer_lang,
-)
+import autogen
+from autogen.code_utils import execute_code
+from autogen.runtime_logging import log_new_agent, logging_enabled
+
 
 class SonAutoGenAgent(autogen.ConversableAgent):
     DEFAULT_USER_PROXY_AGENT_DESCRIPTIONS = {

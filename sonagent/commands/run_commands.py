@@ -1,7 +1,8 @@
-import os
 import logging
+import os
 import signal
 from typing import Any, Dict
+
 from sonagent.configuration import load_config_file
 from sonagent.exceptions import OperationalException
 
@@ -73,7 +74,7 @@ def create_user_data_dir(args: Dict[str, Any]) -> None:
     # print("user_data_dir: ", args)
     current_path = str(os.getcwd())
     user_data_dir = args["user_data_dir"]
-    if user_data_dir == None:
+    if user_data_dir is None:
         print(current_path)
         user_data_dir = "user_data"
         if not os.path.exists(current_path + "/" + user_data_dir):

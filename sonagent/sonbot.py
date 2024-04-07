@@ -1,25 +1,20 @@
-import os
 import ast
 import logging
-import traceback
-from copy import deepcopy
-from datetime import datetime, time, timedelta, timezone
-from math import isclose
-from threading import Lock
-from time import sleep
-from typing import Any, Dict, List, Optional, Tuple
+import os
+from datetime import datetime
+from typing import Any
 
-from sonagent.mixins import LoggingMixin
+from croniter import croniter
+from schedule import Scheduler
+
+from sonagent.agent import Agent
 from sonagent.enums.enums import State
 from sonagent.enums.rpcmessagetype import RPCMessageType
-from sonagent.rpc import RPCManager, IOMsg
-from sonagent.skills.skills_manager import SkillsManager
+from sonagent.mixins import LoggingMixin
 from sonagent.persistence.belief_models import Belief
-from sonagent.persistence.models import ScheduleJob
-from sonagent.agent import Agent
-from sonagent.persistence.models import init_db
-from schedule import Scheduler
-from croniter import croniter
+from sonagent.persistence.models import ScheduleJob, init_db
+from sonagent.rpc import IOMsg, RPCManager
+from sonagent.skills.skills_manager import SkillsManager
 from sonagent.utils.datetime_helpers import dt_now
 
 # import threading
@@ -95,7 +90,7 @@ class SonBot(LoggingMixin):
             for job in job_list:
                 # job.run()
                 job_dict = ast.literal_eval(job.plan)
-                result = self.agent.execute_plan(job_dict)
+                self.agent.execute_plan(job_dict)
                 if job.is_recurring:
                     cron_expression = job.schedule_interval
 

@@ -1,10 +1,11 @@
 # planning module 
 from semantic_kernel.kernel import Kernel
-from semantic_kernel.planning.basic_planner import Plan, BasicPlanner
+from semantic_kernel.planning.basic_planner import BasicPlanner, Plan
 from semantic_kernel.planning.sequential_planner import SequentialPlanner
-from semantic_kernel.planning.sequential_planner.sequential_planner_config import SequentialPlannerConfig
-from sonagent.planning.prompt import SEQUENCE_PLAN
+from semantic_kernel.planning.sequential_planner.sequential_planner_config import \
+    SequentialPlannerConfig
 
+from sonagent.planning.prompt import SEQUENCE_PLAN
 
 PROMPT = """
 You are a planner for the Semantic Kernel.

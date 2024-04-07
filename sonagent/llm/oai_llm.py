@@ -1,19 +1,14 @@
-import os
-from openai import OpenAI
-from langchain.prompts import PromptTemplate
-import re
 import logging
-from sonagent.llm.prompt import (
-    summary_doc, create_git_pull_request_param, 
-    GITHUB_PULL_REQUEST_PROMPT, rewrite_code_with_docstring
-)
-from sonagent.llm.prompt_auto_docs import (
-    auto_skill_docs
-)
-from sonagent.llm.prompt_create_schedule import (
-    create_schedule_llm
-)
+import os
+import re
 
+from langchain.prompts import PromptTemplate
+from openai import OpenAI
+
+from sonagent.llm.prompt import (GITHUB_PULL_REQUEST_PROMPT,
+                                 rewrite_code_with_docstring, summary_doc)
+from sonagent.llm.prompt_auto_docs import auto_skill_docs
+from sonagent.llm.prompt_create_schedule import create_schedule_llm
 
 logger = logging.getLogger(__name__)
 
@@ -120,9 +115,9 @@ def rewrite_python_code_docs_string(code: str):
         presence_penalty=0,
     )
     code = str(response.choices[0].message.content)
-    logger.info(f"---------------")
+    logger.info("---------------")
     logging.info(f"Rewrite Python Code: {code}")
-    logger.info(f"---------------")
+    logger.info("---------------")
 
     # get ```python ``` block
     try:

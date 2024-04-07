@@ -7,7 +7,6 @@ from sonagent.loggers.buffering_handler import FTBufferingHandler
 from sonagent.loggers.set_log_levels import set_loggers
 from sonagent.loggers.std_err_stream_handler import FTStdErrStreamHandler
 
-
 logger = logging.getLogger(__name__)
 LOGFORMAT = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 

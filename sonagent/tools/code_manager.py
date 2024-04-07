@@ -1,9 +1,4 @@
 import logging
-import requests
-import git
-import shutil
-import os
-from pathlib import Path
 from abc import ABC, abstractmethod
 
 logger = logging.getLogger(__name__)

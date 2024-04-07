@@ -8,6 +8,5 @@ To launch sonagent as a module
 
 from sonagent import main
 
-
 if __name__ == '__main__':
     main.main()

@@ -50,9 +50,8 @@ class ConversationSummarySkill:
         :return: SKContext with the summarized conversation result.
         """
         from semantic_kernel.text import text_chunker
-        from semantic_kernel.text.function_extension import (
-            aggregate_chunked_results_async,
-        )
+        from semantic_kernel.text.function_extension import \
+            aggregate_chunked_results_async
 
         lines = text_chunker._split_text_lines(input, ConversationSummarySkill._max_tokens, True)
         paragraphs = text_chunker._split_text_paragraph(lines, ConversationSummarySkill._max_tokens)

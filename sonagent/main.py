@@ -2,18 +2,15 @@ import logging
 import sys
 from typing import Any, List, Optional
 
-
 # check min. python version
 if sys.version_info < (3, 9):  # pragma: no cover
     sys.exit("SonAgent requires Python version >= 3.9")
 
 from sonagent import __version__
-
-from sonagent.exceptions import SonAgentException, OperationalException
-from sonagent.utils.gc_setup import gc_set_threshold
 from sonagent.commands import Arguments
+from sonagent.exceptions import OperationalException, SonAgentException
 from sonagent.loggers import setup_logging_pre
-
+from sonagent.utils.gc_setup import gc_set_threshold
 
 logger = logging.getLogger('sonagent')
 
