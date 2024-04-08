@@ -242,10 +242,17 @@ class Telegram(RPCHandler):
         message = self.compose_message(deepcopy(msg))
         logger.info(f"Sending message: {message}")
         if message:
-            asyncio.run_coroutine_threadsafe(
-                self._send_msg(message, parse_mode=ParseMode.MARKDOWN),
-                self._loop)
-        # self._send_msg(message, disable_notification=(noti == 'silent')),
+            if len(message) > MAX_MESSAGE_LENGTH:
+                msg_parts = self.split_message_parts(message)
+                for msg_part in msg_parts:
+                    asyncio.run_coroutine_threadsafe(
+                        self._send_msg(msg_part, parse_mode=ParseMode.MARKDOWN),
+                        self._loop
+                    )
+            else:
+                asyncio.run_coroutine_threadsafe(
+                    self._send_msg(message, parse_mode=ParseMode.MARKDOWN),
+                    self._loop)
 
     async def _update_msg(self, query: CallbackQuery, msg: str, callback_path: str = "",
                           reload_able: bool = False, parse_mode: str = ParseMode.MARKDOWN) -> None:
