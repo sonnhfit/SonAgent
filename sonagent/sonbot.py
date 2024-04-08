@@ -115,7 +115,12 @@ class SonBot(LoggingMixin):
                 logger.error(f"Error notifying chat event: {e}")
             return chat
         else:
-            return await self.agent.chat_code(input)
+            code_chat = await self.agent.chat_code(input)
+            try:
+                self.notify_chat_event(code_chat)
+            except Exception as e:
+                logger.error(f"Error notifying code chat event: {e}")
+            return code_chat
     
     async def get_mode(self) -> str:
         return self.agent_mode
