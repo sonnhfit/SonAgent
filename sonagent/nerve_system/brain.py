@@ -1,5 +1,4 @@
 import logging
-from multiprocessing import shared_memory
 
 
 logger = logging.getLogger(__name__)
