@@ -1,1 +1,1 @@
-from sonagent.cell.cell import BaseCell # noqa
+from sonagent.cell.cell import BaseCell  # noqa

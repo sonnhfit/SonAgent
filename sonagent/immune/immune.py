@@ -2,10 +2,10 @@ import logging
 from datetime import datetime
 from typing import Any, Dict, Optional
 
-from sonagent.loggers import bufferHandler
-from sonagent.utils.datetime_helpers import format_date
 from sonagent.cell import BaseCell
+from sonagent.loggers import bufferHandler
 from sonagent.nerve_system.nerve import Nerve
+from sonagent.utils.datetime_helpers import format_date
 
 logger = logging.getLogger(__name__)
 
