@@ -1,4 +1,4 @@
-from sonagent.nervous_system.brain import Brain
+from sonagent.nerve_system.brain import Brain
 
 
 class Nerve:
