@@ -4,6 +4,8 @@ from typing import Any, Dict, Optional
 
 from sonagent.loggers import bufferHandler
 from sonagent.utils.datetime_helpers import format_date
+from sonagent.cell import BaseCell
+from sonagent.nerve_system.nerve import Nerve
 
 logger = logging.getLogger(__name__)
 
@@ -13,6 +15,9 @@ class ImmuneSystem:
     Class for Self Immune System that allows self-monitoring and self-recovery of the system.
     """
     error_logs = []
+
+    def __init__(self) -> None:
+        self.nerve = Nerve()
 
     @staticmethod
     def get_logs(limit: Optional[int]) -> Dict[str, Any]:
@@ -44,6 +49,9 @@ class ImmuneSystem:
 
         if len(errors_detected) > 0:
             logger.info(f"Errors detected: {errors_detected}")
+            # send alert to Nerve System
+            self.nerve.stimulation(errors_detected)
+            
         else:
             logger.debug("No errors detected.")
 
@@ -58,3 +66,16 @@ class ImmuneSystem:
         else:
             print("No errors detected.")
             logger.info("No errors detected.")
+
+
+class ImmuneCell(BaseCell):
+    def __init__(self) -> None:
+        super().__init__()
+        self.immune = ImmuneSystem()
+    
+    def scan(self) -> None:
+        self.immune.immune_scan()
+
+    def recover(self) -> None:
+        self.immune.immune_recover()
+

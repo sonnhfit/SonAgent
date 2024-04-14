@@ -64,6 +64,17 @@ class SkillsManager:
 
         self.load_skills()
         self.save_skills_function_to_memory(memory=memory)
+    
+    def remove_skill_by_name(self, skill_name: str, memory: Any) -> None:
+        # clear memory collection 
+        try:
+            memory.delete_memory_collection(self.skills_area)
+        except Exception as e:
+            logger.info(f"Error deleting memory collection: {e}")
+
+        self.load_skills()
+        self.skill_object_list = [skill for skill in self.skill_object_list if skill.__doc__ != skill_name]
+        self.save_skills_function_to_memory(memory=memory)
 
     def save_skills_function_to_memory(self, memory: Any) -> None:
         logger.info("Adding skills to memory.")
