@@ -1,3 +1,9 @@
+import re
+import logging
+
+logger = logging.getLogger(__name__)
+
+
 def rewrite_code_post_process(response_content):
     code = str(response_content)
     logger.info("---------------")
