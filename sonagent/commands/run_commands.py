@@ -116,6 +116,22 @@ def create_user_data_dir(args: Dict[str, Any]) -> None:
         "api_type": "openai",
         "api_key": ""
     },
+    "llm": {
+        "enabled": true,
+        "type": "openai",
+        "api_key": ""
+    },
+    "vector_memory": {
+        "type": "file",
+        "path": "./user_data/memory",
+        "collection": "memory",
+        "host": "localhost",
+        "port": 8000,
+        "embedding":  "openai"
+    },
+    "skills": {
+        "path": "skills/skills.yaml"
+    },
     "skills_file_path": "skills/skills.yaml",
     "github": {
         "enabled": false,

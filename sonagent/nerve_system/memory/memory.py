@@ -1,5 +1,5 @@
 import logging
-from sonagent.tools import VectorDB, Embedding, ChromaDB
+from sonagent.tools import VectorDB, Embedding, ChromaDB, OAIEmbedding
 import chromadb
 from chromadb.config import Settings
 
@@ -38,7 +38,7 @@ class SonMemory:
 
         # setup embedding
         if embedding_type == "openai":
-            self.embed = Embedding()
+            self.embed = OAIEmbedding()
 
     def delete_memory_collection(self, collection_name=None):
         if self.vtdb is not None:

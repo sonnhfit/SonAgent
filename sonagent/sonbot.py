@@ -10,7 +10,7 @@ from schedule import Scheduler
 from sonagent.agent import Agent
 from sonagent.enums.enums import State
 from sonagent.enums.rpcmessagetype import RPCMessageType
-from sonagent.loggers import LoggingMixin
+from sonagent.loggers.logging_mixin import LoggingMixin
 from sonagent.persistence.belief_models import Belief
 from sonagent.persistence.models import ScheduleJob, init_db
 from sonagent.rpc import IOMsg, RPCManager

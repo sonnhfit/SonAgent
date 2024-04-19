@@ -18,7 +18,7 @@ class VectorDB(ABC):
         ids: list,
         collection: str = "",
     ):
-        collection = self.client.get_collection(collection)
+        collection = self.client.get_or_create_collection(name=collection)
         collection.add(
             embeddings=embeddings,
             metadatas=metadatas,
@@ -27,7 +27,7 @@ class VectorDB(ABC):
         )
 
     def query(self, embedding: list, k: int, collection: str = ""):
-        collection = self.client.get_collection(collection)
+        collection = self.client.get_or_create_collection(name=collection)
         result = collection.query(
             query_embeddings=[embedding],
             n_results=k

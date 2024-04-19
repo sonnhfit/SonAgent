@@ -14,7 +14,7 @@ class OAIEmbedding(Embedding):
             input=text,
             model="text-embedding-3-small"
         )
-        return {"text": response.data[0].embedding}
+        return response.data[0].embedding
 
     def embed_batch(self, texts):
         result = {}
