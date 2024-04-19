@@ -44,7 +44,6 @@ required = [
     'psutil==5.9.7',
     'python-rapidjson==1.14',
     'orjson==3.9.10',
-    'semantic-kernel==0.4.5.dev0',
     'sdnotify==0.3.2',
     'GitPython==3.1.42',
     'pyautogen==0.2.15',
