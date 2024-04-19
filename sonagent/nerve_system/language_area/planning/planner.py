@@ -1,8 +1,9 @@
 # planning module 
 from semantic_kernel.kernel import Kernel
 from semantic_kernel.planning.basic_planner import BasicPlanner, Plan
+
 import sonagent.nerve_system.language_area.prompt.planning as planning_prompt
-  
+
 
 class SonAgentPlanner(BasicPlanner):
 

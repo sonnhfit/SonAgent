@@ -6,15 +6,13 @@ from typing import Any, Dict, Union
 import autogen
 import yaml
 
-from sonagent.nerve_system.language_area.coding.sonautogen import (
-    SonAutoGenAgent
-)
 import sonagent.nerve_system.language_area.prompt.coding as coding_prompt
-from sonagent.persistence.models import SkillDocs
-from sonagent.nerve_system.stimulus import Stimulus
-from sonagent.nerve_system.language_area.coding.utils import (
+from sonagent.nerve_system.language_area.coding.sonautogen import \
+    SonAutoGenAgent
+from sonagent.nerve_system.language_area.coding.utils import \
     rewrite_code_post_process
-)
+from sonagent.nerve_system.stimulus import Stimulus
+from sonagent.persistence.models import SkillDocs
 
 
 class SonCodeAgent:

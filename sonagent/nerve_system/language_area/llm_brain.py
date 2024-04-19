@@ -1,11 +1,12 @@
 from abc import abstractmethod
-from sonagent.nerve_system.brain_lobe import BrainLobe
-from sonagent.nerve_system.stimulus import Stimulus
-import sonagent.nerve_system.language_area.prompt.me as me_prompt
-import sonagent.nerve_system.language_area.prompt.schedule as schedule_prompt
-import sonagent.nerve_system.language_area.prompt.planning as planning_prompt
+
 import sonagent.nerve_system.language_area.prompt.coding as coding_prompts
+import sonagent.nerve_system.language_area.prompt.me as me_prompt
+import sonagent.nerve_system.language_area.prompt.planning as planning_prompt
+import sonagent.nerve_system.language_area.prompt.schedule as schedule_prompt
+from sonagent.nerve_system.brain_lobe import BrainLobe
 from sonagent.nerve_system.language_area.coding import SonCodeAgent
+from sonagent.nerve_system.stimulus import Stimulus
 
 
 class LLMBrain(BrainLobe):

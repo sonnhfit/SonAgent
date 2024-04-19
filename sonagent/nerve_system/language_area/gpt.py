@@ -1,7 +1,9 @@
-from sonagent.nerve_system.language_area.llm_brain import LLMBrain
-from openai import OpenAI
-import os
 import logging
+import os
+
+from openai import OpenAI
+
+from sonagent.nerve_system.language_area.llm_brain import LLMBrain
 
 logger = logging.getLogger(__name__)
 
