@@ -49,8 +49,8 @@ class SkillsManager:
         return self.skill_object_list
     
     def search_skill_function_by_semantic_query(self, query: str, memory) -> List[BaseModel]:
-        results = memory.brain_area_search(
-            area_collection_name=self.skills_area,
+        results = memory.search(
+            collection_name=self.skills_area,
             query=query
         )
         return results
@@ -81,12 +81,11 @@ class SkillsManager:
         logger.info(f"Adding skills to memory. {self.skill_object_list}")
         for skill in self.skill_object_list:
             logger.info(f"Adding skill {str(skill.__doc__)} to memory: {hash_md5_str(skill.__doc__)}")
-            # skill_hash_str(skill.name())
             is_added = memory.add(
                 document=skill.__doc__,
                 metadata={'skill_description': skill.__doc__},
                 id=hash_md5_str(skill.__doc__),
-                area_collection_name=self.skills_area
+                collection_name=self.skills_area
             )
             if is_added:
                 logger.info(f"Skill {skill} added to memory.")

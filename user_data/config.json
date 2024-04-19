@@ -25,6 +25,18 @@
         "api_type": "openai",
         "api_key": ""
     },
+
+    "vector_memory": {
+        "type": "file",
+        "path": "memory",
+        "collection": "memory",
+        "host": "localhost",
+        "port": 8000,
+        "embedding":  "openai"
+    },
+    "skills": {
+        "path": "skills/skills.yaml"
+    },
     "skills_file_path": "skills/skills.yaml",
     "github": {
         "enabled": false,

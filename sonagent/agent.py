@@ -13,7 +13,7 @@ from semantic_kernel.connectors.ai.open_ai import (AzureChatCompletion,
 from sonagent.coding.gencode import SonCodeAgent
 from sonagent.core_prompt.me import ASK_ABOUT_ME_PROMP
 from sonagent.llm.oai_llm import auto_create_schedule_json_llm
-from sonagent.memory.memory import SonMemory
+from sonagent.nerve_system.memory import SonMemory
 from sonagent.memory.short_memory import ShortTermMemory
 from sonagent.persistence import Belief, Plan, ScheduleJob
 from sonagent.planning.planner import SonAgentPlanner
@@ -27,10 +27,21 @@ logger = logging.getLogger(__name__)
 class Agent:
     def __init__(self, memory_path, skills, config: dict) -> None:
         # memory
-        logger.debug(f"init memory with path {memory_path}.")
-        self.memory = SonMemory(default_memory_path=memory_path)
 
         self.config = config
+
+        logger.debug(f"Init memory with path {memory_path}.")
+
+        # get memory config
+        memory_config = self.config.get('vector_memory')
+        self.memory = SonMemory(
+            collection_name=memory_config.get('collection', "son_memory"),
+            memory_type=memory_config.get('type', "file"),
+            embedding_type=memory_config.get('embedding_type', "openai"),
+            default_memory_path=memory_path,
+            host=memory_config.get('host', "localhost"),
+            port=memory_config.get('port', 8000)
+        )
 
         # planner
         self.planner = SonAgentPlanner()
@@ -140,8 +151,8 @@ class Agent:
     async def run(self, input) -> None:
         # get belief -> thinking, planning -> acting
 
-        belief = self.memory.brain_area_search(
-            area_collection_name="belief_base", query=input
+        belief = self.memory.search(
+            collection_name="belief_base", query=input
         )
         belief_ids = belief["ids"][0]
         result_list = self.get_beliefs_for_planner(belief_ids)
@@ -191,7 +202,7 @@ class Agent:
                 belief.text,
                 {"description": belief.description},
                 str(belief.id),
-                area_collection_name="belief_base",
+                collection_name="belief_base",
             )
         logger.info("Finish syncing beliefs to memory.")
 
@@ -326,8 +337,8 @@ class Agent:
 
     async def chat(self, input: str) -> str:
 
-        belief = self.memory.brain_area_search(
-            area_collection_name="belief_base", query=input
+        belief = self.memory.search(
+            collection_name="belief_base", query=input
         )
 
         belief_ids = belief["ids"][0]
@@ -494,8 +505,8 @@ class Agent:
         # get belief
         logger.debug(f"Start asking: Q: {question}")
 
-        belief = self.memory.brain_area_search(
-            area_collection_name="belief_base", query=question
+        belief = self.memory.search(
+            collection_name="belief_base", query=question
         )
 
         belief_ids = belief["ids"][0]
@@ -537,8 +548,8 @@ class Agent:
 
     async def planning(self, goal: str) -> str:
 
-        belief = self.memory.brain_area_search(
-            area_collection_name="belief_base", query=goal
+        belief = self.memory.search(
+            collection_name="belief_base", query=goal
         )
         belief_ids = belief["ids"][0]
         result_list = self.get_beliefs_for_planner(belief_ids)

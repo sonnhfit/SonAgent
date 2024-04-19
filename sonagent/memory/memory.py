@@ -4,6 +4,8 @@ import chromadb
 from chromadb.config import Settings
 
 logger = logging.getLogger(__name__)
+
+
 class SonMemory:
 
     def __init__(self, collection_name="son_memory", memory_init_mode="file", default_memory_path=None):
@@ -88,19 +90,9 @@ class SonMemory:
         except Exception as e:
             print(e)
             return False
-
-        
-    def search_with_embedding(self, embedding):
-        pass
-
-    def save(self):
-        pass
     
     def clear_all(self):
         self.chroma_client.reset()
-
-    def load(self):
-        pass
 
     def reset_memory(self):
         self.chroma_client.reset()

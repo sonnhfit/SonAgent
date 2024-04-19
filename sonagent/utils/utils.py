@@ -16,5 +16,3 @@ def hash_str(string: str) -> str:
 def hash_md5_str(string: str) -> str:
     m = hashlib.md5(string.encode('UTF-8'))
     return m.hexdigest()
-
-
