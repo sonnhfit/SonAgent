@@ -2,23 +2,13 @@ import json
 import logging
 import os
 from datetime import datetime
-
-import semantic_kernel as sk
 import yaml
 from croniter import croniter
 from openai import OpenAI
-from semantic_kernel.connectors.ai.open_ai import (
-    AzureChatCompletion,
-    OpenAIChatCompletion,
-)
 
-from sonagent.coding.gencode import SonCodeAgent
 from sonagent.nerve_system import Brain
-from sonagent.llm.oai_llm import auto_create_schedule_json_llm
 from sonagent.nerve_system.memory_area import ShortTermMemory, SonMemory
 from sonagent.persistence import Belief, Plan, ScheduleJob
-from sonagent.planning.planner import SonAgentPlanner
-from sonagent.planning.prompt import CLEAN_BELIEF_PROMPT, PROMPT_PLAN
 from sonagent.tools import GitManager, LocalCodeManager
 from sonagent.utils.datetime_helpers import dt_now
 from sonagent.nerve_system.stimulus import Stimulus
@@ -44,11 +34,10 @@ class Agent:
             host=memory_config.get("host", "localhost"),
             port=memory_config.get("port", 8000),
         )
+        
+        llm_config = self.config.get('llm')
+        self.brain = Brain(llm_config=llm_config)
 
-        self.brain = Brain()
-
-        # planner
-        self.planner = SonAgentPlanner()
         # self.sync_beliefs()
 
         self.skills = skills
@@ -58,25 +47,9 @@ class Agent:
         self.skills_dict = {}
         logger.info("--------- Start Done.---------")
 
-        openai = self.config.get("openai")
-        if openai.get("api_type", None) == "openai":
-            self.chat_service = OpenAIChatCompletion(
-                ai_model_id="gpt-4-0125-preview", api_key=os.environ["OPENAI_API_KEY"]
-            )
-        elif openai.get("api_type", None) == "azure":
-            deployment, api_key, endpoint = sk.azure_openai_settings_from_dot_env()
-            self.chat_service = AzureChatCompletion(
-                deployment_name=deployment, endpoint=endpoint, api_key=api_key
-            )
-
         self.short_term_memory = ShortTermMemory(
             collection_name="short_term_memory", default_memory_path=memory_path
         )
-
-        # print(deployment, api_key, endpoint)
-        self.kernel = sk.Kernel()
-
-        self.kernel.add_chat_service("chat_completion", self.chat_service)
 
         # git manager
         github = self.config.get("github")
@@ -91,14 +64,6 @@ class Agent:
             self.git_manager = LocalCodeManager(
                 local_repo_path=self.config.get("user_data_dir")
             )
-
-        if self.git_manager is not None:
-            user_data_dir = self.config.get("user_data_dir")
-            self.codeagent = SonCodeAgent(
-                git_manager=self.git_manager, user_data_dir=user_data_dir
-            )
-        else:
-            self.codeagent = SonCodeAgent()
 
         # load skill dict
         self.init_skills_dict()
@@ -146,49 +111,6 @@ class Agent:
     def reload_skills(self) -> str:
         self._reload_skills()
         return self.show_skills()
-
-    async def run(self, input) -> None:
-        # get belief -> thinking, planning -> acting
-
-        belief = self.memory.search(collection_name="belief_base", query=input)
-        belief_ids = belief["ids"][0]
-        result_list = self.get_beliefs_for_planner(belief_ids)
-        belief_text = ""
-        for item in result_list:
-            belief_text += item.text
-
-        deployment, api_key, endpoint = sk.azure_openai_settings_from_dot_env()
-        # print(deployment, api_key, endpoint)
-        kernel = sk.Kernel()
-        kernel.add_chat_service(
-            "chat_completion",
-            AzureChatCompletion(
-                deployment_name=deployment, endpoint=endpoint, api_key=api_key
-            ),
-        )
-
-        # planner = SonAgentPlanner()
-        ask = "train a neural network for classify 0 -> 9?"
-        # plan = await planner.create_plan_async(ask, kernel)
-        # print(plan.generated_plan)
-
-        variables = sk.ContextVariables()
-
-        variables["believe"] = belief_text
-        variables["goal"] = ask
-
-        semantic_function = kernel.create_semantic_function(PROMPT_PLAN)
-        result = await kernel.run_async(
-            semantic_function,
-            input_vars=variables,
-        )
-        print(result)
-        print(type(result))
-        print("plan: ", result.json())
-
-        print("skill: ", result.skills)
-
-        # self._create_belief("my name is Son", "this is my name")
 
     def sync_beliefs(self) -> None:
         logger.debug("Start syncing beliefs to memory.")
@@ -293,8 +215,11 @@ class Agent:
         plan_json = plan_json.replace("```json", "").replace("```", "")
         plan_json = json.loads(plan_json)
         logger.info(f"sk planner schedule json: {plan_json}")
+        json_data_schedule = self.brain.language_brain.process(
+            stimulus=Stimulus.SCHEDULING,
+            goal=goal_plan
+        )
 
-        json_data_schedule = auto_create_schedule_json_llm(goal=goal_plan)
         json_data_schedule = json_data_schedule.replace("```json", "").replace(
             "```", ""
         )
@@ -473,20 +398,13 @@ class Agent:
             }
         ]
 
-        client = OpenAI(api_key=os.environ["OPENAI_API_KEY"])
-        response = client.chat.completions.create(
-            model="gpt-4-0125-preview",
+        r_str, response = self.brain.language_brain.process(
+            stimulus=Stimulus.CHAT_CODE,
             messages=message_text,
-            functions=custom_functions,
-            function_call="auto",
-            temperature=1,
-            max_tokens=4096,
-            top_p=1,
-            frequency_penalty=0,
-            presence_penalty=0,
+            custom_functions=custom_functions,
         )
-        r_str = str(response.choices[0].message.content)
-        if r_str == "None":
+
+        if str(r_str) == "None":
 
             r_str = "I send requirment to compile code agent. Please wait for a moment."
             function_call_chat = response.choices[0].message.function_call
@@ -501,14 +419,16 @@ class Agent:
                 summary_plan_or_requirement = json_response.get(
                     "summary_plan_or_requirement"
                 )
-                self.codeagent.gen_code(
-                    message=summary_plan_or_requirement, is_create_pull_request=True
+
+                self.brain.language_brain.process(
+                    stimulus=Stimulus.CODING,
+                    git_manager=self.git_manager,
+                    user_data_dir=self.config.get("user_data_dir", None),
+                    summary_plan_or_requirement=summary_plan_or_requirement
                 )
 
-        print(response.choices[0].message.function_call)
         self.short_term_memory.add_chat_item({"role": "assistant", "content": r_str})
-        logger.info(f"Finish chat: {str(response)}")
-        logger.info(f"Chat return: {r_str}")
+        logger.info(f"Finish with chat return: {r_str}")
         return r_str
 
     async def clear_short_term_memory(self) -> str:

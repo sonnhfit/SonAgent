@@ -6,17 +6,24 @@ from typing import Any, Dict, Union
 import autogen
 import yaml
 
-from sonagent.coding.sonautogen import SonAutoGenAgent
-from sonagent.llm.oai_llm import (auto_create_skill_docs,
-                                  create_pull_request_info,
-                                  rewrite_python_code_docs_string)
-
+from sonagent.nerve_system.language_area.coding.sonautogen import (
+    SonAutoGenAgent
+)
 import sonagent.nerve_system.language_area.prompt.coding as coding_prompt
 from sonagent.persistence.models import SkillDocs
+from sonagent.nerve_system.stimulus import Stimulus
+from sonagent.nerve_system.language_area.coding.utils import (
+    rewrite_code_post_process
+)
 
 
 class SonCodeAgent:
-    def __init__(self, git_manager: Any = None, user_data_dir: str = '/user_data') -> None:
+    def __init__(
+            self, git_manager: Any = None, 
+            user_data_dir: str = '/user_data', 
+            llmbrain: Any = None
+    ) -> None:
+        self.llmbrain = llmbrain
         self.user_data_dir = user_data_dir
         self.config_item = {"model": "gpt-4-0125-preview", "api_key": os.environ["OPENAI_API_KEY"]}
         self.llm_config = {
@@ -79,13 +86,15 @@ class SonCodeAgent:
         if self.latest_code is None:
             logging.error("No code generated")
         else:
-            self.latest_code = rewrite_python_code_docs_string(
-                self.latest_code
-            )
-        
+            output_code = self.llmbrain.process(
+                Stimulus.REWRITE_CODE, code=self.latest_code)
+            self.latest_code = rewrite_code_post_process(output_code)
+
         metadata = {}
         pull_str = str(chat_res.summary) + "-- final code --" + str(self.latest_code)
-        metadata_str = create_pull_request_info(pull_str)
+        metadata_str = self.llmbrain.process(
+                Stimulus.WRITE_GITHUB_METADATA, summary_text=pull_str)
+        
         logging.info(f"metadata_str: {metadata_str}")
         
         # Removing the triple backticks and 'json' label
@@ -170,7 +179,9 @@ class SonCodeAgent:
     
     def create_and_save_code_docs(self, skill_name: str, code: str) -> None:
         try:
-            docs = auto_create_skill_docs(code)
+            docs = self.llmbrain.process(
+                Stimulus.CREATE_SKILL_DOCS, code=code
+            )
             logging.info(f"Docs: {docs}")
             # save docs to models
             plan = SkillDocs(skill_name=skill_name, docs=docs)

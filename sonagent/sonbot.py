@@ -37,11 +37,10 @@ class SonBot(LoggingMixin):
         memory_url = self.args.get('memory-url', "user_data/memory")
         agentdb = self.args.get('agentdb', "sqlite:///user_data/agentdb.sqlite")
 
-        # get openai key 
-        openai = self.config.get('openai')
-        if openai.get('api_type', None) == 'openai':
-            os.environ["OPENAI_API_KEY"] = openai.get('api_key')
-            print("----------------")
+        llm = self.config.get('llm')
+        if llm.get('api_type', None) == 'openai':
+            os.environ["OPENAI_API_KEY"] = llm.get('api_key')
+            logger.info("Run with openai LLM")
 
         if agentdb is None:
             agentdb = "sqlite:///user_data/agentdb.sqlite"

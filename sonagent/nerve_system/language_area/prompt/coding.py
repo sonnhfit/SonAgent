@@ -21,7 +21,9 @@ follow coding conventions and best practices bellow:
 - For Input operations when required to get input from the user, use the following method instead of the input function `from sonagent.rpc import IOMsg` IOMsg.get_input() and store the result in a variable, dont use input function
 """
 
-ADD_DOCSTRING_TO_CLASS = '''
+REWIRTE_CODE_ADD_DOCS_SYSTEM_PROMPT = "You are a python expert capable of adding doc strings and comments to user code. Please describe carefully without forgetting the keywords and try to make the description friendly to search engines"
+
+REWRITE_CODE_ADD_DOCSTRING_TO_CLASS = '''
 You are a software engineer working on a Python project. You need to add  or rewrite docs string to Python classes following the following rules:
 - Classes must have docstrings listing all the parameters of a function, as shown in the example
 - If the function call to execute the code is not placed within the if name == "main": block, please move the code execution into the if name == "main": block. This is because this code block is intended for use when importing into other modules
@@ -147,71 +149,152 @@ class GetAppleStockPlotter(BaseModel):
 ```
 [INPUT]
 ```python
-{input_code}
+{code}
 ```
 [OUTPUT]
 
 '''
 
-GITHUB_PULL_REQUEST = """
-    You are a software engineer working on a python project.
-    You have been asked to create a pull request for the following changes.
-    The changes are to the codebase of a project. 
-    Based on the content provided below. Let's create a json file, ouput is json.
+GITHUB_PULL_REQUEST_SYSTEM_PROMPT = "you are a sennior software engineer and you are creating a pull request for the following changes. Your results will be used in another software."
+GITHUB_PULL_REQUEST_PROMPT = """
+You are a software engineer working on a python project.
+You have been asked to create a pull request for the following changes.
+The changes are to the codebase of a project. 
+Based on the content provided below. Let's create a json file, ouput is json that format can load by json.loads.
 
-    For example:
+For example:
 
-    Example 1:
-    ### SUMMARY
-    SonAgent (to assistant):
-    create a python class that have function to plot apple stock price in from 1 year ago to now user yahoo finance data 
-    that class need extend from 
-    ```python
-    from pydantic import BaseModel
-    ```
-    --------------------------------------------------------------------------------
-    assistant (to SonAgent):
+Example 1:
+[SUMMARY]
+SonAgent (to assistant):
+create a python class that have function to plot apple stock price in from 1 year ago to now user yahoo finance data 
+that class need extend from 
+```python
+from pydantic import BaseModel
+```
+--------------------------------------------------------------------------------
+assistant (to SonAgent):
 
-    To accomplish this task, we will create a Python class that extends from `BaseModel` provided by `pydantic`. This class will have a function to plot the Apple stock price from 1 year ago to the current date using Yahoo Finance data. We will use the `yfinance` library to fetch the stock data and `matplotlib` for plotting. If you don't have `yfinance` and `matplotlib` installed, you will need to install them using pip.
+To accomplish this task, we will create a Python class `PlotAppleStock` that extends from `BaseModel` provided by `pydantic`. 
+This class will have a function to plot the Apple stock price from 1 year ago to the current date using Yahoo Finance data. 
+We will use the `yfinance` library to fetch the stock data and `matplotlib` for plotting. 
+If you don't have `yfinance` and `matplotlib` installed, you will need to install them using pip.
 
-    Here's the plan:
-    1. Import necessary libraries.
-    2. Extend the class from `BaseModel`.
-    3. Implement a function within the class to fetch and plot the Apple stock price data.
+Here's the plan:
+1. Import necessary libraries.
+2. Extend the class from `BaseModel`.
+3. Implement a function within the class to fetch and plot the Apple stock price data.
 
-    First, ensure you have `pydantic`, `yfinance`, and `matplotlib` installed. You can install them using pip. Execute the following command in your shell:
+First, ensure you have `pydantic`, `yfinance`, and `matplotlib` installed. You can install them using pip. Execute the following command in your shell:
 
-    ### OUTPUT
-    {
-        "branch_name": "feature/sonagent-plot-apple-stock",
-        "commit_message": "add new feature to plot apple stock price",
-        "pull_request_title": "Add new skill to agent to plot Apple stock price",
-        "pull_request_body": "This pull request adds a new skill to the agent to plot the Apple stock price using Yahoo Finance data.",
-        "source_code_file_name": "skill_plot_apple_stock.py",
-    }
+[OUTPUT]
+```json
+{{
+    "branch_name": "feature/sonagent-plot-apple-stock",
+    "commit_message": "add new feature to plot apple stock price",
+    "pull_request_title": "Add new skill to agent to plot Apple stock price",
+    "pull_request_body": "This pull request adds a new skill to the agent to plot the Apple stock price using Yahoo Finance data.",
+    "source_code_file_name": "skill_plot_apple_stock.py",
+    "class_name": "PlotAppleStock"
+}}
+```
 
-    Example 2:
-    ### SUMMARY
-    Certainly! The following is a summary of the Python function for performing a Google search using the googlesearch-python library:
-    Install the googlesearch-python library using pip install googlesearch-python.
-    Create a function called google_search that takes a search query and an optional parameter for the number of results to fetch.
-    Inside the function, use the search function from the library to perform the Google search with the given query and retrieve the specified number of results.
-    Iterate through the search results and print the title and URL of each result.
-    Handle exceptions gracefully in case of errors during the search process.
-    Remember to use this functionality responsibly and be aware of potential legal and ethical considerations when interacting with external APIs or web services.
+Example 2:
+[SUMMARY]
+Certainly! The following is a summary of the Python function for performing a Google search using the googlesearch-python library:
+Install the googlesearch-python library using pip install googlesearch-python.
+Create a class called `GooleSearch` have a function called google_search that takes a search query and an optional parameter for the number of results to fetch.
+Inside the function, use the search function from the library to perform the Google search with the given query and retrieve the specified number of results.
+Iterate through the search results and print the title and URL of each result.
+Handle exceptions gracefully in case of errors during the search process.
+Remember to use this functionality responsibly and be aware of potential legal and ethical considerations when interacting with external APIs or web services.
 
-    ### OUTPUT
-    {
-        "branch_name": "feature/sonagent-google-search",
-        "commit_message": "add new feature to perform Google search",
-        "pull_request_title": "Add new skill to agent to perform Google search",
-        "pull_request_body": "This pull request adds a new skill to the agent to perform a Google search using the googlesearch-python library.",
-        "source_code_file_name": "skill_google_search.py",
-    }
+[OUTPUT]
+```json
+{{
+    "branch_name": "feature/sonagent-google-search",
+    "commit_message": "add new feature to perform Google search",
+    "pull_request_title": "Add new skill to agent to perform Google search",
+    "pull_request_body": "This pull request adds a new skill to the agent to perform a Google search using the googlesearch-python library.",
+    "source_code_file_name": "skill_google_search.py",
+    "class_name": "GooleSearch"
+}}
+```
+
+[SUMMARY]
+{summary_text}
+
+[OUTPUT]
+
+"""
 
 
-    ### SUMMARY
-    {sumary_text}
+AUTO_SKILL_DOCS_SYSTEM_PROMPT = (
+    "You are a software engineer with the ability to write " +
+    "Python software documentation. "
+    "You receive an INPUT and document that code in OUTPUT."
+)
 
-    ### OUTPUT
+AUTO_SKILL_DOCS_PROMPT = """
+
+document  INPUT code with document template like example
+Example 1:
+        
+[INPUT]
+```python
+import sys
+from typing import TYPE_CHECKING, List, Optional
+
+if sys.version_info >= (3, 9):
+    from typing import Annotated
+else:
+    from typing_extensions import Annotated
+
+from semantic_kernel.functions.kernel_function_decorator import kernel_function
+
+if TYPE_CHECKING:
+    from semantic_kernel.connectors.search_engine.connector import ConnectorBase
+
+
+class WebSearchEnginePlugin:
+
+    _connector: "ConnectorBase"
+
+    def __init__(self, connector: "ConnectorBase") -> None:
+        self._connector = connector
+
+    @kernel_function(description="Performs a web search for a given query")
+    async def search(
+        self,
+        query: Annotated[str, "The search query"],
+        num_results: Annotated[Optional[int], "The number of search results to return"] = 1,
+        offset: Annotated[Optional[int], "The number of search results to skip"] = 0,
+    ) -> List[str]:
+        return await self._connector.search(query, num_results, offset)
+```
+[OUTPUT]
+Description: A plugin that provides web search engine functionality
+
+Usage:
+    connector = BingConnector(bing_search_api_key)
+    kernel.import_plugin_from_object(WebSearchEnginePlugin(connector), plugin_name="WebSearch")
+
+Examples:
+    {{WebSearch.search "What is semantic kernel?"}}
+    =>  Returns the first `num_results` number of results for the given search query
+        and ignores the first `offset` number of results.
+
+Method:
+    - `search(query: str, num_results: Optional[int] = 1, offset: Optional[int] = 0) -> List[str]`:
+        Performs a web search for a given query and returns a list of search results.
+
+    - `__init__(connector: ConnectorBase)`:
+        Initializes the plugin with the specified connector.
+
+
+[INTPUT]
+```python
+{code}
+```
+[OUTPUT]
 """

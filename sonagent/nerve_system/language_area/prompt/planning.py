@@ -224,7 +224,7 @@ List the beliefs related to achieving your goals and eliminate the remaining bel
 
 
 [BELIEVE]
-{belief}
+{believe}
 [GOAL]
 {goal}
 

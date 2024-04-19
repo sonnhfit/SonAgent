@@ -1,5 +1,4 @@
 
-from sonagent.llm.oai_llm import text_summary
 from sonagent.nerve_system.memory_area import SonMemory
 
 
@@ -10,7 +9,8 @@ class ShortTermMemory(SonMemory):
         self.summerize_dialog_str = None
 
     def summerize_dialog(self):
-        sum_text = text_summary(self.get_chat_dialog_as_string())
+        sum_text = ""
+        # sum_text = text_summary(self.get_chat_dialog_as_string())
         return sum_text
     
     def add_chat_item(self, item: dict={}):
