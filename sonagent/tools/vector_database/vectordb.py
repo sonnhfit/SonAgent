@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+
 import chromadb
 from chromadb.config import Settings
 

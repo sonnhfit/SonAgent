@@ -1,6 +1,8 @@
-from sonagent.tools.embedding.embedding import Embedding
-from openai import OpenAI
 import os
+
+from openai import OpenAI
+
+from sonagent.tools.embedding.embedding import Embedding
 
 
 class OAIEmbedding(Embedding):

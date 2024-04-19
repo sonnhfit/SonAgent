@@ -1,7 +1,9 @@
 import logging
-from sonagent.tools import VectorDB, Embedding, ChromaDB, OAIEmbedding
+
 import chromadb
 from chromadb.config import Settings
+
+from sonagent.tools import ChromaDB, Embedding, OAIEmbedding, VectorDB
 
 logger = logging.getLogger(__name__)
 
