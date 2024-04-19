@@ -1,7 +1,5 @@
 import logging
 
-import chromadb
-from chromadb.config import Settings
 
 from sonagent.tools import ChromaDB, Embedding, OAIEmbedding, VectorDB
 
