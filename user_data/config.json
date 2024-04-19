@@ -36,7 +36,7 @@
     },
     "vector_memory": {
         "type": "file",
-        "path": "memory",
+        "path": "./user_data/memory",
         "collection": "memory",
         "host": "localhost",
         "port": 8000,
