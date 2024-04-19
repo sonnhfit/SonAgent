@@ -1,11 +1,12 @@
 import logging
+from sonagent.nerve_system.brain_lobe import BrainLobe
 
 from sonagent.tools import ChromaDB, Embedding, OAIEmbedding, VectorDB
 
 logger = logging.getLogger(__name__)
 
 
-class SonMemory:
+class SonMemory(BrainLobe):
 
     def __init__(
         self,

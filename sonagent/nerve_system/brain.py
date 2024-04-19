@@ -1,18 +1,10 @@
-import logging
-
-logger = logging.getLogger(__name__)
+from sonagent.nerve_system.brain_lobe import BrainLobe
+from sonagent.nerve_system.language_area.llm_brain import LLMBrain
 
 
 class Brain:
-    shm_nerve = {}
-
-    def __init__(self):
-        logger.info("Initializing Brain...")
-
-    def process(self, stimulus):
-        logger.info(f"Processing stimulus: {stimulus}")
-        return stimulus
-        
-    def start(self):
-        logger.info("Brain started.")
-
+    def __init__(self, brain_config={}):
+        self.language_brain: BrainLobe = LLMBrain()
+        self.visual_brain = None
+        self.auditory_brain = None
+        self.movement_brain = None

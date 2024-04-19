@@ -1,4 +1,4 @@
-ASK_ABOUT_ME_PROMP = """
+ASK_ABOUT_ME_PROMPT = """
 This is what I believe is true. Please rely on it to answer the following question.
 answer in the language of the person asking the question
 If belief is not relevant to the question. Please answer "I don't know"
@@ -19,8 +19,8 @@ Q: do you want to learn english?
 A: yes i want to learn english
 
 [believe]
-{{$believe}}
+{believe}
 
-Q: {{$question}}
+Q: {question}
 A:
 """
