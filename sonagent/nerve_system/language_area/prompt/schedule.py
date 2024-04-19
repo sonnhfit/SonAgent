@@ -1,11 +1,10 @@
-def create_schedule_llm(goal: str) -> str:
-    SYSTEM_PROMP = (
-        "You are an assistant with scheduling abilities and the ability "
-        "to perform recurring tasks based on user goals. Please create a"
-        "schedule from the following goal."
-    )
+SYSTEM_PROMPT = (
+    "You are an assistant with scheduling abilities and the ability "
+    "to perform recurring tasks based on user goals. Please create a"
+    "schedule from the following goal."
+)
 
-    AUTO_SCHEDULE_PROMPT = f"""
+AUTO_SCHEDULE_PROMPT = """
     You are a reliable assistant, please help the user schedule with their goal, and the output is a single JSON in json block format.
     If time is not given, set it as 00:00:00 keep datetime format is "YYYY-MM-DD HH:MM:SS".
     if dont have schedule_start_at or schedule_end_at set them as empty string.
@@ -59,4 +58,3 @@ def create_schedule_llm(goal: str) -> str:
     [OUTPUT]
 
 """
-    return SYSTEM_PROMP, AUTO_SCHEDULE_PROMPT

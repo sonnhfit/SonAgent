@@ -89,6 +89,7 @@ def create_user_data_dir(args: Dict[str, Any]) -> None:
 
         # create config.json file with string
         config_exampe = """
+
 {
     "initial_state": "running",
     "api_server": {
@@ -111,19 +112,22 @@ def create_user_data_dir(args: Dict[str, Any]) -> None:
         "token": "",
         "chat_id": ""
     },
-    "openai": {
-        "enabled": true,
-        "api_type": "openai",
-        "api_key": ""
-    },
     "llm": {
         "enabled": true,
-        "type": "openai",
-        "api_key": ""
+        "api_type": "openai",
+        "api_key": "",
+        "params": {
+            "model": "gpt-3.5-turbo",
+            "temperature": 0.5,
+            "max_tokens": 100,
+            "top_p": 1,
+            "frequency_penalty": 0,
+            "presence_penalty": 0
+        }
     },
     "vector_memory": {
         "type": "file",
-        "path": "./user_data/memory",
+        "path": "memory",
         "collection": "memory",
         "host": "localhost",
         "port": 8000,
@@ -148,6 +152,7 @@ def create_user_data_dir(args: Dict[str, Any]) -> None:
         }
     }
 }
+
         """
         with open(current_path + f"/{user_data_dir}/config.json", "w") as file:
             file.write(config_exampe)

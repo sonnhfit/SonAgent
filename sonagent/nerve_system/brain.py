@@ -1,18 +1,14 @@
-import logging
-
-logger = logging.getLogger(__name__)
+from sonagent.nerve_system.brain_lobe import BrainLobe
+from sonagent.nerve_system.language_area.gpt import GPTLlmBrain
 
 
 class Brain:
-    shm_nerve = {}
+    def __init__(self, brain_config={}, llm_config={}, **kwargs):
 
-    def __init__(self):
-        logger.info("Initializing Brain...")
+        self.language_brain: BrainLobe = None
+        if llm_config.get("api_type", None) == "openai":
+            self.language_brain = GPTLlmBrain()
 
-    def process(self, stimulus):
-        logger.info(f"Processing stimulus: {stimulus}")
-        return stimulus
-        
-    def start(self):
-        logger.info("Brain started.")
-
+        self.visual_brain = None
+        self.auditory_brain = None
+        self.movement_brain = None

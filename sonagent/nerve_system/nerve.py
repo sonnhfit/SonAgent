@@ -1,6 +1,6 @@
-from sonagent.nerve_system.brain import Brain
+from sonagent.nerve_system.brain_lobe import BrainLobe
 
 
 class Nerve:
     def stimulation(self, stimulus):
-        Brain.shm_nerve['stimulus'] = stimulus
+        BrainLobe.shm_nerve['stimulus'] = stimulus
