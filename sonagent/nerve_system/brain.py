@@ -12,3 +12,5 @@ class Brain:
         self.visual_brain = None
         self.auditory_brain = None
         self.movement_brain = None
+
+        self.thalamus = None

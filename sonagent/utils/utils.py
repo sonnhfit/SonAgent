@@ -16,3 +16,13 @@ def hash_str(string: str) -> str:
 def hash_md5_str(string: str) -> str:
     m = hashlib.md5(string.encode('UTF-8'))
     return m.hexdigest()
+
+
+def get_schema_from_dict(data: dict) -> dict:
+    schema = {}
+    for key, value in data.items():
+        if isinstance(value, dict):
+            schema[key] = get_schema_from_dict(value)
+        else:
+            schema[key] = type(value).__name__
+    return schema
