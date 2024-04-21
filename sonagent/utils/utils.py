@@ -1,4 +1,10 @@
 import hashlib
+import logging
+import os
+
+from sonagent.persistence.models import Environment
+
+logger = logging.getLogger(__name__)
 
 
 def read_text_from_file(file_path: str) -> str:
@@ -26,3 +32,16 @@ def get_schema_from_dict(data: dict) -> dict:
         else:
             schema[key] = type(value).__name__
     return schema
+
+
+def init_evironment():
+    try:
+        logger.info("Initializing environment ...")
+        envs = Environment.get_all_environment()
+        for env in envs:
+            os.environ[str(env.key)] = str(env.value)
+
+        logger.debug(os.environ)
+    except Exception as e:
+        logger.error(f"Error initializing environment: {e}")
+        raise e

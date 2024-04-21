@@ -1,3 +1,4 @@
+import logging
 from typing import Any, Dict
 
 from sqlalchemy import create_engine, inspect
@@ -12,6 +13,8 @@ from sonagent.persistence.migrations import check_migrate
 from sonagent.persistence.planning_models import Plan
 from sonagent.persistence.schedule_models import ScheduleJob
 from sonagent.persistence.skill_models import SkillDocs
+
+logger = logging.getLogger(__name__)
 
 _SQL_DOCS_URL = 'http://docs.sqlalchemy.org/en/latest/core/engines.html#database-urls'
 
@@ -60,10 +63,9 @@ def init_db(db_url: str) -> None:
     
     try:
         previous_tables = inspect(engine).get_table_names()
-    except Exception:
-        print("okii")
+    except Exception as e:
+        logger.error(f"Error inspecting tables: {e}")
     
     ModelBase.metadata.create_all(engine)
 
-    print("run here")
     check_migrate(engine, decl_base=ModelBase, previous_tables=previous_tables)
