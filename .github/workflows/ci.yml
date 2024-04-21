@@ -164,8 +164,10 @@ jobs:
     - name: Publish to PyPI (Test)
       uses: pypa/gh-action-pypi-publish@v1.8.14
       with:
-        password: ${{ secrets.PYPI_API_TOKEN }}
-        repository-url: https://upload.pypi.org/legacy/
+        repository-url: https://test.pypi.org/legacy/
 
     - name: Publish to PyPI
       uses: pypa/gh-action-pypi-publish@v1.8.14
+      with:
+        password: ${{ secrets.PYPI_API_TOKEN }}
+        repository-url: https://upload.pypi.org/legacy/
