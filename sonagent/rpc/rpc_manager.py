@@ -2,13 +2,10 @@
 This module contains class to manage RPC communications (Telegram, API, ...)
 """
 import logging
-from collections import deque
 from typing import List
 
-from sonagent.enums import RPCMessageType
 from sonagent.rpc import RPC, RPCHandler
 from sonagent.rpc.rpc_types import RPCSendMsg
-
 
 logger = logging.getLogger(__name__)
 
@@ -51,7 +48,7 @@ class RPCManager:
 
         logger.info('Sending rpc message: %s', msg)
         for mod in self.registered_modules:
-            logger.debug('Forwarding message to rpc.%s', mod.name)
+            logger.info('Forwarding message to rpc.%s', mod.name)
             try:
                 mod.send_msg(msg)
             except NotImplementedError:

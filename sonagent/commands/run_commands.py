@@ -1,7 +1,8 @@
-import os
 import logging
+import os
 import signal
 from typing import Any, Dict
+
 from sonagent.configuration import load_config_file
 from sonagent.exceptions import OperationalException
 
@@ -47,9 +48,7 @@ def start_sonagent(args: Dict[str, Any]) -> int:
             config = config
             raise OperationalException("Error loading config file: " + str(e))
         # config['user_data_dir'] = args['user_data_dir']
-        print(config)
 
-        print(args)
         config["user_data_dir"] = args["user_data_dir"]
         worker = Worker(args, config=config)
         worker.run()
@@ -73,7 +72,7 @@ def create_user_data_dir(args: Dict[str, Any]) -> None:
     # print("user_data_dir: ", args)
     current_path = str(os.getcwd())
     user_data_dir = args["user_data_dir"]
-    if user_data_dir == None:
+    if user_data_dir is None:
         print(current_path)
         user_data_dir = "user_data"
         if not os.path.exists(current_path + "/" + user_data_dir):
@@ -88,6 +87,7 @@ def create_user_data_dir(args: Dict[str, Any]) -> None:
 
         # create config.json file with string
         config_exampe = """
+
 {
     "initial_state": "running",
     "api_server": {
@@ -110,10 +110,29 @@ def create_user_data_dir(args: Dict[str, Any]) -> None:
         "token": "",
         "chat_id": ""
     },
-    "openai": {
+    "llm": {
         "enabled": true,
         "api_type": "openai",
-        "api_key": ""
+        "api_key": "",
+        "params": {
+            "model": "gpt-3.5-turbo",
+            "temperature": 0.5,
+            "max_tokens": 100,
+            "top_p": 1,
+            "frequency_penalty": 0,
+            "presence_penalty": 0
+        }
+    },
+    "vector_memory": {
+        "type": "file",
+        "path": "memory",
+        "collection": "memory",
+        "host": "localhost",
+        "port": 8000,
+        "embedding":  "openai"
+    },
+    "skills": {
+        "path": "skills/skills.yaml"
     },
     "skills_file_path": "skills/skills.yaml",
     "github": {
@@ -131,6 +150,7 @@ def create_user_data_dir(args: Dict[str, Any]) -> None:
         }
     }
 }
+
         """
         with open(current_path + f"/{user_data_dir}/config.json", "w") as file:
             file.write(config_exampe)

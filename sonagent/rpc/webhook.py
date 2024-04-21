@@ -1,11 +1,12 @@
 import logging
 import time
 from typing import Any, Dict, Optional
+
 from requests import RequestException, post
+
 from sonagent.enums import RPCMessageType
 from sonagent.rpc import RPC, RPCHandler
 from sonagent.rpc.rpc_types import RPCSendMsg
-
 
 logger = logging.getLogger(__name__)
 

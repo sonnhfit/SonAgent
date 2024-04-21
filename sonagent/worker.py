@@ -4,16 +4,15 @@ import traceback
 from os import getpid
 from typing import Any, Callable, Dict, Optional
 
-
 import sdnotify
 
 from sonagent import __version__
-from sonagent.sonbot import SonBot
+from sonagent.constants import PROCESS_THROTTLE_SECS, RETRY_TIMEOUT
 from sonagent.enums.enums import State
 from sonagent.enums.rpcmessagetype import RPCMessageType
-from sonagent.constants import PROCESS_THROTTLE_SECS, RETRY_TIMEOUT
 from sonagent.exceptions import OperationalException, TemporaryError
-
+from sonagent.immune.immune import ImmuneSystem
+from sonagent.sonbot import SonBot
 
 logger = logging.getLogger(__name__)
 
@@ -30,10 +29,12 @@ class Worker:
         self._init(False)
 
         self._heartbeat_msg: float = 0
+        self._immune = ImmuneSystem()
 
         # Tell systemd that we completed initialization phase
         self._notify("READY=1")
 
+        
     def _init(self, reconfig: bool) -> None:
         # Init the instance of the bot
         self.sonbot = SonBot(self._config, args=self._args)
@@ -107,6 +108,9 @@ class Worker:
                     f"version='{version}', state='{state.name}'"
                 )
                 self._heartbeat_msg = now
+
+                # Ping Immune System for scan
+                self._immune.immune_scan()
 
         return state
 

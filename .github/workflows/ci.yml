@@ -1,0 +1,171 @@
+name: SonAgent CI
+
+on:
+  push:
+    branches:
+      - main
+      - dev
+      - ci/*
+    tags:
+  release:
+    types: [published]
+  pull_request:
+  schedule:
+    - cron:  '0 3 * * 4'
+
+concurrency:
+  group: "${{ github.workflow }}-${{ github.ref }}-${{ github.event_name }}"
+  cancel-in-progress: true
+permissions:
+  repository-projects: read
+jobs:
+  build-linux:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-22.04]
+        python-version: ["3.11"]
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    - name: Cache_dependencies
+      uses: actions/cache@v4
+      id: cache
+      with:
+        path: ~/dependencies/
+        key: ${{ runner.os }}-dependencies
+
+    - name: pip cache (linux)
+      uses: actions/cache@v4
+      with:
+        path: ~/.cache/pip
+        key: test-${{ matrix.os }}-${{ matrix.python-version }}-pip
+
+
+    - name: Installation - *nix
+      run: |
+        python -m pip install --upgrade pip wheel
+        pip install -r requirements-dev.txt
+        pip install -e .
+
+    - name: Tests
+      run: |
+        pytest --random-order --cov=sonagent --cov-config=.coveragerc
+
+    - name: Check for repository changes
+      run: |
+        if [ -n "$(git status --porcelain)" ]; then
+          echo "Repository is dirty, changes detected:"
+          git status
+          git diff
+          exit 1
+        else
+          echo "Repository is clean, no changes detected."
+        fi
+
+    - name: Sort imports (isort)
+      run: |
+        isort --check .
+
+    - name: Run Ruff
+      run: |
+        ruff check --output-format=github .
+
+    - name: Discord notification
+      uses: rjstone/discord-webhook-notify@v1
+      if: failure() && ( github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork == false)
+      with:
+          severity: error
+          details: SonAgent CI failed on ${{ matrix.os }}
+          webhookUrl: ${{ secrets.DISCORD_WEBHOOK }}
+
+  # Notify only once - when CI completes (and after deploy) in case it's successfull
+  notify-complete:
+    needs: [
+      build-linux
+    ]
+    runs-on: ubuntu-22.04
+    # Discord notification can't handle schedule events
+    if: github.event_name != 'schedule' && github.repository == 'sonnhfit/SonAgent'
+    permissions:
+      repository-projects: read
+    steps:
+
+    - name: Check user permission
+      id: check
+      uses: scherermichael-oss/action-has-permission@1.0.6
+      with:
+        required-permission: write
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Discord notification
+      uses: rjstone/discord-webhook-notify@v1
+      if: always() && steps.check.outputs.has-permission && ( github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork == false)
+      with:
+          severity: info
+          details: Test Completed!
+          webhookUrl: ${{ secrets.DISCORD_WEBHOOK }}
+
+  build:
+    name: "Build"
+    needs: [build-linux]
+    runs-on: ubuntu-22.04
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.11"
+
+    - name: Build distribution
+      run: |
+        pip install -U build
+        python -m build --sdist --wheel
+
+    - name: Upload artifacts 📦
+      uses: actions/upload-artifact@v4
+      with:
+        name: sonagent-build
+        path: |
+          dist
+        retention-days: 10
+
+  deploy-pypi:
+    name: "Deploy to PyPI"
+    needs: [ build ]
+    runs-on: ubuntu-22.04
+    if: (github.event_name == 'release')
+    environment:
+      name: release
+      url: https://pypi.org/p/sonagent
+    permissions:
+      id-token: write
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Download artifact  📦
+      uses: actions/download-artifact@v4
+      with:
+        pattern: sonagent*-build
+        path: dist
+        merge-multiple: true
+
+
+    - name: Publish to PyPI (Test)
+      uses: pypa/gh-action-pypi-publish@v1.8.14
+      with:
+        password: ${{ secrets.PYPI_API_TOKEN }}
+        repository-url: https://test.pypi.org/legacy/
+
+    - name: Publish to PyPI
+      uses: pypa/gh-action-pypi-publish@v1.8.14

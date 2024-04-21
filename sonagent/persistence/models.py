@@ -1,21 +1,20 @@
 import logging
-
-from typing import Any, Dict, Final, Optional
+from typing import Any, Dict
 
 from sqlalchemy import create_engine, inspect
-from sqlalchemy.exc import NoSuchModuleError
 from sqlalchemy.orm import scoped_session, sessionmaker
 from sqlalchemy.pool import StaticPool
 
 from sonagent.exceptions import OperationalException
 from sonagent.persistence.base import ModelBase
-from sonagent.persistence.migrations import check_migrate
 from sonagent.persistence.belief_models import Belief
+from sonagent.persistence.environment_models import Environment
+from sonagent.persistence.migrations import check_migrate
 from sonagent.persistence.planning_models import Plan
-from sonagent.persistence.skill_models import SkillDocs
 from sonagent.persistence.schedule_models import ScheduleJob
+from sonagent.persistence.skill_models import SkillDocs
 
-
+logger = logging.getLogger(__name__)
 
 _SQL_DOCS_URL = 'http://docs.sqlalchemy.org/en/latest/core/engines.html#database-urls'
 
@@ -58,13 +57,15 @@ def init_db(db_url: str) -> None:
 
     ScheduleJob.session = scoped_session(sessionmaker(bind=engine, autoflush=False))
     ScheduleJob.query = ScheduleJob.session.query_property()
+
+    Environment.session = scoped_session(sessionmaker(bind=engine, autoflush=False))
+    Environment.query = Environment.session.query_property()
     
     try:
         previous_tables = inspect(engine).get_table_names()
     except Exception as e:
-        print("okii")
+        logger.error(f"Error inspecting tables: {e}")
     
     ModelBase.metadata.create_all(engine)
 
-    print("run here")
     check_migrate(engine, decl_base=ModelBase, previous_tables=previous_tables)

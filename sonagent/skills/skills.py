@@ -1,7 +1,7 @@
 
-import logging
+from abc import ABC, abstractmethod
+
 from semantic_kernel.sk_pydantic import SKBaseModel
-from abc import ABC, abstractmethod 
 
 
 class SonSkill(ABC, SKBaseModel):

@@ -15,3 +15,8 @@ class IOMsg:
             })
         else:
             print(msg)
+
+    @staticmethod
+    def get_input(msg: str):
+        IOMsg.message.append(msg)
+        return msg

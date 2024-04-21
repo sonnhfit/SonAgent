@@ -1,26 +1,22 @@
-import os
 import ast
 import logging
-import traceback
-from copy import deepcopy
-from datetime import datetime, time, timedelta, timezone
-from math import isclose
-from threading import Lock
-from time import sleep
-from typing import Any, Dict, List, Optional, Tuple
+import os
+from datetime import datetime
+from typing import Any
 
-from sonagent.mixins import LoggingMixin
+from croniter import croniter
+from schedule import Scheduler
+
+from sonagent.agent import Agent
 from sonagent.enums.enums import State
 from sonagent.enums.rpcmessagetype import RPCMessageType
-from sonagent.rpc import RPCManager, IOMsg
-from sonagent.skills.skills_manager import SkillsManager
+from sonagent.loggers.logging_mixin import LoggingMixin
 from sonagent.persistence.belief_models import Belief
-from sonagent.persistence.models import ScheduleJob
-from sonagent.agent import Agent
-from sonagent.persistence.models import init_db
-from schedule import Scheduler
-from croniter import croniter
+from sonagent.persistence.models import ScheduleJob, init_db
+from sonagent.rpc import IOMsg, RPCManager
+from sonagent.skills.skills_manager import SkillsManager
 from sonagent.utils.datetime_helpers import dt_now
+from sonagent.utils.utils import init_evironment
 
 # import threading
 
@@ -42,11 +38,10 @@ class SonBot(LoggingMixin):
         memory_url = self.args.get('memory-url', "user_data/memory")
         agentdb = self.args.get('agentdb', "sqlite:///user_data/agentdb.sqlite")
 
-        # get openai key 
-        openai = self.config.get('openai')
-        if openai.get('api_type', None) == 'openai':
-            os.environ["OPENAI_API_KEY"] = openai.get('api_key')
-            print("----------------")
+        llm = self.config.get('llm')
+        if llm.get('api_type', None) == 'openai':
+            os.environ["OPENAI_API_KEY"] = llm.get('api_key')
+            logger.info("Run with openai LLM")
 
         if agentdb is None:
             agentdb = "sqlite:///user_data/agentdb.sqlite"
@@ -58,7 +53,10 @@ class SonBot(LoggingMixin):
         except Exception as e:
             logger.error(f"Error initializing database: {e}")
             raise e
-        
+
+        # init env 
+        init_evironment()
+
         self.skills = SkillsManager(self)
 
         names = str(self.skills.load_register_skills_name())
@@ -95,7 +93,7 @@ class SonBot(LoggingMixin):
             for job in job_list:
                 # job.run()
                 job_dict = ast.literal_eval(job.plan)
-                result = self.agent.execute_plan(job_dict)
+                self.agent.execute_plan(job_dict)
                 if job.is_recurring:
                     cron_expression = job.schedule_interval
 
@@ -120,7 +118,12 @@ class SonBot(LoggingMixin):
                 logger.error(f"Error notifying chat event: {e}")
             return chat
         else:
-            return await self.agent.chat_code(input)
+            code_chat = await self.agent.chat_code(input)
+            try:
+                self.notify_chat_event(code_chat)
+            except Exception as e:
+                logger.error(f"Error notifying code chat event: {e}")
+            return code_chat
     
     async def get_mode(self) -> str:
         return self.agent_mode
@@ -154,6 +157,15 @@ class SonBot(LoggingMixin):
     
     async def show_schedule(self) -> str:
         return await self.agent.show_schedule()
+    
+    async def show_env(self) -> list:
+        return await self.agent.show_env()
+    
+    async def remove_env(self, key: str) -> str:
+        return await self.agent.remove_env(key)
+    
+    async def add_env(self, key: str, value: str, description: str) -> str:
+        return await self.agent.add_env(key, value, description)
     
     def show_skills(self) -> str:
         return self.agent.show_skills()

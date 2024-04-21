@@ -1,13 +1,11 @@
-import logging
 import re
 import sys
-from copy import deepcopy
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict
 
 import rapidjson
-from sonagent.exceptions import OperationalException
 
+from sonagent.exceptions import OperationalException
 
 CONFIG_PARSE_MODE = rapidjson.PM_COMMENTS | rapidjson.PM_TRAILING_COMMAS
 

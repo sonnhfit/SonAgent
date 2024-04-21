@@ -1,3 +1,4 @@
+
 {
     "initial_state": "running",
     "api_server": {
@@ -20,10 +21,29 @@
         "token": "",
         "chat_id": ""
     },
-    "openai": {
+    "llm": {
         "enabled": true,
         "api_type": "openai",
-        "api_key": ""
+        "api_key": "",
+        "params": {
+            "model": "gpt-3.5-turbo",
+            "temperature": 0.5,
+            "max_tokens": 100,
+            "top_p": 1,
+            "frequency_penalty": 0,
+            "presence_penalty": 0
+        }
+    },
+    "vector_memory": {
+        "type": "file",
+        "path": "./user_data/memory",
+        "collection": "memory",
+        "host": "localhost",
+        "port": 8000,
+        "embedding":  "openai"
+    },
+    "skills": {
+        "path": "skills/skills.yaml"
     },
     "skills_file_path": "skills/skills.yaml",
     "github": {

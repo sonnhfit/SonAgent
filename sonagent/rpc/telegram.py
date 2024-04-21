@@ -4,34 +4,28 @@
 This module manage Telegram communication
 """
 import asyncio
-import json
 import logging
 import re
 from copy import deepcopy
-from dataclasses import dataclass
-from datetime import date, datetime, timedelta
-from functools import partial, wraps
-from html import escape
+from datetime import datetime
 from itertools import chain
-from math import isnan
 from threading import Thread
-from typing import Any, Callable, Coroutine, Dict, List, Literal, Optional, Union
+from typing import List, Optional, Union
 
-
-from telegram import (CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup, KeyboardButton,
+from tabulate import tabulate
+from telegram import (CallbackQuery, InlineKeyboardButton,
+                      InlineKeyboardMarkup, KeyboardButton,
                       ReplyKeyboardMarkup, Update)
 from telegram.constants import MessageLimit, ParseMode
 from telegram.error import BadRequest, NetworkError, TelegramError
-from telegram.ext import Application, CallbackContext, CallbackQueryHandler, CommandHandler, MessageHandler, ContextTypes
-from telegram.helpers import escape_markdown
-from telegram.ext import filters
+from telegram.ext import (Application, CallbackContext, CommandHandler,
+                          ContextTypes, MessageHandler, filters)
 
-from sonagent.exceptions import OperationalException
-from sonagent.rpc import RPC, RPCException, RPCHandler
-from sonagent.rpc.rpc_types import RPCSendMsg
-from sonagent.enums import RPCMessageType
 from sonagent.__init__ import __version__
-
+from sonagent.enums import RPCMessageType
+from sonagent.exceptions import OperationalException
+from sonagent.rpc import RPC, RPCHandler
+from sonagent.rpc.rpc_types import RPCSendMsg
 
 logger = logging.getLogger(__name__)
 logging.getLogger("httpx").setLevel(logging.WARNING)
@@ -76,7 +70,8 @@ class Telegram(RPCHandler):
         #       problem in _help()).
         valid_keys: List[str] = [
             r'/ibelieve', r'/show_mode$', r'/mode', r'/sum$', r'/show_skills$',
-            r'/reload_skills$', r'/remove_skill', r'/show_schedule$',
+            r'/reload_skills$', r'/remove_skill', r'/show_schedule$', r'/env$',
+            r'/add_env', r'/remove_env', r'/reload_env',
             r'/help$', r'/version$'
         ]
         # Create keys for generation
@@ -128,16 +123,7 @@ class Telegram(RPCHandler):
         msg = update.message.text.replace('/sonagent', '')
         if len(msg) <= 0:
             msg = "Hello, I'm SonAgent"
-        
-        chat_result = await self._rpc.chat(msg)
-
-        if len(chat_result) > MAX_MESSAGE_LENGTH:
-            msg_parts = self.split_message_parts(chat_result)
-            for msg_part in msg_parts:
-                # await update.message.reply_text(msg_part)
-                await self._send_msg(msg_part, parse_mode=ParseMode.MARKDOWN)
-        # await update.message.reply_text(chat_result)
-        await self._send_msg(chat_result, parse_mode=ParseMode.MARKDOWN)
+        await self._rpc.chat(msg)
 
     def _init(self) -> None:
         """
@@ -165,8 +151,12 @@ class Telegram(RPCHandler):
             CommandHandler('show_mode', self._show_mode),
             CommandHandler('sum', self._summerize_dialog),
             CommandHandler('show_skills', self._show_skills),
+            CommandHandler('env', self._env),
+            CommandHandler('add_env', self._add_env),
+            CommandHandler('remove_env', self._remove_env),
             CommandHandler('show_schedule', self._show_schedule),
             CommandHandler('reload_skills', self._reload_skills),
+            CommandHandler('reload_env', self._reload_env),
             CommandHandler('remove_skill', self._remove_skill),
             CommandHandler('mode', self._mode),
             CommandHandler('help', self._help),
@@ -258,10 +248,17 @@ class Telegram(RPCHandler):
         message = self.compose_message(deepcopy(msg))
         logger.info(f"Sending message: {message}")
         if message:
-            asyncio.run_coroutine_threadsafe(
-                self._send_msg(message, parse_mode=ParseMode.MARKDOWN),
-                self._loop)
-        # self._send_msg(message, disable_notification=(noti == 'silent')),
+            if len(message) > MAX_MESSAGE_LENGTH:
+                msg_parts = self.split_message_parts(message)
+                for msg_part in msg_parts:
+                    asyncio.run_coroutine_threadsafe(
+                        self._send_msg(msg_part, parse_mode=ParseMode.MARKDOWN),
+                        self._loop
+                    )
+            else:
+                asyncio.run_coroutine_threadsafe(
+                    self._send_msg(message, parse_mode=ParseMode.MARKDOWN),
+                    self._loop)
 
     async def _update_msg(self, query: CallbackQuery, msg: str, callback_path: str = "",
                           reload_able: bool = False, parse_mode: str = ParseMode.MARKDOWN) -> None:
@@ -360,6 +357,22 @@ class Telegram(RPCHandler):
         message = (
             "_Bot Control_\n"
             "------------\n"
+            "*/show_plan:* `Show plan`\n"
+            "*/planning:* `Planning`\n"
+            "*/clear_chat:* `Clear chat`\n"
+            "*/reincarnate:* `Reincarnate`\n"
+            "*/askme:* `Ask me`\n"
+            "*/ibelieve:* `I believe in you`\n"
+            "*/show_mode:* `Show mode`\n"
+            "*/sum:* `Summerize dialog`\n"
+            "*/show_skills:* `Show skills`\n"
+            "*/show_schedule:* `Show schedule`\n"
+            "*/reload_skills:* `Reload skills`\n"
+            "*/remove_skill:* `Remove skill`\n"
+            "*/mode:* `Mode`\n"
+            "*/env:* `Environment`\n"
+            "*/add_env:* `Add environment`\n"
+            "*/remove_env:* `Remove environment`\n"
             "*/help:* `This help message`\n"
             "*/version:* `Show version`"
             )
@@ -376,6 +389,82 @@ class Telegram(RPCHandler):
         """
         version_string = f'*Version:* `{__version__}`'
         await self._send_msg(version_string)
+    
+    async def _env(self, update: Update, context: CallbackContext) -> None:
+        """
+        Handler for /env.
+        Show version information
+        :param bot: telegram bot
+        :param update: message update
+        :return: None
+        """
+        result = await self._rpc.show_env()
+        head = ['Key', 'Value', 'Description']
+        logger.info(result)
+        message = tabulate(result, headers=head, tablefmt='simple')
+
+        await self._send_msg(f"<pre>{message}</pre>", parse_mode=ParseMode.HTML)
+        # await update.message.reply_text(result, parse_mode=ParseMode.MARKDOWN)
+
+    async def _reload_env(self, update: Update, context: CallbackContext) -> None:
+        """
+        Handler for /reload_env.
+        Show version information
+        :param bot: telegram bot
+        :param update: message update
+        :return: None
+        """
+        result = await self._rpc.reload_env()
+        await update.message.reply_text(result)
+
+    async def _add_env(self, update: Update, context: CallbackContext) -> None:
+        """
+        Handler for /add_env.
+        Show version information
+        :param bot: telegram bot
+        :param update: message update
+        :return: None
+        """
+        result = "Add your environment!"
+        msg = update.message.text.replace('/add_env', '')
+
+        logger.info(msg)
+
+        if len(msg) > 0:
+            try:
+                msg_param = msg.strip().split(' ')
+                key = msg_param[0].strip()
+                value = msg_param[1].strip()
+                description = msg_param[2].strip()
+                result = await self._rpc.add_env(key, value, description)
+            except Exception as e:
+                result = "Wrong format. Please use /add_env key value description"
+                logger.error(e)
+        else:
+            result = "What environment you want to add?"
+
+        await update.message.reply_text(result, parse_mode=ParseMode.MARKDOWN)
+
+    async def _remove_env(self, update: Update, context: CallbackContext) -> None:
+        """
+        Handler for /remove_env.
+        Show version information
+        :param bot: telegram bot
+        :param update: message update
+        :return: None
+        """
+        result = "remove your environment!"
+
+        env_name = update.message.text.replace('/remove_env', '')
+
+        if len(env_name) > 0:
+            result = await self._rpc.remove_env(env_name=env_name.strip())
+        else:
+            result = "What environment you want to remove?"
+
+        # result = "remove your ai skill!"
+
+        await update.message.reply_text(result)
     
     async def _show_skills(self, update: Update, context: CallbackContext) -> None:
         """

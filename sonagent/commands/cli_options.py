@@ -1,6 +1,6 @@
-from argparse import SUPPRESS, ArgumentTypeError
-from sonagent import __version__
-from sonagent import constants
+from argparse import ArgumentTypeError
+
+from sonagent import __version__, constants
 
 
 def check_int_positive(value: str) -> int:
@@ -86,16 +86,6 @@ AVAILABLE_CLI_OPTIONS = {
     "agentdb": Arg(
         '--agentdb-url',
         help='Agent database url.',
-        metavar='PATH',
-    ),
-    "freqaimodel": Arg(
-        '--freqaimodel',
-        help='Specify a custom freqaimodels.',
-        metavar='NAME',
-    ),
-    "freqaimodel_path": Arg(
-        '--freqaimodel-path',
-        help='Specify additional lookup path for freqaimodels.',
         metavar='PATH',
     ),
 }

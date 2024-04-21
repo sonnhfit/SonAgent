@@ -1,16 +1,12 @@
 import logging
-from collections import deque
-import sys
 from pathlib import Path
-from typing import Any, Dict, Iterator, List, Optional, Tuple, Type, Union
+from typing import Any, List
 
-from semantic_kernel.sk_pydantic import SKBaseModel
 import yaml
-from sonagent.skills.loading import BaseLoading
-from sonagent.skills.skills import SonSkill
 from pydantic import BaseModel
 
-from sonagent.utils.utils import hash_str, hash_md5_str
+from sonagent.skills.loading import BaseLoading
+from sonagent.utils.utils import hash_md5_str
 
 logger = logging.getLogger(__name__)
 
@@ -53,8 +49,8 @@ class SkillsManager:
         return self.skill_object_list
     
     def search_skill_function_by_semantic_query(self, query: str, memory) -> List[BaseModel]:
-        results = memory.brain_area_search(
-            area_collection_name=self.skills_area,
+        results = memory.search(
+            collection_name=self.skills_area,
             query=query
         )
         return results
@@ -68,18 +64,28 @@ class SkillsManager:
 
         self.load_skills()
         self.save_skills_function_to_memory(memory=memory)
+    
+    def remove_skill_by_name(self, skill_name: str, memory: Any) -> None:
+        # clear memory collection 
+        try:
+            memory.delete_memory_collection(self.skills_area)
+        except Exception as e:
+            logger.info(f"Error deleting memory collection: {e}")
+
+        self.load_skills()
+        self.skill_object_list = [skill for skill in self.skill_object_list if skill.__doc__ != skill_name]
+        self.save_skills_function_to_memory(memory=memory)
 
     def save_skills_function_to_memory(self, memory: Any) -> None:
         logger.info("Adding skills to memory.")
         logger.info(f"Adding skills to memory. {self.skill_object_list}")
         for skill in self.skill_object_list:
             logger.info(f"Adding skill {str(skill.__doc__)} to memory: {hash_md5_str(skill.__doc__)}")
-            # skill_hash_str(skill.name())
             is_added = memory.add(
                 document=skill.__doc__,
                 metadata={'skill_description': skill.__doc__},
                 id=hash_md5_str(skill.__doc__),
-                area_collection_name=self.skills_area
+                collection_name=self.skills_area
             )
             if is_added:
                 logger.info(f"Skill {skill} added to memory.")
