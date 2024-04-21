@@ -154,6 +154,15 @@ class SonBot(LoggingMixin):
     async def show_schedule(self) -> str:
         return await self.agent.show_schedule()
     
+    async def show_env(self) -> list:
+        return await self.agent.show_env()
+    
+    async def remove_env(self, key: str) -> str:
+        return await self.agent.remove_env(key)
+    
+    async def add_env(self, key: str, value: str, description: str) -> str:
+        return await self.agent.add_env(key, value, description)
+    
     def show_skills(self) -> str:
         return self.agent.show_skills()
     

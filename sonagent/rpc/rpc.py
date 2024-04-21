@@ -92,6 +92,30 @@ class RPC:
         """
         return await self.sonagent.reincarnate()
     
+    async def show_env(self) -> list:
+        """
+        Send a chat message to all registered rpc modules.
+        :param msg: Message to send
+        :return: None
+        """
+        return await self.sonagent.show_env()
+    
+    async def add_env(self, key: str, value: str, description: str) -> str:
+        """
+        Send a chat message to all registered rpc modules.
+        :param msg: Message to send
+        :return: None
+        """
+        return await self.sonagent.add_env(key, value, description)
+    
+    async def remove_env(self, key: str) -> str:
+        """
+        Send a chat message to all registered rpc modules.
+        :param msg: Message to send
+        :return: None
+        """
+        return await self.sonagent.remove_env(key)
+    
     async def askme(self, msg: str) -> str:
         """
         Send a chat message to all registered rpc modules.

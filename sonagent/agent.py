@@ -10,7 +10,7 @@ from openai import OpenAI
 from sonagent.nerve_system import Brain
 from sonagent.nerve_system.memory_area import ShortTermMemory, SonMemory
 from sonagent.nerve_system.stimulus import Stimulus
-from sonagent.persistence import Belief, Plan, ScheduleJob
+from sonagent.persistence import Belief, Environment, Plan, ScheduleJob
 from sonagent.tools import GitManager, LocalCodeManager
 from sonagent.utils.datetime_helpers import dt_now
 
@@ -154,7 +154,28 @@ class Agent:
 
     def get_tools(self) -> list:
         return []
+    
+    async def show_env(self) -> list:
+        env_list = Environment.get_all_environment()
+        result = []
+        for env in env_list:
+            result.append([env.key, env.value[:10], env.description[:10]])
+        return result
 
+    async def remove_env(self, key: str) -> str:
+        env = Environment.session.query(Environment).filter_by(key=key).first()
+        if env is None:
+            return f"Key {key} not found."
+        Environment.session.delete(env)
+        Environment.session.commit()
+        return f"Key {key} removed successfully."
+    
+    async def add_env(self, key: str, value: str, description: str) -> str:
+        env = Environment(key=key, value=value, description=description)
+        Environment.session.add(env)
+        Environment.session.commit()
+        return f"Key {key} added successfully."
+    
     async def excute_plan_task(self, task: dict) -> str:
         task_intance = str(task["function"]).split(".")
         if len(task_intance) < 2:
