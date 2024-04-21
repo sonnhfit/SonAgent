@@ -160,12 +160,8 @@ jobs:
         path: dist
         merge-multiple: true
 
-
-    - name: Publish to PyPI (Test)
+    - name: Publish to PyPI
       uses: pypa/gh-action-pypi-publish@v1.8.14
       with:
         password: ${{ secrets.PYPI_API_TOKEN }}
         repository-url: https://upload.pypi.org/legacy/
-
-    - name: Publish to PyPI
-      uses: pypa/gh-action-pypi-publish@v1.8.14
