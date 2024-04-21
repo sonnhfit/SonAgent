@@ -399,6 +399,7 @@ class Telegram(RPCHandler):
         """
         result = await self._rpc.show_env()
         head = ['Key', 'Value', 'Description']
+        logger.info(result)
         message = tabulate(result, headers=head, tablefmt='simple')
 
         await self._send_msg(f"<pre>{message}</pre>", parse_mode=ParseMode.HTML)
@@ -415,16 +416,22 @@ class Telegram(RPCHandler):
         result = "Add your environment!"
         msg = update.message.text.replace('/add_env', '')
 
+        logger.info(msg)
+
         if len(msg) > 0:
-            msg_param = msg.split(' ')
-            key = msg_param[0].strip()
-            value = msg_param[1].strip()
-            description = msg_param[2].strip()
-            result = await self._rpc.add_env(key, value, description)
+            try:
+                msg_param = msg.strip().split(' ')
+                key = msg_param[0].strip()
+                value = msg_param[1].strip()
+                description = msg_param[2].strip()
+                result = await self._rpc.add_env(key, value, description)
+            except Exception as e:
+                result = "Wrong format. Please use /add_env key value description"
+                logger.error(e)
         else:
             result = "What environment you want to add?"
 
-        await update.message.reply_text(result)
+        await update.message.reply_text(result, parse_mode=ParseMode.MARKDOWN)
 
     async def _remove_env(self, update: Update, context: CallbackContext) -> None:
         """

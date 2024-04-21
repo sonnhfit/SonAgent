@@ -92,7 +92,7 @@ class RPC:
         """
         return await self.sonagent.reincarnate()
     
-    async def show_env(self) -> str:
+    async def show_env(self) -> list:
         """
         Send a chat message to all registered rpc modules.
         :param msg: Message to send
