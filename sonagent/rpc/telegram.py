@@ -71,7 +71,7 @@ class Telegram(RPCHandler):
         valid_keys: List[str] = [
             r'/ibelieve', r'/show_mode$', r'/mode', r'/sum$', r'/show_skills$',
             r'/reload_skills$', r'/remove_skill', r'/show_schedule$', r'/env$',
-            r'/add_env', r'/remove_env',
+            r'/add_env', r'/remove_env', r'/reload_env',
             r'/help$', r'/version$'
         ]
         # Create keys for generation
@@ -156,6 +156,7 @@ class Telegram(RPCHandler):
             CommandHandler('remove_env', self._remove_env),
             CommandHandler('show_schedule', self._show_schedule),
             CommandHandler('reload_skills', self._reload_skills),
+            CommandHandler('reload_env', self._reload_env),
             CommandHandler('remove_skill', self._remove_skill),
             CommandHandler('mode', self._mode),
             CommandHandler('help', self._help),
@@ -404,6 +405,17 @@ class Telegram(RPCHandler):
 
         await self._send_msg(f"<pre>{message}</pre>", parse_mode=ParseMode.HTML)
         # await update.message.reply_text(result, parse_mode=ParseMode.MARKDOWN)
+
+    async def _reload_env(self, update: Update, context: CallbackContext) -> None:
+        """
+        Handler for /reload_env.
+        Show version information
+        :param bot: telegram bot
+        :param update: message update
+        :return: None
+        """
+        result = await self._rpc.reload_env()
+        await update.message.reply_text(result)
 
     async def _add_env(self, update: Update, context: CallbackContext) -> None:
         """

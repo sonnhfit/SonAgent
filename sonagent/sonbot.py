@@ -16,6 +16,7 @@ from sonagent.persistence.models import ScheduleJob, init_db
 from sonagent.rpc import IOMsg, RPCManager
 from sonagent.skills.skills_manager import SkillsManager
 from sonagent.utils.datetime_helpers import dt_now
+from sonagent.utils.utils import init_evironment
 
 # import threading
 
@@ -52,7 +53,10 @@ class SonBot(LoggingMixin):
         except Exception as e:
             logger.error(f"Error initializing database: {e}")
             raise e
-        
+
+        # init env 
+        init_evironment()
+
         self.skills = SkillsManager(self)
 
         names = str(self.skills.load_register_skills_name())

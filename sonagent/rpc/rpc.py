@@ -5,6 +5,7 @@ from abc import abstractmethod
 
 from sonagent.constants import AGENT_MODE
 from sonagent.rpc.rpc_types import RPCSendMsg
+from sonagent.utils.utils import init_evironment
 
 
 class RPCException(Exception):
@@ -115,6 +116,15 @@ class RPC:
         :return: None
         """
         return await self.sonagent.remove_env(key)
+    
+    async def reload_env(self) -> str:
+        """
+        Send a chat message to all registered rpc modules.
+        :param msg: Message to send
+        :return: None
+        """
+        init_evironment()
+        return "Env reloaded"
     
     async def askme(self, msg: str) -> str:
         """
