@@ -11,8 +11,8 @@ from datetime import datetime
 from itertools import chain
 from threading import Thread
 from typing import List, Optional, Union
-from tabulate import tabulate
 
+from tabulate import tabulate
 from telegram import (CallbackQuery, InlineKeyboardButton,
                       InlineKeyboardMarkup, KeyboardButton,
                       ReplyKeyboardMarkup, Update)

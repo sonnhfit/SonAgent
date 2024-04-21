@@ -7,12 +7,11 @@ from sqlalchemy.pool import StaticPool
 from sonagent.exceptions import OperationalException
 from sonagent.persistence.base import ModelBase
 from sonagent.persistence.belief_models import Belief
+from sonagent.persistence.environment_models import Environment
 from sonagent.persistence.migrations import check_migrate
 from sonagent.persistence.planning_models import Plan
 from sonagent.persistence.schedule_models import ScheduleJob
 from sonagent.persistence.skill_models import SkillDocs
-from sonagent.persistence.environment_models import Environment
-
 
 _SQL_DOCS_URL = 'http://docs.sqlalchemy.org/en/latest/core/engines.html#database-urls'
 

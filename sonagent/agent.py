@@ -10,7 +10,7 @@ from openai import OpenAI
 from sonagent.nerve_system import Brain
 from sonagent.nerve_system.memory_area import ShortTermMemory, SonMemory
 from sonagent.nerve_system.stimulus import Stimulus
-from sonagent.persistence import Belief, Plan, ScheduleJob, Environment
+from sonagent.persistence import Belief, Environment, Plan, ScheduleJob
 from sonagent.tools import GitManager, LocalCodeManager
 from sonagent.utils.datetime_helpers import dt_now
 
