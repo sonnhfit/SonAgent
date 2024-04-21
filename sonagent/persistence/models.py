@@ -11,6 +11,8 @@ from sonagent.persistence.migrations import check_migrate
 from sonagent.persistence.planning_models import Plan
 from sonagent.persistence.schedule_models import ScheduleJob
 from sonagent.persistence.skill_models import SkillDocs
+from sonagent.persistence.environment_models import Environment
+
 
 _SQL_DOCS_URL = 'http://docs.sqlalchemy.org/en/latest/core/engines.html#database-urls'
 
@@ -53,6 +55,9 @@ def init_db(db_url: str) -> None:
 
     ScheduleJob.session = scoped_session(sessionmaker(bind=engine, autoflush=False))
     ScheduleJob.query = ScheduleJob.session.query_property()
+
+    Environment.session = scoped_session(sessionmaker(bind=engine, autoflush=False))
+    Environment.query = Environment.session.query_property()
     
     try:
         previous_tables = inspect(engine).get_table_names()

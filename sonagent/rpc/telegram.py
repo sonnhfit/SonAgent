@@ -11,6 +11,7 @@ from datetime import datetime
 from itertools import chain
 from threading import Thread
 from typing import List, Optional, Union
+from tabulate import tabulate
 
 from telegram import (CallbackQuery, InlineKeyboardButton,
                       InlineKeyboardMarkup, KeyboardButton,
@@ -69,7 +70,8 @@ class Telegram(RPCHandler):
         #       problem in _help()).
         valid_keys: List[str] = [
             r'/ibelieve', r'/show_mode$', r'/mode', r'/sum$', r'/show_skills$',
-            r'/reload_skills$', r'/remove_skill', r'/show_schedule$',
+            r'/reload_skills$', r'/remove_skill', r'/show_schedule$', r'/env$',
+            r'/add_env', r'/remove_env',
             r'/help$', r'/version$'
         ]
         # Create keys for generation
@@ -149,6 +151,9 @@ class Telegram(RPCHandler):
             CommandHandler('show_mode', self._show_mode),
             CommandHandler('sum', self._summerize_dialog),
             CommandHandler('show_skills', self._show_skills),
+            CommandHandler('env', self._env),
+            CommandHandler('add_env', self._add_env),
+            CommandHandler('remove_env', self._remove_env),
             CommandHandler('show_schedule', self._show_schedule),
             CommandHandler('reload_skills', self._reload_skills),
             CommandHandler('remove_skill', self._remove_skill),
@@ -351,6 +356,22 @@ class Telegram(RPCHandler):
         message = (
             "_Bot Control_\n"
             "------------\n"
+            "*/show_plan:* `Show plan`\n"
+            "*/planning:* `Planning`\n"
+            "*/clear_chat:* `Clear chat`\n"
+            "*/reincarnate:* `Reincarnate`\n"
+            "*/askme:* `Ask me`\n"
+            "*/ibelieve:* `I believe in you`\n"
+            "*/show_mode:* `Show mode`\n"
+            "*/sum:* `Summerize dialog`\n"
+            "*/show_skills:* `Show skills`\n"
+            "*/show_schedule:* `Show schedule`\n"
+            "*/reload_skills:* `Reload skills`\n"
+            "*/remove_skill:* `Remove skill`\n"
+            "*/mode:* `Mode`\n"
+            "*/env:* `Environment`\n"
+            "*/add_env:* `Add environment`\n"
+            "*/remove_env:* `Remove environment`\n"
             "*/help:* `This help message`\n"
             "*/version:* `Show version`"
             )
@@ -367,6 +388,64 @@ class Telegram(RPCHandler):
         """
         version_string = f'*Version:* `{__version__}`'
         await self._send_msg(version_string)
+    
+    async def _env(self, update: Update, context: CallbackContext) -> None:
+        """
+        Handler for /env.
+        Show version information
+        :param bot: telegram bot
+        :param update: message update
+        :return: None
+        """
+        result = await self._rpc.show_env()
+        head = ['Key', 'Value', 'Description']
+        message = tabulate(result, headers=head, tablefmt='simple')
+
+        await self._send_msg(f"<pre>{message}</pre>", parse_mode=ParseMode.HTML)
+        # await update.message.reply_text(result, parse_mode=ParseMode.MARKDOWN)
+
+    async def _add_env(self, update: Update, context: CallbackContext) -> None:
+        """
+        Handler for /add_env.
+        Show version information
+        :param bot: telegram bot
+        :param update: message update
+        :return: None
+        """
+        result = "Add your environment!"
+        msg = update.message.text.replace('/add_env', '')
+
+        if len(msg) > 0:
+            msg_param = msg.split(' ')
+            key = msg_param[0].strip()
+            value = msg_param[1].strip()
+            description = msg_param[2].strip()
+            result = await self._rpc.add_env(key, value, description)
+        else:
+            result = "What environment you want to add?"
+
+        await update.message.reply_text(result)
+
+    async def _remove_env(self, update: Update, context: CallbackContext) -> None:
+        """
+        Handler for /remove_env.
+        Show version information
+        :param bot: telegram bot
+        :param update: message update
+        :return: None
+        """
+        result = "remove your environment!"
+
+        env_name = update.message.text.replace('/remove_env', '')
+
+        if len(env_name) > 0:
+            result = await self._rpc.remove_env(env_name=env_name.strip())
+        else:
+            result = "What environment you want to remove?"
+
+        # result = "remove your ai skill!"
+
+        await update.message.reply_text(result)
     
     async def _show_skills(self, update: Update, context: CallbackContext) -> None:
         """
