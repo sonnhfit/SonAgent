@@ -10,7 +10,7 @@ from sonagent.persistence.base import ModelBase
 from sonagent.persistence.belief_models import Belief
 from sonagent.persistence.environment_models import Environment
 from sonagent.persistence.migrations import check_migrate
-from sonagent.persistence.planning_models import Plan
+from sonagent.persistence.planning_models import Artifact, Plan, Step, Task
 from sonagent.persistence.schedule_models import ScheduleJob
 from sonagent.persistence.skill_models import SkillDocs
 
@@ -60,6 +60,16 @@ def init_db(db_url: str) -> None:
 
     Environment.session = scoped_session(sessionmaker(bind=engine, autoflush=False))
     Environment.query = Environment.session.query_property()
+
+    Step.session = scoped_session(sessionmaker(bind=engine, autoflush=False))
+    Step.query = Step.session.query_property()
+
+    Artifact.session = scoped_session(sessionmaker(bind=engine, autoflush=False))
+    Artifact.query = Artifact.session.query_property()
+
+    Task.session = scoped_session(sessionmaker(bind=engine, autoflush=False))
+    Task.query = Task.session.query_property()
+
     
     try:
         previous_tables = inspect(engine).get_table_names()
