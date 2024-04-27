@@ -35,3 +35,4 @@ async def chat(msg: str, rpc: RPC = Depends(get_rpc)):
     message = await rpc.chat(msg)
     return {"message": message}
 
+
