@@ -1,15 +1,14 @@
 import logging
-from typing import Annotated, List, Optional
+from typing import Annotated, Optional
 
 from fastapi import APIRouter, File, Form, UploadFile
 from fastapi.responses import FileResponse, JSONResponse
 
-from sonagent.persistence.planning_models import Artifact, Step, Task
+from sonagent.persistence.planning_models import Step, Task
 from sonagent.rpc.api_server.ap_models import (Pagination, StepRequestBody,
                                                TaskListResponse,
                                                TaskRequestBody,
                                                TaskStepsListResponse)
-from sonagent.rpc.api_server.api_models import Ping
 
 logger = logging.getLogger(__name__)
 
