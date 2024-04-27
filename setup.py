@@ -49,7 +49,8 @@ required = [
     'pyautogen==0.2.15',
     'schedule==1.2.1',
     'croniter==2.0.3',
-    'tabulate==0.9.0'
+    'tabulate==0.9.0',
+    'python-multipart==0.0.9'
 ]
 
 # print(f"Required: {required}")

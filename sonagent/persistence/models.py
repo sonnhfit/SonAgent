@@ -61,14 +61,15 @@ def init_db(db_url: str) -> None:
     Environment.session = scoped_session(sessionmaker(bind=engine, autoflush=False))
     Environment.query = Environment.session.query_property()
 
-    Task.session = scoped_session(sessionmaker(bind=engine, autoflush=False))
-    Task.query = Task.session.query_property()
-
     Step.session = scoped_session(sessionmaker(bind=engine, autoflush=False))
     Step.query = Step.session.query_property()
 
     Artifact.session = scoped_session(sessionmaker(bind=engine, autoflush=False))
     Artifact.query = Artifact.session.query_property()
+
+    Task.session = scoped_session(sessionmaker(bind=engine, autoflush=False))
+    Task.query = Task.session.query_property()
+
     
     try:
         previous_tables = inspect(engine).get_table_names()

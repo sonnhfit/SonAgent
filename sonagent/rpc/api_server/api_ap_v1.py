@@ -20,7 +20,7 @@ router_public = APIRouter()
 router = APIRouter()
 
 
-@router_public.post("/agent/tasks", response_model=Task, tags=["agent"])
+@router_public.post("/agent/tasks", tags=["agent"])
 def create_agent_task(body: TaskRequestBody | None = None):
     """
     Create a new task.
@@ -30,10 +30,10 @@ def create_agent_task(body: TaskRequestBody | None = None):
 
     # trigger task handler
 
-    return JSONResponse(content=task, status_code=200)
+    return JSONResponse(content=[], status_code=200)
 
 
-@router_public.get("/agent/tasks", response_model=Ping)
+@router_public.get("/agent/tasks")
 async def list_agent_tasks_ids(page_size: int = 10, current_page: int = 1):
     tasks = Task.get_all_tasks()
     start_index = (current_page - 1) * page_size
@@ -84,19 +84,17 @@ async def list_agent_task_steps(
 
 @router_public.post(
     "/agent/tasks/{task_id}/steps",
-    response_model=Step,
-    tags=["agent"],
+    tags=["agent"]
 )
 async def execute_agent_task_step(
     task_id: str,
     body: StepRequestBody | None = None,
-) -> Step:
-    pass
+):
+    return {}
 
 
 @router_public.get(
     "/agent/tasks/{task_id}/steps/{step_id}",
-    response_model=Step,
     tags=["agent"],
 )
 async def get_agent_task_step(task_id: str, step_id: str):
@@ -105,30 +103,28 @@ async def get_agent_task_step(task_id: str, step_id: str):
 
 @router_public.get(
     "/agent/tasks/{task_id}/artifacts",
-    response_model=List[Artifact],
-    tags=["agent"],
+    tags=["agent"]
 )
-async def list_agent_task_artifacts(task_id: str) -> List[Artifact]:
+async def list_agent_task_artifacts(task_id: str):
     """
     List all artifacts for the specified task.
     """
-    pass
+    return {}
 
 
 @router_public.post(
     "/agent/tasks/{task_id}/artifacts",
-    response_model=Artifact,
     tags=["agent"],
 )
 async def upload_agent_task_artifacts(
     task_id: str,
     file: Annotated[UploadFile, File()],
     relative_path: Annotated[Optional[str], Form()] = None,
-) -> Artifact:
+):
     """
     Upload an artifact for the specified task.
     """
-    pass
+    return {}
 
 
 @router_public.get(
