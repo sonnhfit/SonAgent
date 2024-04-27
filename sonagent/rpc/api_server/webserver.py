@@ -102,10 +102,13 @@ class ApiServer(RPCHandler):
         )
 
     def configure_app(self, app: FastAPI, config):
+        from sonagent.rpc.api_server.api_ap_v1 import \
+            router_public as api_ap_v1_public
         from sonagent.rpc.api_server.api_v1 import \
             router_public as api_v1_public
 
         app.include_router(api_v1_public, prefix="/api/v1")
+        app.include_router(api_ap_v1_public, prefix="/ap/v1")
 
         app.add_middleware(
             CORSMiddleware,
