@@ -14,3 +14,4 @@ class SonAgentPlanner(BasicPlanner):
         prompt: str = planning_prompt.PROMPT,
     ) -> Plan:
         return super().create_plan_async(goal, kernel, prompt)
+
