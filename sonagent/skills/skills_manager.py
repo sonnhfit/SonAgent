@@ -1,6 +1,6 @@
 import logging
 from pathlib import Path
-from typing import Any, List
+from typing import Any, Dict, List, Optional
 
 import yaml
 from pydantic import BaseModel
@@ -10,15 +10,39 @@ from sonagent.utils.utils import hash_md5_str
 
 logger = logging.getLogger(__name__)
 
+# Lazy import for sandbox to avoid Docker dependency when not needed
+_sandbox_module = None
+
+def _get_sandbox_module():
+    """Lazy load sandbox module."""
+    global _sandbox_module
+    if _sandbox_module is None:
+        try:
+            from sonagent.sandbox import DockerSandbox, SandboxResult
+            _sandbox_module = {
+                'DockerSandbox': DockerSandbox,
+                'SandboxResult': SandboxResult,
+                'available': True
+            }
+        except ImportError as e:
+            logger.warning(f"Docker sandbox not available: {e}")
+            _sandbox_module = {'available': False}
+    return _sandbox_module
+
 
 class SkillsManager:
-
-    # load, and get skills from config
+    """
+    Manager for loading, testing, and managing skills.
+    
+    Supports testing skills in Docker sandbox before deployment.
+    """
 
     def __init__(self, sonagent) -> None:
         self.skill_object_list: List[BaseModel] = []
         self.config = sonagent.config
         self.skills_area = "son_skills"
+        self._sandbox = None
+        self._sandbox_enabled = self.config.get('sandbox', {}).get('enabled', False)
 
     def load_register_skills_name(self) -> List[str]:
         skill_file_name = self.config.get('skills_file_path', 'skills.yaml')
@@ -120,4 +144,220 @@ class SkillsManager:
         logger.info(f"Found functions: {result}")
 
         return result
+
+    # ==================== Sandbox Methods ====================
+    
+    @property
+    def sandbox(self):
+        """Get or create Docker sandbox instance."""
+        if self._sandbox is None:
+            sandbox_module = _get_sandbox_module()
+            if sandbox_module.get('available'):
+                sandbox_config = self.config.get('sandbox', {})
+                from sonagent.sandbox.docker_sandbox import SandboxConfig
+                config = SandboxConfig(
+                    timeout=sandbox_config.get('timeout', 30),
+                    memory_limit=sandbox_config.get('memory_limit', '256m'),
+                    cpu_limit=sandbox_config.get('cpu_limit', 0.5),
+                    network_disabled=sandbox_config.get('network_disabled', True)
+                )
+                self._sandbox = sandbox_module['DockerSandbox'](config)
+            else:
+                raise RuntimeError("Docker sandbox is not available. Install docker package.")
+        return self._sandbox
+    
+    def is_sandbox_available(self) -> bool:
+        """Check if Docker sandbox is available."""
+        sandbox_module = _get_sandbox_module()
+        if not sandbox_module.get('available'):
+            return False
+        try:
+            return self.sandbox.is_docker_available()
+        except Exception:
+            return False
+    
+    def test_skill_in_sandbox(
+        self,
+        skill_name: str,
+        method_name: Optional[str] = None,
+        test_args: Optional[Dict[str, Any]] = None
+    ) -> Dict[str, Any]:
+        """
+        Test a skill in Docker sandbox before deployment.
+        
+        Args:
+            skill_name: Name of the skill class to test
+            method_name: Optional method name to test (if None, only validates syntax)
+            test_args: Arguments to pass to the method
+            
+        Returns:
+            Dict with test results:
+                - success: bool
+                - output: str
+                - error: str
+                - execution_time: float
+        """
+        if not self.is_sandbox_available():
+            return {
+                'success': False,
+                'error': 'Docker sandbox is not available',
+                'output': '',
+                'execution_time': 0.0
+            }
+        
+        # Find skill file
+        skill_file_path = self._find_skill_file(skill_name)
+        if not skill_file_path:
+            return {
+                'success': False,
+                'error': f'Skill file not found for: {skill_name}',
+                'output': '',
+                'execution_time': 0.0
+            }
+        
+        # Read skill code
+        skill_code = skill_file_path.read_text()
+        
+        # Run test
+        if method_name:
+            result = self.sandbox.run_skill_with_args(
+                skill_code=skill_code,
+                class_name=skill_name,
+                method_name=method_name,
+                args=test_args or {}
+            )
+        else:
+            result = self.sandbox.validate_skill_syntax(skill_code)
+        
+        return {
+            'success': result.success,
+            'output': result.output,
+            'error': result.error,
+            'execution_time': result.execution_time,
+            'logs': result.logs
+        }
+    
+    def test_skill_code_in_sandbox(
+        self,
+        skill_code: str,
+        class_name: str,
+        method_name: Optional[str] = None,
+        test_args: Optional[Dict[str, Any]] = None
+    ) -> Dict[str, Any]:
+        """
+        Test skill code directly in Docker sandbox.
+        
+        Args:
+            skill_code: Python code of the skill
+            class_name: Name of the skill class
+            method_name: Optional method name to test
+            test_args: Arguments to pass to the method
+            
+        Returns:
+            Dict with test results
+        """
+        if not self.is_sandbox_available():
+            return {
+                'success': False,
+                'error': 'Docker sandbox is not available',
+                'output': '',
+                'execution_time': 0.0
+            }
+        
+        if method_name:
+            result = self.sandbox.run_skill_with_args(
+                skill_code=skill_code,
+                class_name=class_name,
+                method_name=method_name,
+                args=test_args or {}
+            )
+        else:
+            result = self.sandbox.validate_skill_syntax(skill_code)
+        
+        return {
+            'success': result.success,
+            'output': result.output,
+            'error': result.error,
+            'execution_time': result.execution_time,
+            'logs': result.logs
+        }
+    
+    def _find_skill_file(self, skill_name: str) -> Optional[Path]:
+        """Find the file containing a skill by name."""
+        # Search in user_data/skills directory
+        skills_dir = Path(self.config['user_data_dir']).joinpath('skills')
+        
+        if skills_dir.exists():
+            for py_file in skills_dir.glob('*.py'):
+                content = py_file.read_text()
+                if f'class {skill_name}' in content:
+                    return py_file
+        
+        return None
+    
+    def load_skill_with_sandbox_test(
+        self,
+        skill_name: str,
+        test_method: Optional[str] = None,
+        test_args: Optional[Dict[str, Any]] = None
+    ) -> Dict[str, Any]:
+        """
+        Load a skill after testing it in sandbox.
+        
+        Args:
+            skill_name: Name of the skill to load
+            test_method: Optional method to test before loading
+            test_args: Arguments for the test method
+            
+        Returns:
+            Dict with:
+                - success: bool
+                - skill: loaded skill object or None
+                - test_result: sandbox test result
+        """
+        # Test in sandbox first
+        test_result = self.test_skill_in_sandbox(
+            skill_name=skill_name,
+            method_name=test_method,
+            test_args=test_args
+        )
+        
+        if not test_result['success']:
+            logger.warning(f"Skill {skill_name} failed sandbox test: {test_result['error']}")
+            return {
+                'success': False,
+                'skill': None,
+                'test_result': test_result
+            }
+        
+        # Load skill if test passed
+        try:
+            BaseLoading.object_type = BaseModel
+            skill = BaseLoading.load_object(
+                object_name=skill_name,
+                config=self.config,
+                kwargs={},
+                extra_dir='user_data/skills'
+            )
+            self.skill_object_list.append(skill)
+            logger.info(f"Skill {skill_name} loaded successfully after sandbox test")
+            return {
+                'success': True,
+                'skill': skill,
+                'test_result': test_result
+            }
+        except Exception as e:
+            logger.error(f"Failed to load skill {skill_name}: {e}")
+            return {
+                'success': False,
+                'skill': None,
+                'test_result': test_result,
+                'load_error': str(e)
+            }
+    
+    def cleanup_sandbox(self) -> None:
+        """Clean up sandbox resources."""
+        if self._sandbox:
+            self._sandbox.cleanup()
+            self._sandbox = None
 

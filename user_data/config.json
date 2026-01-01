@@ -46,6 +46,13 @@
         "path": "skills/skills.yaml"
     },
     "skills_file_path": "skills/skills.yaml",
+    "sandbox": {
+        "enabled": true,
+        "timeout": 30,
+        "memory_limit": "256m",
+        "cpu_limit": 0.5,
+        "network_disabled": true
+    },
     "github": {
         "enabled": false,
         "username": "sonnhfit",
