@@ -22,6 +22,8 @@ The Digital Consciousness Backup Agent is an autonomous system designed to safeg
 - **Self-Repairing source code**  edits its own source code and compiles itself under human approval
 
 - **Many tools and skills:** Train neural network, Search, write file, ...
+
+- **Dynamic Skill Creation:** Create new skills programmatically using PythonSandboxSkill - write, validate, and execute Python code in a sandboxed environment
 ### Into and demo video 
 [![SonAgent Demo](https://img.youtube.com/vi/l_aQ2RG9Np0/0.jpg)](https://www.youtube.com/watch?v=l_aQ2RG9Np0)
 
@@ -59,7 +61,42 @@ sonagent run
 --datadir user_data
 --user-data-dir user_data
 ```
-#### 3. check rpc channal  
+#### 3. Dynamic Skill Creation with PythonSandboxSkill
+
+SonAgent now includes a powerful PythonSandboxSkill that allows the agent to create new skills dynamically:
+
+```python
+# Example: Using PythonSandboxSkill to create a new skill
+from user_data.skills.PythonSandboxSkill import PythonSandboxSkill
+
+sandbox = PythonSandboxSkill()
+
+# Execute Python code safely
+code = """
+print("Hello from sandbox!")
+result = sum([1, 2, 3, 4, 5])
+print(f"Sum: {result}")
+"""
+output = sandbox.execute_python_code(code)
+
+# Create a new skill
+new_skill = """
+from pydantic import BaseModel
+from sonagent.rpc import IOMsg
+
+class CalculatorSkill(BaseModel):
+    def add(self, a: float, b: float) -> str:
+        result = a + b
+        msg = f"{a} + {b} = {result}"
+        IOMsg.send_msg(msg)
+        return msg
+"""
+sandbox.write_skill("CalculatorSkill", new_skill, "Basic calculator operations")
+```
+
+See [PythonSandboxSkill Documentation](docs/PYTHON_SANDBOX_SKILL.md) for more details.
+
+#### 4. check rpc channal  
 
 ```
 ```
