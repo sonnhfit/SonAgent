@@ -28,7 +28,7 @@ class SkillsManager:
         self.copy_standard_skills_if_needed()
 
     def copy_standard_skills_if_needed(self) -> None:
-        """Copy standard skills to user_data/skills if directory is empty."""
+        """Copy standard skills to user_data/skills, overwriting if already exists."""
         # Ensure the skills directory exists
         if not self.skills_dir.exists():
             try:
@@ -38,14 +38,6 @@ class SkillsManager:
                 logger.error(f"Failed to create skills directory {self.skills_dir}: {e}")
                 return
         
-        # Check if there are any Python skill files in the directory
-        existing_skills = [f for f in self.skills_dir.iterdir() 
-                          if f.suffix == '.py' and f.is_file() and not f.name.startswith('__')]
-        
-        if existing_skills:
-            logger.info(f"Skills directory already contains {len(existing_skills)} skill(s), skipping standard skills copy")
-            return
-        
         # Get the path to standard skills directory
         standard_skills_dir = Path(__file__).parent.parent.joinpath('standard_skills')
         
@@ -53,7 +45,7 @@ class SkillsManager:
             logger.warning(f"Standard skills directory not found: {standard_skills_dir}")
             return
         
-        # Copy all Python files from standard_skills to user_data/skills
+        # Copy all Python files from standard_skills to user_data/skills (overwrite if exists)
         copied_count = 0
         for skill_file in standard_skills_dir.iterdir():
             if skill_file.suffix == '.py' and skill_file.is_file() and not skill_file.name.startswith('__'):
