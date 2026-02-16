@@ -1,5 +1,6 @@
 import logging
 import os
+import shutil
 from pathlib import Path
 from typing import Any, List
 
@@ -22,6 +23,52 @@ class SkillsManager:
         self.skills_dir = Path(self.config['user_data_dir']).joinpath('skills')
         self.last_scan_time = 0
         self.cached_skill_files = set()
+        
+        # Copy standard skills if user_data/skills is empty
+        self.copy_standard_skills_if_needed()
+
+    def copy_standard_skills_if_needed(self) -> None:
+        """Copy standard skills to user_data/skills if directory is empty."""
+        # Ensure the skills directory exists
+        if not self.skills_dir.exists():
+            try:
+                self.skills_dir.mkdir(parents=True, exist_ok=True)
+                logger.info(f"Created skills directory: {self.skills_dir}")
+            except Exception as e:
+                logger.error(f"Failed to create skills directory {self.skills_dir}: {e}")
+                return
+        
+        # Check if there are any Python skill files in the directory
+        existing_skills = [f for f in self.skills_dir.iterdir() 
+                          if f.suffix == '.py' and f.is_file() and not f.name.startswith('__')]
+        
+        if existing_skills:
+            logger.info(f"Skills directory already contains {len(existing_skills)} skill(s), skipping standard skills copy")
+            return
+        
+        # Get the path to standard skills directory
+        standard_skills_dir = Path(__file__).parent.parent.joinpath('standard_skills')
+        
+        if not standard_skills_dir.exists():
+            logger.warning(f"Standard skills directory not found: {standard_skills_dir}")
+            return
+        
+        # Copy all Python files from standard_skills to user_data/skills
+        copied_count = 0
+        for skill_file in standard_skills_dir.iterdir():
+            if skill_file.suffix == '.py' and skill_file.is_file() and not skill_file.name.startswith('__'):
+                try:
+                    dest_file = self.skills_dir / skill_file.name
+                    shutil.copy2(skill_file, dest_file)
+                    logger.info(f"Copied standard skill: {skill_file.name} to {dest_file}")
+                    copied_count += 1
+                except Exception as e:
+                    logger.error(f"Failed to copy skill {skill_file.name}: {e}")
+        
+        if copied_count > 0:
+            logger.info(f"Successfully copied {copied_count} standard skill(s) to {self.skills_dir}")
+        else:
+            logger.info("No standard skills found to copy")
 
     def scan_skills_directory(self) -> List[str]:
         """Scan the skills directory for Python files and return skill names."""
