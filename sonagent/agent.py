@@ -10,7 +10,7 @@ from openai import OpenAI
 from sonagent.nerve_system import Brain
 from sonagent.nerve_system.memory_area import ShortTermMemory, SonMemory
 from sonagent.nerve_system.stimulus import Stimulus
-from sonagent.persistence import Belief, Environment, Plan, ScheduleJob
+from sonagent.persistence import Belief, Environment, ScheduleJob, Task
 from sonagent.tools import GitManager, LocalCodeManager
 from sonagent.utils.datetime_helpers import dt_now
 
@@ -215,6 +215,14 @@ class Agent:
         return result
 
     async def create_plan_and_running(self, goal_plan: str) -> str:
+        # Create a new task for this plan
+        task = Task.create_task(
+            agent_id="agent",
+            content=goal_plan,
+            priority=0
+        )
+        
+        # Execute the plan
         plan_json = await self.planning(goal=goal_plan)
 
         # replace ```json to empty string
@@ -225,9 +233,11 @@ class Agent:
         tasks = plan_json.get("subtasks", [])
 
         result = ""
-        for task in tasks:
-            result += str(await self.excute_plan_task(task))
-
+        for subtask in tasks:
+            result += str(await self.excute_plan_task(subtask))
+        
+        # Mark task as completed
+        task.complete({"result": result})
         return result
 
     async def create_schedule_for_task_or_plan(self, goal_plan: str) -> str:
@@ -531,20 +541,17 @@ class Agent:
         )
         plan_result_string = result.strip()
 
-        # save to database
-        plan = Plan(goal=goal, subtask=plan_result_string)
-        Plan.session.add(plan)
-        Plan.session.commit()
-
-        logger.debug("Finish Create new plan.")
+        logger.debug("Finish planning.")
         return plan_result_string
 
     async def show_plan(self) -> str:
-        plan_list = Plan.get_all_plans()
-        plan_text = ""
-        for plan in plan_list:
-            plan_text += str("-" + plan.goal + "\n")
-        return plan_text
+        # This method is now deprecated since we're using tasks instead of plans
+        # We'll show pending tasks instead
+        tasks = Task.get_pending_tasks()
+        task_text = "Pending Tasks:\n"
+        for task in tasks:
+            task_text += f"- ID: {task.id}, Content: {task.content[:50]}..., Status: {task.status}, Priority: {task.priority}\n"
+        return task_text
 
     async def show_schedule(self) -> str:
         schedule_jobs = ScheduleJob.get_all_schedule_not_completed_jobs()
