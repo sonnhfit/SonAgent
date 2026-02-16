@@ -1,8 +1,9 @@
 import logging
-from typing import ClassVar, List, Optional, Dict, Any
 from datetime import datetime
+from typing import Any, ClassVar, Dict, List, Optional
 
-from sqlalchemy import BigInteger, Integer, String, Text, SmallInteger, DateTime, JSON
+from sqlalchemy import (JSON, BigInteger, DateTime, Integer, SmallInteger,
+                        String, Text)
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.sql import select
 
