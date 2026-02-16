@@ -686,6 +686,8 @@ Thought:{agent_scratchpad}"""
             
             # Execute agent
             result = agent.invoke({"input": query})
+
+            logging.info(f"ReAct agent raw result: {result}")
             
             # Extract response
             response_text = result.get('output', 'No response generated')
