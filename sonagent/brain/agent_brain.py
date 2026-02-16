@@ -479,6 +479,79 @@ class AgentBrain:
         self.load_and_index_skills()
         logger.info("Skills reloaded and reindexed")
     
+    def _convert_skill_to_tools(self, skill: Any) -> List[BaseTool]:
+        """
+        Convert a SonAgent skill to multiple LangChain Tools (one per method).
+        
+        Args:
+            skill: SonAgent skill object
+            
+        Returns:
+            List of LangChain Tool objects
+        """
+        skill_name = skill.__class__.__name__
+        tools = []
+        
+        logger.debug(f"Converting skill '{skill_name}' to tools (all methods)")
+        
+        # List of methods to skip (Pydantic special methods and private methods)
+        skip_methods = {'construct', 'model_construct', 'from_orm', 'dict', 'json', 'copy', 'validate', 
+                       'parse_obj', 'parse_raw', 'schema', 'schema_json', 'update_forward_refs'}
+        
+        # Find all callable public methods
+        for attr_name in dir(skill):
+            # Skip private methods, special methods, and Pydantic methods
+            if attr_name.startswith('_') or attr_name in skip_methods:
+                continue
+            
+            attr = getattr(skill, attr_name)
+            if not callable(attr):
+                continue
+            
+            # Skip if it's a classmethod or staticmethod
+            if isinstance(attr, (classmethod, staticmethod)):
+                continue
+            
+            method_name = attr_name
+            method = attr
+            
+            # Get the method's docstring if available
+            method_doc = method.__doc__ or ""
+            
+            logger.debug(f"  Found callable method '{method_name}' in {skill_name}")
+            
+            # Create tool function using the tool decorator
+            from langchain.tools import tool
+            
+            # Use method docstring as description
+            func_description = method_doc.strip() if method_doc else f"Execute {skill_name}.{method_name}"
+            
+            # Create a closure to capture the current method reference
+            def make_tool_func(skill_instance, method_ref, skill_cls_name, method_nm):
+                @tool(description=func_description)
+                def skill_tool_func(**kwargs):
+                    """Execute the skill method with provided arguments."""
+                    try:
+                        result = method_ref(**kwargs)
+                        return str(result)
+                    except Exception as e:
+                        error_msg = f"Error executing {skill_cls_name}.{method_nm}: {str(e)}"
+                        logger.error(error_msg, exc_info=True)
+                        return error_msg
+                
+                # Use underscore instead of dot to match OpenAI's required pattern: ^[a-zA-Z0-9_-]+$
+                skill_tool_func.name = f"{skill_cls_name}_{method_nm}"
+                return skill_tool_func
+            
+            tool_func = make_tool_func(skill, method, skill_name, method_name)
+            tools.append(tool_func)
+            logger.info(f"Created tool: {tool_func.name}")
+        
+        if not tools:
+            logger.warning(f"No callable methods found for skill {skill_name}")
+        
+        return tools
+    
     def _convert_skill_to_tool(self, skill: Any) -> BaseTool:
         """
         Convert a SonAgent skill to a LangChain Tool.
@@ -619,11 +692,23 @@ class AgentBrain:
             if tools is None:
                 skills = self.skills_manager.get_all_skills()
                 logger.info(f"No tools provided, loading all {len(skills)} skills")
-                tools = [self._convert_skill_to_tool(skill) for skill in skills]
+                # Convert each skill to multiple tools (one per method)
+                tools = []
+                for skill in skills:
+                    skill_tools = self._convert_skill_to_tools(skill)
+                    tools.extend(skill_tools)
             else:
                 # Convert provided skills to tools
                 logger.info(f"Converting {len(tools)} provided tools")
-                tools = [self._convert_skill_to_tool(tool) if not isinstance(tool, BaseTool) else tool for tool in tools]
+                converted_tools = []
+                for tool in tools:
+                    if isinstance(tool, BaseTool):
+                        converted_tools.append(tool)
+                    else:
+                        # Convert skill to multiple tools
+                        skill_tools = self._convert_skill_to_tools(tool)
+                        converted_tools.extend(skill_tools)
+                tools = converted_tools
             
             logger.info(f"Total tools available for agent: {len(tools)}")
             for tool in tools:
@@ -828,7 +913,7 @@ Thought:{agent_scratchpad}"""
         
         Args:
             query: Query to find relevant tools
-            limit: Maximum number of tools to return
+            limit: Maximum number of SKILLS to return (each skill may have multiple methods/tools)
             
         Returns:
             List of LangChain Tool objects
@@ -842,6 +927,10 @@ Thought:{agent_scratchpad}"""
             skills = self.skills_manager.get_all_skills()
             skills = skills[:limit]
         
-        # Convert to tools
-        tools = [self._convert_skill_to_tool(skill) for skill in skills]
+        # Convert to tools (multiple tools per skill)
+        tools = []
+        for skill in skills:
+            skill_tools = self._convert_skill_to_tools(skill)
+            tools.extend(skill_tools)
+        
         return tools
