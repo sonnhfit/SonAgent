@@ -115,3 +115,5 @@ target/
 repo_tmp/
 /user_data/config.json
 .clinerules/*
+
+/user_data/memory/*
