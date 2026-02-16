@@ -4,7 +4,7 @@ using LangChain's OpenAIEmbeddings with fallback to custom implementation.
 """
 import logging
 import os
-from typing import List, Optional, Any, Dict
+from typing import Any, Dict, List, Optional
 
 from .embedding import Embedding
 
@@ -45,7 +45,7 @@ class LangChainEmbeddingWrapper(Embedding):
         if api_type == 'openai':
             try:
                 from langchain_openai import OpenAIEmbeddings
-                
+
                 # Get configuration parameters
                 model = llm_config.get('embedding_model', 'text-embedding-3-small')
                 base_url = llm_config.get('base_url')

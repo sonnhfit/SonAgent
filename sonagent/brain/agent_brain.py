@@ -10,7 +10,8 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 from sonagent.skills.skills_manager import SkillsManager
-from sonagent.tools.embedding.langchain_embedding_wrapper import create_embedding_wrapper
+from sonagent.tools.embedding.langchain_embedding_wrapper import \
+    create_embedding_wrapper
 from sonagent.tools.vector_database.vectordb import VectorDB
 from sonagent.utils.datetime_helpers import dt_now
 
@@ -68,8 +69,9 @@ class AgentBrain:
         Returns:
             Unique conversation ID string
         """
-        import uuid
         import time
+        import uuid
+
         # Generate a UUID and combine with timestamp for uniqueness
         unique_id = str(uuid.uuid4())[:8]
         timestamp = int(time.time())
@@ -313,7 +315,7 @@ class AgentBrain:
         try:
             # Import locally to avoid circular imports
             from sonagent.persistence import ChatMessage
-            
+
             # Save to ChatMessage model
             ChatMessage.create_message(
                 conversation_id=conversation_id,
@@ -343,7 +345,7 @@ class AgentBrain:
         try:
             # Import locally to avoid circular imports
             from sonagent.persistence import ChatMessage
-            
+
             # Get messages for the conversation
             messages = ChatMessage.get_conversation_messages(
                 conversation_id=conversation_id,
@@ -385,7 +387,7 @@ class AgentBrain:
         try:
             # Import locally to avoid circular imports
             from sonagent.persistence import ChatMessage
-            
+
             # Delete messages for the conversation
             deleted_count = ChatMessage.delete_conversation(conversation_id)
             logger.info(f"Cleared {deleted_count} chat messages for conversation: {conversation_id}")
