@@ -17,6 +17,19 @@ from sonagent.utils.datetime_helpers import dt_now
 
 logger = logging.getLogger(__name__)
 
+# Methods to skip when converting skills to tools (Pydantic and common BaseModel methods)
+SKIP_METHODS = {
+    # Pydantic v1 methods
+    'construct', 'from_orm', 'dict', 'json', 'copy', 'validate', 
+    'parse_obj', 'parse_raw', 'parse_file', 'schema', 'schema_json', 'update_forward_refs',
+    # Pydantic v2 methods
+    'model_construct', 'model_validate', 'model_validate_json', 'model_validate_strings',
+    'model_dump', 'model_dump_json', 'model_copy', 'model_json_schema',
+    'model_parametrized_name', 'model_post_init', 'model_rebuild',
+    # Other common methods to skip
+    'get', 'set', 'values', 'keys', 'items'
+}
+
 # LangChain imports for ReAct agent
 try:
     from langchain.agents import create_agent
@@ -494,31 +507,14 @@ class AgentBrain:
         
         logger.debug(f"Converting skill '{skill_name}' to tools (all methods)")
         
-        # List of methods to skip (Pydantic special methods, private methods, and common BaseModel methods)
-        skip_methods = {
-            # Pydantic v1 methods
-            'construct', 'from_orm', 'dict', 'json', 'copy', 'validate', 
-            'parse_obj', 'parse_raw', 'parse_file', 'schema', 'schema_json', 'update_forward_refs',
-            # Pydantic v2 methods
-            'model_construct', 'model_validate', 'model_validate_json', 'model_validate_strings',
-            'model_dump', 'model_dump_json', 'model_copy', 'model_json_schema',
-            'model_parametrized_name', 'model_post_init', 'model_rebuild',
-            # Other common methods to skip
-            'get', 'set', 'values', 'keys', 'items'
-        }
-        
         # Find all callable public methods
         for attr_name in dir(skill):
             # Skip private methods, special methods, and Pydantic methods
-            if attr_name.startswith('_') or attr_name in skip_methods:
+            if attr_name.startswith('_') or attr_name in SKIP_METHODS:
                 continue
             
             attr = getattr(skill, attr_name)
             if not callable(attr):
-                continue
-            
-            # Skip if it's a classmethod or staticmethod
-            if isinstance(attr, (classmethod, staticmethod)):
                 continue
             
             method_name = attr_name
@@ -535,9 +531,9 @@ class AgentBrain:
             # Use method docstring as description
             func_description = method_doc.strip() if method_doc else f"Execute {skill_name}.{method_name}"
             
-            # Create a closure to capture the current method reference
-            def make_tool_func(skill_instance, method_ref, skill_cls_name, method_nm):
-                @tool(description=func_description)
+            # Create a closure to capture the current method reference and description
+            def make_tool_func(skill_instance, method_ref, skill_cls_name, method_nm, description):
+                @tool(description=description)
                 def skill_tool_func(**kwargs):
                     """Execute the skill method with provided arguments."""
                     try:
@@ -552,7 +548,7 @@ class AgentBrain:
                 skill_tool_func.name = f"{skill_cls_name}_{method_nm}"
                 return skill_tool_func
             
-            tool_func = make_tool_func(skill, method, skill_name, method_name)
+            tool_func = make_tool_func(skill, method, skill_name, method_name, func_description)
             tools.append(tool_func)
             logger.info(f"Created tool: {tool_func.name}")
         
@@ -585,13 +581,10 @@ class AgentBrain:
         method_name = None
         method_doc = ""
         
-        # List of methods to skip (Pydantic special methods)
-        skip_methods = {'construct', 'model_construct', 'from_orm', 'dict', 'json', 'copy', 'validate'}
-        
         logger.debug(f"Searching for callable methods in {skill_name}")
         for attr_name in dir(skill):
             # Skip private methods and special Pydantic methods
-            if attr_name.startswith('_') or attr_name in skip_methods:
+            if attr_name.startswith('_') or attr_name in SKIP_METHODS:
                 continue
             if callable(getattr(skill, attr_name)):
                 method = getattr(skill, attr_name)

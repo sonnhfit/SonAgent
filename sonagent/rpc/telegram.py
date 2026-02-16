@@ -132,9 +132,10 @@ class Telegram(RPCHandler):
             logger.error(f"[Telegram] Error processing message: {e}", exc_info=True)
             # Try to send error message back to user
             try:
-                await update.message.reply_text(f"Error processing message: {str(e)}")
-            except:
-                pass
+                error_msg = f"Sorry, an error occurred while processing your message: {str(e)[:200]}"
+                await update.message.reply_text(error_msg)
+            except Exception as reply_error:
+                logger.error(f"[Telegram] Failed to send error message to user: {reply_error}")
 
     def _init(self) -> None:
         """
