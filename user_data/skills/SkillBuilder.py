@@ -1,3 +1,5 @@
+import json
+import os
 from pathlib import Path
 from typing import Dict, List, Optional, Any
 from pydantic import BaseModel
@@ -52,9 +54,6 @@ class SkillBuilder(BaseModel):
             str: Status message with path to saved skill or error message
         """
         try:
-            import json
-            import os
-            
             # Parse parameters if provided
             params_list = None
             if parameters:
@@ -148,8 +147,6 @@ class SkillBuilder(BaseModel):
             str: Status message with path to saved skill or error message
         """
         try:
-            import os
-            
             # Create skill generator
             generator = SkillGenerator()
             

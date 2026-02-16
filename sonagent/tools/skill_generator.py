@@ -202,7 +202,7 @@ return result'''
         """Indent code by specified number of spaces."""
         indent = " " * indent_level
         lines = code.split('\n')
-        return '\n'.join([indent + line if line.strip() else line for line in lines])
+        return '\n'.join([indent + line if line.strip() else '' for line in lines])
     
     def _generate_example_call(self, parameters: List[Dict[str, str]]) -> str:
         """Generate example method call."""

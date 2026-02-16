@@ -15,14 +15,8 @@ logger = logging.getLogger(__name__)
 class SandboxExecutor:
     """Execute Python code in a restricted sandbox environment."""
     
-    def __init__(self, timeout: int = 10):
-        """
-        Initialize sandbox executor.
-        
-        Args:
-            timeout: Maximum execution time in seconds (not enforced in basic version)
-        """
-        self.timeout = timeout
+    def __init__(self):
+        """Initialize sandbox executor."""
         self.allowed_imports = {
             'json', 'math', 'datetime', 'time', 're', 'random',
             'typing', 'pathlib', 'collections', 'itertools',
@@ -224,10 +218,13 @@ class SandboxExecutor:
         
         Args:
             code: Skill code to test
-            test_cases: Optional list of test cases (each a dict with 'args' and 'expected')
+            test_cases: Optional list of test cases (not yet implemented - reserved for future use)
             
         Returns:
             Dictionary with test results
+            
+        Note:
+            The test_cases parameter is reserved for future implementation and currently not used.
         """
         # First validate syntax
         is_valid, error_msg = self.validate_code(code)
