@@ -485,10 +485,18 @@ class AgentBrain:
         description = description_lines[0] if description_lines else f"Skill: {skill_name}"
         
         # Find the first method that's not __init__ or private
+        # Skip Pydantic's 'construct' method and other special methods
         method_name = None
         method_doc = ""
+        
+        # List of methods to skip (Pydantic special methods)
+        skip_methods = {'construct', 'model_construct', 'from_orm', 'dict', 'json', 'copy', 'validate'}
+        
         for attr_name in dir(skill):
-            if not attr_name.startswith('_') and callable(getattr(skill, attr_name)):
+            # Skip private methods and special Pydantic methods
+            if attr_name.startswith('_') or attr_name in skip_methods:
+                continue
+            if callable(getattr(skill, attr_name)):
                 method = getattr(skill, attr_name)
                 # Get the method's docstring if available
                 method_doc = method.__doc__ or ""
@@ -618,16 +626,23 @@ class AgentBrain:
             # Default system prompt for agent with tools
             if system_prompt is None:
                 system_prompt = """You are SonAgent, an autonomous AI agent that can use tools to accomplish tasks.
-                
+
 You have access to the following tools:
 {tools}
+
+IMPORTANT: When a user asks you to CREATE or GENERATE a new skill, you MUST call the SkillBuilder tool with the following parameters:
+- skill_name: A valid Python class name (e.g., "PrimeFinder", "WeatherChecker")
+- description: A clear description of what the skill does
+- prompt: Natural language description of what the skill should do (for create_simple_skill method)
+
+When calling tools, ALWAYS provide the required arguments in a JSON format within the Action Input.
 
 Use the following format:
 
 Question: the input question you must answer
 Thought: you should always think about what to do
 Action: the action to take, should be one of [{tool_names}]
-Action Input: the input to the action
+Action Input: the input to the action (MUST be a valid JSON string with all required arguments)
 Observation: the result of the action
 ... (this Thought/Action/Action Input/Observation can repeat N times)
 Thought: I now know the final answer
