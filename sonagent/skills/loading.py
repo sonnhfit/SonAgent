@@ -173,12 +173,11 @@ class BaseLoading:
         abs_paths = cls.build_search_paths(config,
                                            user_subdir=cls.user_subdir,
                                            extra_dirs=extra_dirs)
-        print(abs_paths)
-        
+        logger.info(f"[BaseLoading] Search paths: {abs_paths}")
 
         found_object = cls._load_object(paths=abs_paths, object_name=object_name,
                                         kwargs=kwargs)
-        print(found_object)
+        logger.debug(f"[BaseLoading] Found object: {found_object}")
         if found_object:
             return found_object
         raise Exception(f"Could not find {object_name}'")
@@ -248,4 +247,3 @@ class BaseLoading:
                      'location_rel': cls._build_rel_location(basedir or directory, entry),
                      })
         return objects
-

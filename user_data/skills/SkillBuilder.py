@@ -1,4 +1,5 @@
 import json
+import logging
 import os
 from pathlib import Path
 from typing import Dict, List, Optional, Any
@@ -7,6 +8,8 @@ from pydantic import BaseModel
 from sonagent.rpc import IOMsg
 from sonagent.tools.sandbox_executor import SandboxExecutor
 from sonagent.tools.skill_generator import SkillGenerator
+
+logger = logging.getLogger(__name__)
 
 
 class SkillBuilder(BaseModel):
@@ -54,18 +57,24 @@ class SkillBuilder(BaseModel):
             str: Status message with path to saved skill or error message
         """
         try:
+            logger.info(f"[SkillBuilder] Starting generate_skill - skill_name: {skill_name}, description: {description}")
+            
             # Parse parameters if provided
             params_list = None
             if parameters:
                 try:
                     params_list = json.loads(parameters)
+                    logger.debug(f"[SkillBuilder] Parsed parameters: {params_list}")
                 except json.JSONDecodeError as e:
+                    logger.error(f"[SkillBuilder] Invalid parameters JSON: {str(e)}")
                     return f"Error: Invalid parameters JSON: {str(e)}"
             
             # Create skill generator
             generator = SkillGenerator()
+            logger.debug("[SkillBuilder] Created SkillGenerator instance")
             
             # Generate skill code
+            logger.info(f"[SkillBuilder] Calling SkillGenerator.generate_skill for skill: {skill_name}")
             code = generator.generate_skill(
                 skill_name=skill_name,
                 description=description,
@@ -73,26 +82,33 @@ class SkillBuilder(BaseModel):
                 parameters=params_list,
                 implementation=implementation
             )
+            logger.debug(f"[SkillBuilder] Generated code length: {len(code)} chars")
             
             IOMsg.send_msg(f"Generated skill code:\n```python\n{code}\n```")
             
             # Test in sandbox first
             sandbox = SandboxExecutor()
+            logger.debug("[SkillBuilder] Testing skill code in sandbox")
             test_result = sandbox.test_skill_code(code)
+            logger.debug(f"[SkillBuilder] Sandbox test result: success={test_result.get('success')}")
             
             if not test_result['success']:
                 error_msg = f"Error: Skill code failed validation:\n{test_result.get('error', 'Unknown error')}"
+                logger.error(f"[SkillBuilder] Sandbox validation failed: {test_result.get('error')}")
                 IOMsg.send_msg(error_msg)
                 return error_msg
             
+            logger.info("[SkillBuilder] Skill code validated successfully in sandbox")
             IOMsg.send_msg("✓ Skill code validated successfully in sandbox")
             
             # Get skills directory from environment or use default
             user_data_dir = os.environ.get('USER_DATA_DIR', 'user_data')
             skills_dir = Path(user_data_dir) / 'skills'
+            logger.debug(f"[SkillBuilder] Skills directory: {skills_dir}")
             
             # Save skill
             skill_file = generator.save_skill(code, skill_name, skills_dir)
+            logger.info(f"[SkillBuilder] Skill saved to: {skill_file}")
             
             success_msg = f"✓ Skill '{skill_name}' created successfully at: {skill_file}\n"
             success_msg += "To use this skill, reload skills with the reload_skills command."
@@ -101,6 +117,7 @@ class SkillBuilder(BaseModel):
             return success_msg
             
         except Exception as e:
+            logger.exception(f"[SkillBuilder] Error generating skill: {str(e)}")
             error_msg = f"Error generating skill: {str(e)}"
             IOMsg.send_msg(error_msg)
             return error_msg
@@ -116,21 +133,28 @@ class SkillBuilder(BaseModel):
             str: Test results
         """
         try:
+            logger.info(f"[SkillBuilder] Starting test_skill_code - code length: {len(code)} chars")
+            
             sandbox = SandboxExecutor()
+            logger.debug("[SkillBuilder] Executing sandbox test")
             result = sandbox.test_skill_code(code)
+            logger.debug(f"[SkillBuilder] Test result: success={result.get('success')}")
             
             if result['success']:
                 output = "✓ Skill code is valid and executed successfully\n"
                 if result.get('output'):
                     output += f"\nOutput:\n{result['output']}"
+                logger.info("[SkillBuilder] Skill code test passed")
                 IOMsg.send_msg(output)
                 return output
             else:
                 error = f"✗ Skill code validation failed:\n{result.get('error', 'Unknown error')}"
+                logger.error(f"[SkillBuilder] Skill code test failed: {result.get('error')}")
                 IOMsg.send_msg(error)
                 return error
                 
         except Exception as e:
+            logger.exception(f"[SkillBuilder] Error testing skill code: {str(e)}")
             error_msg = f"Error testing skill code: {str(e)}"
             IOMsg.send_msg(error_msg)
             return error_msg
@@ -147,34 +171,45 @@ class SkillBuilder(BaseModel):
             str: Status message with path to saved skill or error message
         """
         try:
+            logger.info(f"[SkillBuilder] Starting create_simple_skill - skill_name: {skill_name}, prompt: {prompt}")
+            
             # Create skill generator
             generator = SkillGenerator()
+            logger.debug("[SkillBuilder] Created SkillGenerator instance")
             
             # Generate simple skill from prompt
+            logger.info(f"[SkillBuilder] Generating simple skill from prompt")
             code = generator.generate_simple_skill_from_prompt(
                 prompt=prompt,
                 skill_name=skill_name
             )
+            logger.debug(f"[SkillBuilder] Generated code length: {len(code)} chars")
             
             IOMsg.send_msg(f"Generated skill code from prompt:\n```python\n{code}\n```")
             
             # Test in sandbox
             sandbox = SandboxExecutor()
+            logger.debug("[SkillBuilder] Testing skill in sandbox")
             test_result = sandbox.test_skill_code(code)
+            logger.debug(f"[SkillBuilder] Sandbox test result: success={test_result.get('success')}")
             
             if not test_result['success']:
                 error_msg = f"Error: Generated skill failed validation:\n{test_result.get('error', 'Unknown error')}"
+                logger.error(f"[SkillBuilder] Validation failed: {test_result.get('error')}")
                 IOMsg.send_msg(error_msg)
                 return error_msg
             
+            logger.info("[SkillBuilder] Generated skill validated successfully")
             IOMsg.send_msg("✓ Generated skill validated successfully")
             
             # Get skills directory
             user_data_dir = os.environ.get('USER_DATA_DIR', 'user_data')
             skills_dir = Path(user_data_dir) / 'skills'
+            logger.debug(f"[SkillBuilder] Skills directory: {skills_dir}")
             
             # Save skill
             skill_file = generator.save_skill(code, skill_name, skills_dir)
+            logger.info(f"[SkillBuilder] Skill saved to: {skill_file}")
             
             success_msg = f"✓ Skill '{skill_name}' created from prompt!\n"
             success_msg += f"File: {skill_file}\n"
@@ -185,6 +220,7 @@ class SkillBuilder(BaseModel):
             return success_msg
             
         except Exception as e:
+            logger.exception(f"[SkillBuilder] Error creating simple skill: {str(e)}")
             error_msg = f"Error creating simple skill: {str(e)}"
             IOMsg.send_msg(error_msg)
             return error_msg
