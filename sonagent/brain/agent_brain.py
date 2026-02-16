@@ -643,7 +643,30 @@ Thought:{agent_scratchpad}"""
             logger.error(f"Failed to create ReAct agent: {e}")
             return None
     
-    def process_query_with_react(self, query: str, tools: List[Any] = None, system_prompt: str = None) -> Dict[str, Any]:
+    def _build_messages_from_history(self, chat_history: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        """
+        Build messages list from chat history for LangChain agent.
+        
+        Args:
+            chat_history: List of chat message dictionaries from get_chat_history()
+            
+        Returns:
+            List of message dictionaries with 'role' and 'content' keys
+        """
+        messages = []
+        for msg in chat_history:
+            role = msg.get('role', 'user')
+            # Map 'assistant' to 'ai' for LangChain compatibility
+            if role == 'assistant':
+                role = 'ai'
+            messages.append({
+                'role': role,
+                'content': msg.get('content', '')
+            })
+        return messages
+    
+    def process_query_with_react(self, query: str, tools: List[Any] = None, system_prompt: str = None, 
+                                  include_history: bool = True, history_limit: int = 20) -> Dict[str, Any]:
         """
         Process a user query using ReAct agent.
         
@@ -651,6 +674,8 @@ Thought:{agent_scratchpad}"""
             query: User query
             tools: List of tools to use (optional)
             system_prompt: Custom system prompt (optional)
+            include_history: Whether to include conversation history (default: True)
+            history_limit: Maximum number of history messages to include (default: 20)
             
         Returns:
             Dictionary with response and metadata
@@ -684,8 +709,17 @@ Thought:{agent_scratchpad}"""
                 self.save_chat_message("assistant", response_text)
                 return response
             
-            # Execute agent
-            result = agent.invoke({"input": query})
+            # Get conversation history for context
+            messages = []
+            if include_history:
+                chat_history = self.get_chat_history(limit=history_limit)
+                messages = self._build_messages_from_history(chat_history)
+            
+            # Add current user query to messages
+            messages.append({"role": "user", "content": query})
+            
+            # Execute agent with conversation history using 'messages' parameter
+            result = agent.invoke({"messages": messages})
 
             logging.info(f"ReAct agent raw result: {result}")
             
