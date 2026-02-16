@@ -146,7 +146,7 @@ class AgentBrain:
                 metadatas.append({
                     'skill_name': skill_name,
                     'type': 'semantic',
-                    'timestamp': dt_now()
+                    'timestamp': dt_now().isoformat()  # Convert to ISO format string for JSON serialization
                 })
                 docs.append(skill_description)
                 ids.append(f"semantic_{skill_name}_{i}")
@@ -183,7 +183,7 @@ class AgentBrain:
                     'skill_name': skill_name,
                     'keyword': keyword,
                     'type': 'keyword',
-                    'timestamp': dt_now()
+                    'timestamp': dt_now().isoformat()  # Convert to ISO format string for JSON serialization
                 })
                 docs.append(keyword)
                 ids.append(f"keyword_{skill_name}_{keyword}_{i}")
@@ -309,8 +309,8 @@ class AgentBrain:
         if conversation_id is None:
             conversation_id = self.conversation_id
         
-        # Add timestamp to metadata
-        metadata['timestamp'] = dt_now()
+        # Add timestamp to metadata - convert datetime to ISO format string for JSON serialization
+        metadata['timestamp'] = dt_now().isoformat()
         
         try:
             # Import locally to avoid circular imports
@@ -443,7 +443,7 @@ class AgentBrain:
             'query': query,
             'relevant_skills': [skill['skill_name'] for skill in relevant_skills],
             'response': f"I found {len(relevant_skills)} skills that might help with your query: {query}",
-            'timestamp': dt_now()
+            'timestamp': dt_now().isoformat()  # Convert to ISO format string for JSON serialization
         }
         
         # Save assistant response
