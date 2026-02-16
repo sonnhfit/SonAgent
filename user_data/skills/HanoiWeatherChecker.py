@@ -3,17 +3,17 @@ from pydantic import BaseModel
 from sonagent.rpc import IOMsg
 
 
-class WeatherChecker(BaseModel):
+class HanoiWeatherChecker(BaseModel):
     """
-    WeatherChecker.weather_checker
-    description: Check the weather in a specified city using an API
+    HanoiWeatherChecker.hanoi_weather_checker
+    description: Check the current weather in Hanoi, Vietnam
     args:
         - input_text: Input text for the operation
     """
 
-    def weather_checker(self, input_text: str):
+    def hanoi_weather_checker(self, input_text: str):
         """
-        Check the weather in a specified city using an API
+        Check the current weather in Hanoi, Vietnam
         
         Args:
             input_text (str): Input text for the operation
@@ -21,13 +21,13 @@ class WeatherChecker(BaseModel):
         Returns:
             Result of the operation
         """
-        # TODO: Implement actual logic for: Check the weather in a specified city using an API
+        # TODO: Implement actual logic for: Check the current weather in Hanoi, Vietnam
         result = f"Processing: {input_text}"
         IOMsg.send_msg(result)
         return result
 
 # Example usage
 if __name__ == "__main__":
-    skill = WeatherChecker()
-    result = skill.weather_checker(input_text="input_text_value")
+    skill = HanoiWeatherChecker()
+    result = skill.hanoi_weather_checker(input_text="input_text_value")
     print(result)
