@@ -8,11 +8,11 @@ from sqlalchemy.pool import StaticPool
 from sonagent.exceptions import OperationalException
 from sonagent.persistence.base import ModelBase
 from sonagent.persistence.belief_models import Belief
-from sonagent.persistence.chat_models import ChatMessage, Conversation
 from sonagent.persistence.environment_models import Environment
 from sonagent.persistence.migrations import check_migrate
+from sonagent.persistence.planning_models import Plan
 from sonagent.persistence.schedule_models import ScheduleJob
-from sonagent.persistence.tasks_models import Task
+from sonagent.persistence.skill_models import SkillDocs
 
 logger = logging.getLogger(__name__)
 
@@ -49,21 +49,17 @@ def init_db(db_url: str) -> None:
     Belief.session = scoped_session(sessionmaker(bind=engine, autoflush=False))
     Belief.query = Belief.session.query_property()
 
+    Plan.session = scoped_session(sessionmaker(bind=engine, autoflush=False))
+    Plan.query = Plan.session.query_property()
+
+    SkillDocs.session = scoped_session(sessionmaker(bind=engine, autoflush=False))
+    SkillDocs.query = SkillDocs.session.query_property()
+
     ScheduleJob.session = scoped_session(sessionmaker(bind=engine, autoflush=False))
     ScheduleJob.query = ScheduleJob.session.query_property()
 
     Environment.session = scoped_session(sessionmaker(bind=engine, autoflush=False))
     Environment.query = Environment.session.query_property()
-
-    Task.session = scoped_session(sessionmaker(bind=engine, autoflush=False))
-    Task.query = Task.session.query_property()
-
-    ChatMessage.session = scoped_session(sessionmaker(bind=engine, autoflush=False))
-    ChatMessage.query = ChatMessage.session.query_property()
-
-    Conversation.session = scoped_session(sessionmaker(bind=engine, autoflush=False))
-    Conversation.query = Conversation.session.query_property()
-
     
     try:
         previous_tables = inspect(engine).get_table_names()

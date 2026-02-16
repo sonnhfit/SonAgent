@@ -1,9 +1,7 @@
 import ast
 import logging
 import os
-import time
 from datetime import datetime
-from pathlib import Path
 from typing import Any
 
 from croniter import croniter
@@ -37,12 +35,6 @@ class SonBot(LoggingMixin):
 
         self.config = config
         
-        # Global conversation ID for consistent chat context
-        # Generate a new conversation ID on startup
-        self.conversation_id = self._generate_conversation_id()
-        
-        logger.info(f"SonBot initialized with conversation_id: {self.conversation_id}")
-        
         memory_url = self.args.get('memory-url', "user_data/memory")
         agentdb = self.args.get('agentdb', "sqlite:///user_data/agentdb.sqlite")
 
@@ -71,13 +63,7 @@ class SonBot(LoggingMixin):
         logger.info(f"SKILLLS NAME: {names}")
         self._schedule = Scheduler()
 
-        # Pass conversation_id to Agent
-        self.agent = Agent(
-            memory_path=memory_url, 
-            skills=self.skills, 
-            config=self.config,
-            conversation_id=self.conversation_id
-        )
+        self.agent = Agent(memory_path=memory_url, skills=self.skills, config=self.config)
         self.rpc: RPCManager = RPCManager(self)
 
         def update():
@@ -85,64 +71,13 @@ class SonBot(LoggingMixin):
     
         self._schedule.every(15).seconds.do(update)
 
-        # Add skill scanning every 10 seconds
-        def scan_skills():
-            self.scan_and_reload_skills()
-        
-        self._schedule.every(10).seconds.do(scan_skills)
-
         # Set initial bot state from config
         initial_state = self.config.get('initial_state')
 
         self.state = State[initial_state.upper()] if initial_state else State.STOPPED
         
         IOMsg.rpc = self.rpc
-        self.last_skill_scan_time = 0
-        self.cached_skill_files = set()
 
-
-    def scan_and_reload_skills(self) -> None:
-        """
-        Scan the skills directory for changes and reload skills if needed.
-        This method is called every 10 seconds by the scheduler.
-        """
-        try:
-            # Get current skill files in the directory
-            skills_dir = Path(self.config['user_data_dir']).joinpath('skills')
-            
-            if not skills_dir.exists():
-                logger.info(f"Skills directory does not exist, creating: {skills_dir}")
-                try:
-                    skills_dir.mkdir(parents=True, exist_ok=True)
-                    logger.info(f"Created skills directory: {skills_dir}")
-                except Exception as e:
-                    logger.error(f"Failed to create skills directory {skills_dir}: {e}")
-                    return
-                
-            current_files = set()
-            for entry in skills_dir.iterdir():
-                if entry.suffix == '.py' and entry.is_file() and not entry.name.startswith('__'):
-                    # Use file modification time and size to detect changes
-                    stat = entry.stat()
-                    file_key = f"{entry.name}:{stat.st_mtime}:{stat.st_size}"
-                    current_files.add(file_key)
-            
-            # Check if files have changed since last scan
-            if current_files != self.cached_skill_files:
-                logger.info(f"Skill files changed. Current: {len(current_files)} files, Previous: {len(self.cached_skill_files)} files")
-                self.cached_skill_files = current_files
-                
-                # Reload skills
-                self.agent.reload_skills()
-                logger.info("Skills reloaded due to directory changes")
-            else:
-                # Log only occasionally to avoid spam
-                if time.time() - self.last_skill_scan_time > 60:  # Log once per minute
-                    logger.debug(f"No changes in skill directory. Current skill count: {len(self.skills.skill_object_list)}")
-                    self.last_skill_scan_time = time.time()
-                    
-        except Exception as e:
-            logger.error(f"Error scanning skills directory: {e}")
 
     def update_schedule_jobs(self) -> None:
         """
@@ -296,30 +231,3 @@ class SonBot(LoggingMixin):
             'type': msg_type,
             'status': msg
         })
-    
-    def _generate_conversation_id(self) -> str:
-        """
-        Generate a unique conversation ID.
-        
-        Returns:
-            Unique conversation ID string
-        """
-        import time
-        import uuid
-
-        # Generate a UUID and combine with timestamp for uniqueness
-        unique_id = str(uuid.uuid4())[:8]
-        timestamp = int(time.time())
-        return f"conv_{timestamp}_{unique_id}"
-    
-    def new_conversation(self) -> str:
-        """
-        Start a new conversation by generating a new conversation ID.
-        
-        Returns:
-            New conversation ID
-        """
-        old_id = self.conversation_id
-        self.conversation_id = self._generate_conversation_id()
-        logger.info(f"Started new conversation: {old_id} -> {self.conversation_id}")
-        return self.conversation_id

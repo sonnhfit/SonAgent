@@ -51,16 +51,7 @@ sonagent run
 --datadir /path/to/user_data/  
 --user-data-dir /path/to/user_data/
 ```
-for example:
 
-```
-sonagent run 
---config user_data/config.json
---agentdb sqlite:///user_data/agentdb.sqlite
---memory-url user_data/memory
---datadir user_data
---user-data-dir user_data
-```
 #### 3. Dynamic Skill Creation with PythonSandboxSkill
 
 SonAgent now includes a powerful PythonSandboxSkill that allows the agent to create new skills dynamically:
@@ -100,6 +91,21 @@ See [PythonSandboxSkill Documentation](docs/PYTHON_SANDBOX_SKILL.md) for more de
 
 ```
 ```
+### Some Demo 
+
+```
+{
+    "input": "Train neural network for image classification of digits 0-9",
+    "subtasks": [
+        {"function": "PyTorchSkill.SetupEnvironment"},
+        {"function": "PyTorchSkill.CreateCNN", "args": {"architecture": "ResNet50"}},
+        {"function": "PyTorchSkill.PreprocessData", "args": {"data": "MNIST"}},
+        {"function": "PyTorchSkill.TrainModel", "args": {"epochs": 10}},
+        {"function": "PyTorchSkill.EvaluateModel"},
+        {"function": "PyTorchSkill.SaveModel"}
+    ]
+}
+```
 
 
 ### Dev
@@ -108,64 +114,10 @@ See [PythonSandboxSkill Documentation](docs/PYTHON_SANDBOX_SKILL.md) for more de
 pip install --editable .
 ```
 
-### Docker
-
-You can run SonAgent using Docker:
-
-#### Using Docker Compose (recommended)
-
-1. Clone the repository:
-```bash
-git clone https://github.com/sonnhfit/SonAgent.git
-cd SonAgent
+if you want to build docker image 
 ```
-
-2. Create a `.env` file with your configuration (copy from `example.env`):
-```bash
-cp example.env .env
-# Edit .env with your API keys and settings
+soon
 ```
-
-3. Create user_data directory and config:
-```bash
-mkdir -p user_data
-# Create your config.json in user_data/
-```
-
-4. Run with Docker Compose:
-```bash
-docker-compose up
-```
-
-#### Using Docker directly
-
-```bash
-docker run -d \
-  --name sonagent \
-  -v $(pwd)/user_data:/sonagent/user_data \
-  -p 8080:8080 \
-  ghcr.io/sonnhfit/sonagent/sonagent:latest \
-  run \
-  --config /sonagent/user_data/config.json \
-  --agentdb sqlite:///user_data/tradesv3.sqlite \
-  --memory-url /sonagent/user_data/memory
-```
-
-#### Building Docker image locally
-
-```bash
-docker build -t sonagent:latest .
-```
-
-#### Available Docker tags
-
-The CI automatically builds and pushes Docker images to GitHub Container Registry:
-
-- `ghcr.io/sonnhfit/sonagent/sonagent:latest` - Latest build from main branch
-- `ghcr.io/sonnhfit/sonagent/sonagent:dev` - Latest build from dev branch  
-- `ghcr.io/sonnhfit/sonagent/sonagent:v1.0.13` - Specific version tag
-- `ghcr.io/sonnhfit/sonagent/sonagent:sha-abc123` - Specific commit SHA
-
 ## Contributors
 A big thank you to all the contributors who helped improve this project. 
 - Thank you from the freqtrade community, i learned a lot during my time contributing to it
@@ -173,6 +125,5 @@ A big thank you to all the contributors who helped improve this project.
 - Another colleague i learned a lot of interesting things from him, I know about autogen through him. thank @trungtv
 - And other contributors in the [contribute tab](https://github.com/sonnhfit/SonAgent/graphs/contributors) 
 - And you who have been paying attention, users and error reporting.
-
 
 

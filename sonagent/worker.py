@@ -11,6 +11,7 @@ from sonagent.constants import PROCESS_THROTTLE_SECS, RETRY_TIMEOUT
 from sonagent.enums.enums import State
 from sonagent.enums.rpcmessagetype import RPCMessageType
 from sonagent.exceptions import OperationalException, TemporaryError
+from sonagent.immune.immune import ImmuneSystem
 from sonagent.sonbot import SonBot
 
 logger = logging.getLogger(__name__)
@@ -28,6 +29,7 @@ class Worker:
         self._init(False)
 
         self._heartbeat_msg: float = 0
+        self._immune = ImmuneSystem()
 
         # Tell systemd that we completed initialization phase
         self._notify("READY=1")
@@ -107,8 +109,8 @@ class Worker:
                 )
                 self._heartbeat_msg = now
 
-                # Ping Immune System for scan - temporarily disabled
-                # self._immune.immune_scan()
+                # Ping Immune System for scan
+                self._immune.immune_scan()
 
         return state
 
