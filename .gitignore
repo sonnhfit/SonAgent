@@ -117,3 +117,4 @@ repo_tmp/
 .clinerules/*
 
 /user_data/memory/*
+__pycache__/*

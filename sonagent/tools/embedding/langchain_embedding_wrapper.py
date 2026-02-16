@@ -1,10 +1,10 @@
 """
 LangChain Embedding Wrapper - Provides a unified interface for embedding models
-that can use either LangChain's OpenAIEmbeddings or custom embedding implementations.
+using LangChain's OpenAIEmbeddings with fallback to custom implementation.
 """
 import logging
 import os
-from typing import List, Optional
+from typing import List, Optional, Any, Dict
 
 from .embedding import Embedding
 
@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 
 
 class LangChainEmbeddingWrapper(Embedding):
-    """Wrapper for embedding models that can use either LangChain's OpenAIEmbeddings or custom implementations."""
+    """Wrapper for embedding models using LangChain's OpenAIEmbeddings."""
     
     def __init__(self, config: Optional[dict] = None):
         """
@@ -41,24 +41,37 @@ class LangChainEmbeddingWrapper(Embedding):
             self._embedding_type = 'none'
             return
             
-        # Try to use LangChain's OpenAIEmbeddings if available
+        # Try to use LangChain's OpenAIEmbeddings as primary choice
         if api_type == 'openai':
             try:
                 from langchain_openai import OpenAIEmbeddings
                 
-                # Get model from config or use default
+                # Get configuration parameters
                 model = llm_config.get('embedding_model', 'text-embedding-3-small')
-                
-                # Get base_url for Azure OpenAI if specified
                 base_url = llm_config.get('base_url')
+                api_key = os.environ.get('OPENAI_API_KEY')
+                organization = llm_config.get('organization')
+                timeout = llm_config.get('timeout')
+                max_retries = llm_config.get('max_retries')
+                default_headers = llm_config.get('default_headers')
                 
-                # Create embeddings instance
-                embedding_kwargs = {
+                # Create embeddings instance with all available parameters
+                embedding_kwargs: Dict[str, Any] = {
                     'model': model,
+                    'api_key': api_key,
                 }
                 
+                # Add optional parameters if provided
                 if base_url:
                     embedding_kwargs['base_url'] = base_url
+                if organization:
+                    embedding_kwargs['organization'] = organization
+                if timeout is not None:
+                    embedding_kwargs['timeout'] = timeout
+                if max_retries is not None:
+                    embedding_kwargs['max_retries'] = max_retries
+                if default_headers:
+                    embedding_kwargs['default_headers'] = default_headers
                 
                 self._embedding = OpenAIEmbeddings(**embedding_kwargs)
                 self._embedding_type = 'langchain'
@@ -66,8 +79,10 @@ class LangChainEmbeddingWrapper(Embedding):
                 return
             except ImportError as e:
                 logger.warning(f"LangChain OpenAIEmbeddings not available: {e}")
+            except Exception as e:
+                logger.error(f"Failed to initialize LangChain OpenAIEmbeddings: {e}")
         
-        # Fall back to custom OAIEmbedding for OpenAI
+        # Fall back to custom OAIEmbedding for OpenAI if LangChain fails
         if api_type == 'openai':
             try:
                 from .openai_embedding import OAIEmbedding
@@ -77,6 +92,8 @@ class LangChainEmbeddingWrapper(Embedding):
                 return
             except ImportError as e:
                 logger.error(f"Custom OAIEmbedding not available: {e}")
+            except Exception as e:
+                logger.error(f"Failed to initialize custom OAIEmbedding: {e}")
         
         # No embedding model available
         self._embedding = None
