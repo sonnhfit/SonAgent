@@ -99,8 +99,13 @@ class SonBot(LoggingMixin):
             skills_dir = Path(self.config['user_data_dir']).joinpath('skills')
             
             if not skills_dir.exists():
-                logger.warning(f"Skills directory does not exist: {skills_dir}")
-                return
+                logger.info(f"Skills directory does not exist, creating: {skills_dir}")
+                try:
+                    skills_dir.mkdir(parents=True, exist_ok=True)
+                    logger.info(f"Created skills directory: {skills_dir}")
+                except Exception as e:
+                    logger.error(f"Failed to create skills directory {skills_dir}: {e}")
+                    return
                 
             current_files = set()
             for entry in skills_dir.iterdir():
