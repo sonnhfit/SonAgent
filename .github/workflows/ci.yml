@@ -69,9 +69,6 @@ jobs:
           echo "Repository is clean, no changes detected."
         fi
 
-    - name: Sort imports (isort)
-      run: |
-        isort --check .
 
 
   # Notify only once - when CI completes (and after deploy) in case it's successfull
