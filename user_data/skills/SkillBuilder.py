@@ -33,8 +33,33 @@ class SkillBuilder(BaseModel):
     args:
         - skill_name: Name for the skill
         - prompt: Natural language description of what the skill should do
+    
+    IMPORTANT:
+    - All helper/private methods in generated skills MUST start with underscore (_) prefix
+    - Only public methods (without _ prefix) will be exposed as LangChain tools
+    - Example: def calculate(): is public, def _validate_input(): is private
+    - a skill only have one publich method that use for tool with function docs string
     """
 
+    def _parse_parameters(self, parameters: Optional[str]) -> Optional[List[Dict]]:
+        """Parse JSON parameters string into a list of parameter dictionaries."""
+        if not parameters:
+            return None
+        try:
+            return json.loads(parameters)
+        except json.JSONDecodeError as e:
+            raise ValueError(f"Invalid parameters JSON: {str(e)}")
+    
+    def _get_skills_directory(self) -> Path:
+        """Get the skills directory path."""
+        user_data_dir = os.environ.get('USER_DATA_DIR', 'user_data')
+        return Path(user_data_dir) / 'skills'
+    
+    def _validate_and_test_code(self, code: str) -> Dict[str, Any]:
+        """Test skill code in sandbox and return results."""
+        sandbox = SandboxExecutor()
+        return sandbox.test_skill_code(code)
+    
     def generate_skill(
         self,
         skill_name: str,
@@ -60,14 +85,7 @@ class SkillBuilder(BaseModel):
             logger.info(f"[SkillBuilder] Starting generate_skill - skill_name: {skill_name}, description: {description}")
             
             # Parse parameters if provided
-            params_list = None
-            if parameters:
-                try:
-                    params_list = json.loads(parameters)
-                    logger.debug(f"[SkillBuilder] Parsed parameters: {params_list}")
-                except json.JSONDecodeError as e:
-                    logger.error(f"[SkillBuilder] Invalid parameters JSON: {str(e)}")
-                    return f"Error: Invalid parameters JSON: {str(e)}"
+            params_list = self._parse_parameters(parameters)
             
             # Create skill generator
             generator = SkillGenerator()
@@ -87,9 +105,8 @@ class SkillBuilder(BaseModel):
             IOMsg.send_msg(f"Generated skill code:\n```python\n{code}\n```")
             
             # Test in sandbox first
-            sandbox = SandboxExecutor()
             logger.debug("[SkillBuilder] Testing skill code in sandbox")
-            test_result = sandbox.test_skill_code(code)
+            test_result = self._validate_and_test_code(code)
             logger.debug(f"[SkillBuilder] Sandbox test result: success={test_result.get('success')}")
             
             if not test_result['success']:
@@ -102,8 +119,7 @@ class SkillBuilder(BaseModel):
             IOMsg.send_msg("✓ Skill code validated successfully in sandbox")
             
             # Get skills directory from environment or use default
-            user_data_dir = os.environ.get('USER_DATA_DIR', 'user_data')
-            skills_dir = Path(user_data_dir) / 'skills'
+            skills_dir = self._get_skills_directory()
             logger.debug(f"[SkillBuilder] Skills directory: {skills_dir}")
             
             # Save skill
@@ -135,9 +151,8 @@ class SkillBuilder(BaseModel):
         try:
             logger.info(f"[SkillBuilder] Starting test_skill_code - code length: {len(code)} chars")
             
-            sandbox = SandboxExecutor()
             logger.debug("[SkillBuilder] Executing sandbox test")
-            result = sandbox.test_skill_code(code)
+            result = self._validate_and_test_code(code)
             logger.debug(f"[SkillBuilder] Test result: success={result.get('success')}")
             
             if result['success']:
@@ -188,9 +203,8 @@ class SkillBuilder(BaseModel):
             IOMsg.send_msg(f"Generated skill code from prompt:\n```python\n{code}\n```")
             
             # Test in sandbox
-            sandbox = SandboxExecutor()
             logger.debug("[SkillBuilder] Testing skill in sandbox")
-            test_result = sandbox.test_skill_code(code)
+            test_result = self._validate_and_test_code(code)
             logger.debug(f"[SkillBuilder] Sandbox test result: success={test_result.get('success')}")
             
             if not test_result['success']:
@@ -203,8 +217,7 @@ class SkillBuilder(BaseModel):
             IOMsg.send_msg("✓ Generated skill validated successfully")
             
             # Get skills directory
-            user_data_dir = os.environ.get('USER_DATA_DIR', 'user_data')
-            skills_dir = Path(user_data_dir) / 'skills'
+            skills_dir = self._get_skills_directory()
             logger.debug(f"[SkillBuilder] Skills directory: {skills_dir}")
             
             # Save skill

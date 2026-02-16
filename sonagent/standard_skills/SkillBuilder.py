@@ -30,8 +30,33 @@ class SkillBuilder(BaseModel):
     args:
         - skill_name: Name for the skill
         - prompt: Natural language description of what the skill should do
+    
+    IMPORTANT:
+    - All helper/private methods in generated skills MUST start with underscore (_) prefix
+    - Only public methods (without _ prefix) will be exposed as LangChain tools
+    - Example: def calculate(): is public, def _validate_input(): is private
+    - a skill only have one publich method that use for tool with function docs string 
     """
 
+    def _parse_parameters(self, parameters: Optional[str]) -> Optional[List[Dict]]:
+        """Parse JSON parameters string into a list of parameter dictionaries."""
+        if not parameters:
+            return None
+        try:
+            return json.loads(parameters)
+        except json.JSONDecodeError as e:
+            raise ValueError(f"Invalid parameters JSON: {str(e)}")
+    
+    def _get_skills_directory(self) -> Path:
+        """Get the skills directory path."""
+        user_data_dir = os.environ.get('USER_DATA_DIR', 'user_data')
+        return Path(user_data_dir) / 'skills'
+    
+    def _validate_and_test_code(self, code: str) -> Dict[str, Any]:
+        """Test skill code in sandbox and return results."""
+        sandbox = SandboxExecutor()
+        return sandbox.test_skill_code(code)
+    
     def generate_skill(
         self,
         skill_name: str,
@@ -55,12 +80,7 @@ class SkillBuilder(BaseModel):
         """
         try:
             # Parse parameters if provided
-            params_list = None
-            if parameters:
-                try:
-                    params_list = json.loads(parameters)
-                except json.JSONDecodeError as e:
-                    return f"Error: Invalid parameters JSON: {str(e)}"
+            params_list = self._parse_parameters(parameters)
             
             # Create skill generator
             generator = SkillGenerator()
@@ -77,8 +97,7 @@ class SkillBuilder(BaseModel):
             IOMsg.send_msg(f"Generated skill code:\n```python\n{code}\n```")
             
             # Test in sandbox first
-            sandbox = SandboxExecutor()
-            test_result = sandbox.test_skill_code(code)
+            test_result = self._validate_and_test_code(code)
             
             if not test_result['success']:
                 error_msg = f"Error: Skill code failed validation:\n{test_result.get('error', 'Unknown error')}"
@@ -88,8 +107,7 @@ class SkillBuilder(BaseModel):
             IOMsg.send_msg("✓ Skill code validated successfully in sandbox")
             
             # Get skills directory from environment or use default
-            user_data_dir = os.environ.get('USER_DATA_DIR', 'user_data')
-            skills_dir = Path(user_data_dir) / 'skills'
+            skills_dir = self._get_skills_directory()
             
             # Save skill
             skill_file = generator.save_skill(code, skill_name, skills_dir)
@@ -116,8 +134,7 @@ class SkillBuilder(BaseModel):
             str: Test results
         """
         try:
-            sandbox = SandboxExecutor()
-            result = sandbox.test_skill_code(code)
+            result = self._validate_and_test_code(code)
             
             if result['success']:
                 output = "✓ Skill code is valid and executed successfully\n"
@@ -159,8 +176,7 @@ class SkillBuilder(BaseModel):
             IOMsg.send_msg(f"Generated skill code from prompt:\n```python\n{code}\n```")
             
             # Test in sandbox
-            sandbox = SandboxExecutor()
-            test_result = sandbox.test_skill_code(code)
+            test_result = self._validate_and_test_code(code)
             
             if not test_result['success']:
                 error_msg = f"Error: Generated skill failed validation:\n{test_result.get('error', 'Unknown error')}"
@@ -170,8 +186,7 @@ class SkillBuilder(BaseModel):
             IOMsg.send_msg("✓ Generated skill validated successfully")
             
             # Get skills directory
-            user_data_dir = os.environ.get('USER_DATA_DIR', 'user_data')
-            skills_dir = Path(user_data_dir) / 'skills'
+            skills_dir = self._get_skills_directory()
             
             # Save skill
             skill_file = generator.save_skill(code, skill_name, skills_dir)

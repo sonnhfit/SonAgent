@@ -24,6 +24,9 @@ class {class_name}(BaseModel):
     description: {description}
     args:
 {args_section}
+    
+    IMPORTANT: All helper/private methods should start with underscore (_) prefix.
+    Only the main public method ({method_name}) will be exposed as a tool.
     """
 
     def {method_name}(self{method_params}):
@@ -36,6 +39,18 @@ class {class_name}(BaseModel):
             {return_description}
         """
 {method_implementation}
+
+    def _helper_method(self, data: any) -> any:
+        """Helper method - will NOT be exposed as a tool.
+        
+        Args:
+            data: Input data
+            
+        Returns:
+            Processed data
+        """
+        # TODO: Implement helper method logic here
+        return data
 
 # Example usage
 if __name__ == "__main__":

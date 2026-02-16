@@ -30,6 +30,12 @@ SKIP_METHODS = {
     'get', 'set', 'values', 'keys', 'items'
 }
 
+# Maximum context length threshold before triggering truncation
+MAX_CONTEXT_TOKENS = 120000  # Leave 8000 tokens buffer for response
+
+# Number of recent messages to always keep
+RECENT_MESSAGES_TO_KEEP = 15
+
 # LangChain imports for ReAct agent
 try:
     from langchain.agents import create_agent
@@ -798,12 +804,180 @@ Thought:{agent_scratchpad}"""
             logger.error(f"Failed to create ReAct agent: {e}")
             return None
     
-    def _build_messages_from_history(self, chat_history: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    def _estimate_token_count(self, text: str) -> int:
+        """
+        Estimate token count for a given text.
+        
+        Uses a simple approximation: ~4 characters per token on average.
+        This is a rough estimate but sufficient for context management.
+        
+        Args:
+            text: Text to estimate token count for
+            
+        Returns:
+            Estimated token count
+        """
+        if not text:
+            return 0
+        # Average of 4 characters per token
+        return len(text) // 4
+    
+    def _estimate_messages_tokens(self, messages: List[Dict[str, Any]]) -> int:
+        """
+        Estimate total token count for messages.
+        
+        Args:
+            messages: List of message dictionaries with 'role' and 'content' keys
+            
+        Returns:
+            Estimated total token count
+        """
+        total = 0
+        for msg in messages:
+            # Add role overhead (approximately 4 tokens per message for role)
+            total += 4
+            content = msg.get('content', '')
+            total += self._estimate_token_count(content)
+        return total
+    
+    def _truncate_messages(self, messages: List[Dict[str, Any]], max_tokens: int) -> List[Dict[str, Any]]:
+        """
+        Truncate messages to fit within token limit.
+        
+        Keeps recent messages and summarizes older ones if needed.
+        
+        Args:
+            messages: List of message dictionaries
+            max_tokens: Maximum tokens allowed
+            
+        Returns:
+            Truncated messages list
+        """
+        if not messages:
+            return messages
+        
+        # First, try to keep recent messages only
+        recent_messages = messages[-RECENT_MESSAGES_TO_KEEP:] if len(messages) > RECENT_MESSAGES_TO_KEEP else messages
+        
+        # Check if recent messages fit
+        if self._estimate_messages_tokens(recent_messages) <= max_tokens:
+            logger.info(f"Truncated to {len(recent_messages)} recent messages")
+            return recent_messages
+        
+        # If still too large, return just the last few messages
+        minimal_messages = messages[-5:] if len(messages) >= 5 else messages
+        logger.warning(f"Very long context, using only {len(minimal_messages)} most recent messages")
+        return minimal_messages
+    
+    def _summarize_old_messages(self, messages: List[Dict[str, Any]], max_tokens: int) -> List[Dict[str, Any]]:
+        """
+        Summarize old messages using LLM and keep recent messages.
+        
+        Args:
+            messages: List of message dictionaries
+            max_tokens: Maximum tokens allowed
+            
+        Returns:
+            Messages with old ones summarized
+        """
+        if len(messages) <= RECENT_MESSAGES_TO_KEEP:
+            return messages
+        
+        # Split into old and recent
+        recent_messages = messages[-RECENT_MESSAGES_TO_KEEP:]
+        old_messages = messages[:-RECENT_MESSAGES_TO_KEEP]
+        
+        if not old_messages:
+            return messages
+        
+        # Create a summary of old messages
+        summary_content = self._create_messages_summary(old_messages)
+        
+        # Build new messages list with summary
+        summarized_messages = [
+            {
+                'role': 'system',
+                'content': f"Previous conversation summary: {summary_content}"
+            }
+        ]
+        summarized_messages.extend(recent_messages)
+        
+        # Check if fits
+        if self._estimate_messages_tokens(summarized_messages) <= max_tokens:
+            logger.info(f"Created summary of {len(old_messages)} messages, keeping {len(recent_messages)} recent")
+            return summarized_messages
+        
+        # If still too large, truncate more
+        return self._truncate_messages(messages, max_tokens)
+    
+    def _create_messages_summary(self, messages: List[Dict[str, Any]]) -> str:
+        """
+        Create a brief summary of messages.
+        
+        Args:
+            messages: List of message dictionaries
+            
+        Returns:
+            Summary string
+        """
+        if not messages:
+            return "No previous messages."
+        
+        # Simple summary - just capture the key points
+        user_messages = [msg['content'] for msg in messages if msg.get('role') == 'user']
+        
+        if len(user_messages) <= 3:
+            # If few messages, just list them
+            return f"User discussed: {'; '.join(user_messages[:5])}"
+        
+        # More than 3 messages - summarize
+        summary = f"User had {len(user_messages)} previous interactions. "
+        summary += f"Last few topics: {'; '.join(user_messages[-3:])}"
+        
+        return summary
+    
+    def _manage_context_length(self, messages: List[Dict[str, Any]], system_prompt: str = None) -> List[Dict[str, Any]]:
+        """
+        Manage context length by truncating or summarizing messages.
+        
+        Args:
+            messages: List of message dictionaries
+            system_prompt: Optional system prompt to include in token count
+            
+        Returns:
+            Processed messages list that fits within token limit
+        """
+        # Calculate available token budget
+        system_prompt_tokens = self._estimate_token_count(system_prompt or "") if system_prompt else 0
+        # Reserve tokens for tools and response
+        reserved_tokens = 2000
+        available_tokens = MAX_CONTEXT_TOKENS - system_prompt_tokens - reserved_tokens
+        
+        current_tokens = self._estimate_messages_tokens(messages)
+        
+        logger.debug(f"Current context: ~{current_tokens} tokens, limit: {MAX_CONTEXT_TOKENS}")
+        
+        if current_tokens <= available_tokens:
+            # Context is fine
+            return messages
+        
+        logger.warning(f"Context too long ({current_tokens} > {available_tokens}), managing...")
+        
+        # First try truncation
+        truncated = self._truncate_messages(messages, available_tokens)
+        if self._estimate_messages_tokens(truncated) <= available_tokens:
+            return truncated
+        
+        # If truncation not enough, try summarization
+        return self._summarize_old_messages(messages, available_tokens)
+    
+    def _build_messages_from_history(self, chat_history: List[Dict[str, Any]], system_prompt: str = None) -> List[Dict[str, Any]]:
         """
         Build messages list from chat history for LangChain agent.
         
         Args:
             chat_history: List of chat message dictionaries from get_chat_history()
+            system_prompt: Optional system prompt to manage context length
             
         Returns:
             List of message dictionaries with 'role' and 'content' keys
@@ -818,6 +992,11 @@ Thought:{agent_scratchpad}"""
                 'role': role,
                 'content': msg.get('content', '')
             })
+        
+        # Manage context length if needed
+        if len(messages) > 5:  # Only manage if we have enough messages
+            messages = self._manage_context_length(messages, system_prompt)
+        
         return messages
     
     def process_query_with_react(self, query: str, tools: List[Any] = None, system_prompt: str = None, 
@@ -849,6 +1028,53 @@ Thought:{agent_scratchpad}"""
             self.save_chat_message("assistant", response_text)
             return response
         
+        # Get default system prompt if not provided
+        if system_prompt is None:
+            system_prompt = """You are SonAgent, an autonomous AI agent that can use tools to accomplish tasks.
+
+You have access to the following tools:
+{tools}
+
+IMPORTANT INSTRUCTIONS FOR SKILL GENERATION:
+
+When a user asks you to CREATE, GENERATE, or BUILD a new skill, you MUST use one of the SkillBuilder tools:
+
+1. **SkillBuilder_create_simple_skill**: For creating a skill from a natural language description
+   - Use this when the user provides a simple description of what they want
+   - Parameters: skill_name (Python class name), prompt (what the skill should do)
+   - Example: "create a skill to check weather" → call SkillBuilder_create_simple_skill with skill_name="WeatherChecker", prompt="Check the weather in a specified city"
+
+2. **SkillBuilder_generate_skill**: For creating a detailed skill with specific parameters
+   - Use this when you need precise control over the skill structure
+   - Parameters: skill_name, description, method_name (optional), parameters (JSON string), implementation (optional Python code)
+   - Example: For a calculator skill with add/subtract methods, specify the exact parameters
+
+3. **SkillBuilder_test_skill_code**: For testing skill code before deploying
+   - Use this to validate Python skill code
+   - Parameters: code (Python code as string)
+
+IMPORTANT RULES:
+- When calling SkillBuilder tools, provide ALL required arguments as a valid JSON object
+- skill_name must be a valid Python class name (PascalCase, no spaces)
+- Always inform the user after successfully creating a skill that they need to reload skills
+- If skill creation fails, explain the error to the user
+
+Use the following format:
+
+Question: the input question you must answer
+Thought: you should always think about what to do
+Action: the action to take, should be one of [{tool_names}]
+Action Input: the input to the action (MUST be a valid JSON string with all required arguments)
+Observation: the result of the action
+... (this Thought/Action/Action Input/Observation can repeat N times)
+Thought: I now know the final answer
+Final Answer: the final answer to the original input question
+
+Begin!
+
+Question: {input}
+Thought:{agent_scratchpad}"""
+        
         try:
             # Create or get agent
             agent = self.create_react_agent(tools, system_prompt)
@@ -864,11 +1090,11 @@ Thought:{agent_scratchpad}"""
                 self.save_chat_message("assistant", response_text)
                 return response
             
-            # Get conversation history for context
+            # Get conversation history for context (with context management)
             messages = []
             if include_history:
                 chat_history = self.get_chat_history(limit=history_limit)
-                messages = self._build_messages_from_history(chat_history)
+                messages = self._build_messages_from_history(chat_history, system_prompt)
             
             # Add current user query to messages
             messages.append({"role": "user", "content": query})
@@ -915,6 +1141,63 @@ Thought:{agent_scratchpad}"""
             return response
             
         except Exception as e:
+            error_str = str(e)
+            
+            # Check for context length error
+            if 'context length' in error_str.lower() or 'contextlengthexceeded' in error_str.lower():
+                logger.error(f"Context length exceeded, attempting retry with reduced history...")
+                
+                try:
+                    # Retry with minimal context - only recent messages
+                    messages = []
+                    if include_history:
+                        # Get only recent messages and force truncation
+                        chat_history = self.get_chat_history(limit=5)
+                        # Force minimal context
+                        messages = self._truncate_messages(
+                            self._build_messages_from_history(chat_history, system_prompt),
+                            MAX_CONTEXT_TOKENS - 5000  # More aggressive limit for retry
+                        )
+                    
+                    # Add current user query
+                    messages.append({"role": "user", "content": query})
+                    
+                    logger.info(f"Retrying with {len(messages)} messages")
+                    
+                    # Create agent again (tools stay the same)
+                    agent = self.create_react_agent(tools, system_prompt)
+                    
+                    if agent:
+                        result = agent.invoke({"messages": messages})
+                        
+                        # Extract response
+                        response_text = None
+                        if 'output' in result:
+                            response_text = result.get('output')
+                        elif 'messages' in result:
+                            msgs = result.get('messages', [])
+                            if msgs and len(msgs) > 0:
+                                last_msg = msgs[-1]
+                                if hasattr(last_msg, 'content'):
+                                    response_text = last_msg.content
+                                elif isinstance(last_msg, dict):
+                                    response_text = last_msg.get('content', 'No response generated')
+                        
+                        if not response_text:
+                            response_text = 'No response generated'
+                        
+                        response = {
+                            'query': query,
+                            'response': response_text,
+                            'intermediate_steps': result.get('intermediate_steps', []),
+                            'timestamp': dt_now().isoformat(),
+                            'retry': True
+                        }
+                        self.save_chat_message("assistant", response_text)
+                        return response
+                except Exception as retry_error:
+                    logger.error(f"Retry also failed: {retry_error}")
+            
             logger.error(f"Error in ReAct agent execution: {e}")
             response_text = f"Error processing query with ReAct agent: {str(e)}"
             response = {
