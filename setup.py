@@ -54,7 +54,8 @@ required = [
     'croniter==2.0.3',
     'tabulate==0.9.0',
     'python-multipart==0.0.9',
-    'langchain-openai==1.1.9'
+    'langchain-openai==1.1.9',
+    'langchain==1.2.10'
 ]
 
 # print(f"Required: {required}")
