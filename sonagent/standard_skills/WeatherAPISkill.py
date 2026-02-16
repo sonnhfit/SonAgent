@@ -27,8 +27,8 @@ class WeatherAPISkill(BaseModel):
         """
         import os
         # In a real implementation, you would use an API key from environment
-        # api_key = os.environ.get('OPENWEATHER_API_KEY', 'demo-key')
-        api_key = 'demo-key'
+        # api_key = os.environ.get('OPENWEATHER_API_KEY', 'YOUR_API_KEY_HERE')
+        api_key = 'YOUR_API_KEY_HERE'
 
         # Construct API URL
         location = f"{city},{country_code}"
@@ -51,5 +51,5 @@ class WeatherAPISkill(BaseModel):
 # Example usage
 if __name__ == "__main__":
     skill = WeatherAPISkill()
-    result = skill.get_weather(city="city_value", country_code="country_code_value", units="units_value")
+    result = skill.get_weather(city="London", country_code="GB", units="metric")
     print(result)

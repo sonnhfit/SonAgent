@@ -29,5 +29,5 @@ class HanoiWeatherChecker(BaseModel):
 # Example usage
 if __name__ == "__main__":
     skill = HanoiWeatherChecker()
-    result = skill.hanoi_weather_checker(input_text="input_text_value")
+    result = skill.hanoi_weather_checker(input_text="check current weather conditions")
     print(result)
