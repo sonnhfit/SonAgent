@@ -531,7 +531,8 @@ class AgentBrain:
             except Exception as e:
                 return f"Error executing skill {skill_name}: {str(e)}"
         
-        skill_tool_func.name = f"{skill_name}.{method_name}"
+        # Use underscore instead of dot to match OpenAI's required pattern: ^[a-zA-Z0-9_-]+$
+        skill_tool_func.name = f"{skill_name}_{method_name}"
         return skill_tool_func
     
     def _get_llm(self):
