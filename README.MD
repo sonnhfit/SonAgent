@@ -86,10 +86,64 @@ sonagent run
 pip install --editable .
 ```
 
-if you want to build docker image 
+### Docker
+
+You can run SonAgent using Docker:
+
+#### Using Docker Compose (recommended)
+
+1. Clone the repository:
+```bash
+git clone https://github.com/sonnhfit/SonAgent.git
+cd SonAgent
 ```
-soon
+
+2. Create a `.env` file with your configuration (copy from `example.env`):
+```bash
+cp example.env .env
+# Edit .env with your API keys and settings
 ```
+
+3. Create user_data directory and config:
+```bash
+mkdir -p user_data
+# Create your config.json in user_data/
+```
+
+4. Run with Docker Compose:
+```bash
+docker-compose up
+```
+
+#### Using Docker directly
+
+```bash
+docker run -d \
+  --name sonagent \
+  -v $(pwd)/user_data:/sonagent/user_data \
+  -p 8080:8080 \
+  ghcr.io/sonnhfit/sonagent/sonagent:latest \
+  run \
+  --config /sonagent/user_data/config.json \
+  --agentdb sqlite:///user_data/tradesv3.sqlite \
+  --memory-url /sonagent/user_data/memory
+```
+
+#### Building Docker image locally
+
+```bash
+docker build -t sonagent:latest .
+```
+
+#### Available Docker tags
+
+The CI automatically builds and pushes Docker images to GitHub Container Registry:
+
+- `ghcr.io/sonnhfit/sonagent/sonagent:latest` - Latest build from main branch
+- `ghcr.io/sonnhfit/sonagent/sonagent:dev` - Latest build from dev branch  
+- `ghcr.io/sonnhfit/sonagent/sonagent:v1.0.13` - Specific version tag
+- `ghcr.io/sonnhfit/sonagent/sonagent:sha-abc123` - Specific commit SHA
+
 ## Contributors
 A big thank you to all the contributors who helped improve this project. 
 - Thank you from the freqtrade community, i learned a lot during my time contributing to it
