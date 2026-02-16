@@ -49,7 +49,7 @@ class BaseLoading:
             abs_paths.append(cls.initial_search_path)
 
         if user_subdir:
-            abs_paths.insert(0, config['user_data_dir'].joinpath(user_subdir))
+            abs_paths.insert(0, Path(config['user_data_dir']).joinpath(user_subdir))
 
         # Add extra directory to the top of the search paths
         for dir in extra_dirs:

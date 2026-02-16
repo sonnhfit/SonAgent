@@ -107,8 +107,8 @@ class Worker:
                 )
                 self._heartbeat_msg = now
 
-                # Ping Immune System for scan
-                self._immune.immune_scan()
+                # Ping Immune System for scan - temporarily disabled
+                # self._immune.immune_scan()
 
         return state
 
