@@ -7,6 +7,7 @@ from pathlib import Path
 import yaml
 from croniter import croniter
 
+from sonagent.brain import AgentBrain
 from sonagent.persistence import Belief, Environment, ScheduleJob, Task
 from sonagent.tools import GitManager, LocalCodeManager
 from sonagent.utils.datetime_helpers import dt_now
@@ -15,38 +16,35 @@ logger = logging.getLogger(__name__)
 
 
 class Agent:
-    def __init__(self, memory_path, skills, config: dict) -> None:
-        # memory
-
+    def __init__(self, memory_path, skills, config: dict, conversation_id: str = None) -> None:
         self.config = config
 
         logger.debug(f"Init memory with path {memory_path}.")
 
-        # get memory config
-        memory_config = self.config.get("vector_memory")
-        # TODO: Replace SonMemory with new memory implementation
-        self.memory = None
+        # Initialize brain with dynamic skill loading and search
+        # Pass conversation_id if provided, otherwise brain will generate default
+        self.brain = AgentBrain(
+            config=config, 
+            skills_manager=skills,
+            conversation_id=conversation_id
+        )
         
-        llm_config = self.config.get('llm')
-        # TODO: Replace Brain with new brain implementation
-        self.brain = None
-
-        # self.sync_beliefs()
-
+        # Store conversation_id for reference
+        self.conversation_id = self.brain.conversation_id
+        logger.debug(f"Agent initialized with conversation_id: {self.conversation_id}")
+        
+        # Keep skills for backward compatibility
         self.skills = skills
+        self.skills_dict = {}
 
         logger.info("--------- Start skill.---------")
-        # TODO: Fix memory parameter
-        self.skills.start_skill(memory=None)
-        self.skills_dict = {}
+        # Start skills through brain
+        self.brain.load_and_index_skills()
         logger.info("--------- Start Done.---------")
-
-        # TODO: Replace ShortTermMemory with new implementation
-        self.short_term_memory = None
 
         # git manager
         github = self.config.get("github")
-        if github.get("enabled"):
+        if github and github.get("enabled"):
             self.git_manager = GitManager(
                 username=github.get("username"),
                 repo_name=github.get("repo_name"),
@@ -89,8 +87,9 @@ class Agent:
 
     def _reload_skills(self):
         logger.info("--------- reload skill.---------")
-        # TODO: Fix memory parameter
-        self.skills.start_skill(memory=None)
+        # Use brain to reload and reindex skills
+        self.brain.reload_skills()
+        # Also update skills dict for backward compatibility
         self.skills_dict = {}
         self.init_skills_dict()
 
@@ -225,9 +224,24 @@ class Agent:
         return "Schedule creation is temporarily disabled - brain system not implemented"
 
     async def chat(self, input: str) -> str:
-        # TODO: Reimplement chat with new memory and brain systems
-        logger.warning("Chat is temporarily disabled - memory and brain systems not implemented")
-        return "Chat is temporarily disabled - memory and brain systems not implemented"
+        """Process chat input using the brain's dynamic skill search."""
+        try:
+            # Use brain to process query with dynamic skill search
+            result = self.brain.process_query(input)
+            
+            # Extract response from brain result
+            response = result.get('response', '')
+            
+            # If we found relevant skills, mention them
+            relevant_skills = result.get('relevant_skills', [])
+            if relevant_skills:
+                response += f"\n\nRelevant skills found: {', '.join(relevant_skills)}"
+                response += "\nYou can use these skills by calling them directly."
+            
+            return response
+        except Exception as e:
+            logger.error(f"Error in chat: {e}")
+            return f"Error processing your message: {str(e)}"
 
     async def chat_code(self, input: str) -> str:
         # TODO: Reimplement chat_code with new memory and brain systems
@@ -235,9 +249,14 @@ class Agent:
         return "Chat code is temporarily disabled - memory and brain systems not implemented"
 
     async def clear_short_term_memory(self) -> str:
-        # TODO: Reimplement clear_short_term_memory with new memory system
-        logger.warning("Clear short term memory is temporarily disabled - memory system not implemented")
-        return "Clear short term memory is temporarily disabled - memory system not implemented"
+        """Clear chat history from brain and start new conversation."""
+        try:
+            # Clear chat history using global conversation_id and start new conversation
+            self.brain.clear_chat_history(start_new_conversation=True)
+            return f"Chat history cleared successfully. New conversation started with ID: {self.brain.conversation_id}"
+        except Exception as e:
+            logger.error(f"Error clearing chat history: {e}")
+            return f"Error clearing chat history: {str(e)}"
 
     async def ibelieve(self, input: str) -> bool:
         # maybe that gen by LLM + your input
