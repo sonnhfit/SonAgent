@@ -46,7 +46,6 @@ required = [
     'orjson==3.9.10',
     'sdnotify==0.3.2',
     'GitPython==3.1.42',
-    'pyautogen==0.2.15',
     'schedule==1.2.1',
     'croniter==2.0.3',
     'tabulate==0.9.0',
