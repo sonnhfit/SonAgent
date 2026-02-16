@@ -689,8 +689,26 @@ Thought:{agent_scratchpad}"""
 
             logging.info(f"ReAct agent raw result: {result}")
             
-            # Extract response
-            response_text = result.get('output', 'No response generated')
+            # Extract response - handle different result formats
+            response_text = None
+            
+            # Try 'output' key first (standard LangChain agent output)
+            if 'output' in result:
+                response_text = result.get('output')
+            # Try 'messages' key (when agent has no tools or returns messages directly)
+            elif 'messages' in result:
+                messages = result.get('messages', [])
+                if messages and len(messages) > 0:
+                    # Get the last message content
+                    last_message = messages[-1]
+                    if hasattr(last_message, 'content'):
+                        response_text = last_message.content
+                    elif isinstance(last_message, dict):
+                        response_text = last_message.get('content', 'No response generated')
+            
+            # Fallback if no response found
+            if not response_text:
+                response_text = 'No response generated'
             
             # Save response
             response = {
