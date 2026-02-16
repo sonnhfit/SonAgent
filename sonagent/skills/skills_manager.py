@@ -1,8 +1,8 @@
 import logging
+import os
 from pathlib import Path
 from typing import Any, List
 
-import yaml
 from pydantic import BaseModel
 
 from sonagent.skills.loading import BaseLoading
@@ -19,28 +19,55 @@ class SkillsManager:
         self.skill_object_list: List[BaseModel] = []
         self.config = sonagent.config
         self.skills_area = "son_skills"
+        self.skills_dir = Path(self.config['user_data_dir']).joinpath('skills')
+        self.last_scan_time = 0
+        self.cached_skill_files = set()
+
+    def scan_skills_directory(self) -> List[str]:
+        """Scan the skills directory for Python files and return skill names."""
+        skill_names = []
+        
+        if not self.skills_dir.exists():
+            logger.warning(f"Skills directory does not exist: {self.skills_dir}")
+            return skill_names
+            
+        for entry in self.skills_dir.iterdir():
+            if entry.suffix == '.py' and entry.is_file() and not entry.name.startswith('__'):
+                # Remove .py extension to get skill name
+                skill_name = entry.stem
+                skill_names.append(skill_name)
+                
+        return skill_names
 
     def load_register_skills_name(self) -> List[str]:
-        skill_file_name = self.config.get('skills_file_path', 'skills.yaml')
-        skill_file_path = Path(self.config['user_data_dir']).joinpath(skill_file_name)
-        with open(skill_file_path, 'r') as file:
-            skills_register = yaml.safe_load(file)
-
-        if skills_register['skills'] is None:
-            skills_register['skills'] = []
-            
-        return skills_register['skills']
+        """Get list of skill names from scanning the skills directory."""
+        return self.scan_skills_directory()
     
 
     def load_skills(self) -> None:
-        skills_register = self.load_register_skills_name()
+        """Load all skills from the skills directory."""
+        skill_names = self.scan_skills_directory()
         BaseLoading.object_type = BaseModel
-        for skill_name in skills_register:
-            skill = BaseLoading.load_object(object_name=skill_name, config=self.config, kwargs={}, extra_dir='user_data/skills')
-            self.skill_object_list.append(skill)
+        
+        # Clear existing skills
+        self.skill_object_list = []
+        
+        for skill_name in skill_names:
+            try:
+                skill = BaseLoading.load_object(
+                    object_name=skill_name, 
+                    config=self.config, 
+                    kwargs={}, 
+                    extra_dir='user_data/skills'
+                )
+                self.skill_object_list.append(skill)
+                logger.info(f"Successfully loaded skill: {skill_name}")
+            except Exception as e:
+                logger.error(f"Failed to load skill {skill_name}: {e}")
 
     
     def reload_skills(self) -> None:
+        """Reload all skills from the skills directory."""
         self.skill_object_list = []
         self.load_skills()
 

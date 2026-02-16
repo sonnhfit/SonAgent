@@ -2,6 +2,7 @@ import json
 import logging
 import os
 from datetime import datetime
+from pathlib import Path
 
 import yaml
 from croniter import croniter
@@ -61,24 +62,18 @@ class Agent:
         self.init_skills_dict()
 
     def remove_skill(self, skill_name):
-        # remove skill_name from yaml
-
-        skill_file_path = f"{self.git_manager.local_repo_path}/skills/skills.yaml"
-
-        with open(skill_file_path, "r") as file:
-            skills_register = yaml.safe_load(file)
-        try:
-            skills_register["skills"].remove(skill_name)
-        except Exception as e:
-            return f"skill doesn't exist: {e}"
-
-        with open(skill_file_path, "w") as file:
-            yaml.dump(skills_register, file)
-
-        # reload skill
-        self.reload_skills()
-
-        return f"Remove skill {skill_name} successfully."
+        # With dynamic skill loading, we can't remove skills from a YAML file.
+        # Instead, users should delete the skill file from the skills directory.
+        # We'll reload skills to reflect the current state of the directory.
+        
+        skill_file_path = Path(self.git_manager.local_repo_path).joinpath('skills', f"{skill_name}.py")
+        
+        if skill_file_path.exists():
+            return f"Skill '{skill_name}' exists as a file. To remove it, delete the file: {skill_file_path}"
+        else:
+            # The skill might have been already deleted or never existed
+            self.reload_skills()
+            return f"Skill '{skill_name}' not found in skills directory. Skills have been reloaded to reflect current state."
 
     def init_skills_dict(self) -> None:
         for skill in self.skills.get_all_skills():
