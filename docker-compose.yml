@@ -2,7 +2,7 @@
 version: '3'
 services:
   sonagent:
-    image: sonnhfit/sonagent:latest
+    image: ghcr.io/sonnhfit/sonagent/sonagent:latest
     env_file:
       - .env
     restart: unless-stopped
