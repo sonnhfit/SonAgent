@@ -224,19 +224,42 @@ class Agent:
         return "Schedule creation is temporarily disabled - brain system not implemented"
 
     async def chat(self, input: str) -> str:
-        """Process chat input using the brain's dynamic skill search."""
-        try:
-            # Use brain to process query with dynamic skill search
-            result = self.brain.process_query(input)
+        """
+        Process chat input using ReAct agent by default.
+        Falls back to basic processing if ReAct is not available.
+        
+        Args:
+            input: User input message
             
-            # Extract response from brain result
+        Returns:
+            Response string
+        """
+        try:
+            # Always try to use ReAct agent first
+            result = self.brain.process_query_with_react(input)
+            
+            # Extract response from ReAct result
             response = result.get('response', '')
             
-            # If we found relevant skills, mention them
-            relevant_skills = result.get('relevant_skills', [])
-            if relevant_skills:
-                response += f"\n\nRelevant skills found: {', '.join(relevant_skills)}"
-                response += "\nYou can use these skills by calling them directly."
+            # Check for errors - if ReAct failed, fall back to basic processing
+            if 'error' in result and 'LangChain not available' in result['error']:
+                logger.info("ReAct agent not available, falling back to basic processing")
+                result = self.brain.process_query(input)
+                response = result.get('response', '')
+                
+                # If we found relevant skills, mention them
+                relevant_skills = result.get('relevant_skills', [])
+                if relevant_skills:
+                    response += f"\n\nRelevant skills found: {', '.join(relevant_skills)}"
+                    response += "\nYou can use these skills by calling them directly."
+            elif 'error' in result:
+                # Other ReAct errors - include in response but still return what we have
+                response += f"\n\nNote: {result['error']}"
+            
+            # Log intermediate steps if available
+            intermediate_steps = result.get('intermediate_steps', [])
+            if intermediate_steps:
+                logger.debug(f"ReAct agent took {len(intermediate_steps)} steps")
             
             return response
         except Exception as e:

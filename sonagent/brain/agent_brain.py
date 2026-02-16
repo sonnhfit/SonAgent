@@ -1,13 +1,13 @@
 """
 AgentBrain - Core reasoning engine for SonAgent.
-Implements dynamic skill loading, search, and chat history persistence.
+Implements dynamic skill loading, search, chat history persistence, and ReAct agent.
 """
 import json
 import logging
 import os
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple, Callable
 
 from sonagent.skills.skills_manager import SkillsManager
 from sonagent.tools.embedding.langchain_embedding_wrapper import \
@@ -16,6 +16,16 @@ from sonagent.tools.vector_database.vectordb import VectorDB
 from sonagent.utils.datetime_helpers import dt_now
 
 logger = logging.getLogger(__name__)
+
+# LangChain imports for ReAct agent
+try:
+    from langchain.agents import create_agent
+    from langchain_openai import ChatOpenAI
+    from langchain.tools import BaseTool
+    LANGCHAIN_AVAILABLE = True
+except ImportError as e:
+    logger.warning(f"LangChain imports failed: {e}")
+    LANGCHAIN_AVAILABLE = False
 
 
 class AgentBrain:
@@ -456,3 +466,275 @@ class AgentBrain:
         self.skills_manager.reload_skills()
         self.load_and_index_skills()
         logger.info("Skills reloaded and reindexed")
+    
+    def _convert_skill_to_tool(self, skill: Any) -> BaseTool:
+        """
+        Convert a SonAgent skill to a LangChain Tool.
+        
+        Args:
+            skill: SonAgent skill object
+            
+        Returns:
+            LangChain Tool object
+        """
+        skill_name = skill.__class__.__name__
+        skill_doc = skill.__doc__ or ""
+        
+        # Extract description from docstring
+        description_lines = skill_doc.strip().split('\n')
+        description = description_lines[0] if description_lines else f"Skill: {skill_name}"
+        
+        # Find the first method that's not __init__ or private
+        method_name = None
+        for attr_name in dir(skill):
+            if not attr_name.startswith('_') and callable(getattr(skill, attr_name)):
+                method_name = attr_name
+                break
+        
+        if not method_name:
+            # Default to a generic call method
+            def generic_skill_func(**kwargs):
+                return f"Skill {skill_name} executed with args: {kwargs}"
+            
+            # Create a simple tool using the tool decorator
+            from langchain.tools import tool
+            
+            @tool
+            def tool_func(**kwargs):
+                return generic_skill_func(**kwargs)
+            
+            tool_func.name = skill_name
+            tool_func.description = description
+            return tool_func
+        
+        # Get the method
+        method = getattr(skill, method_name)
+        
+        # Create tool function using the tool decorator
+        from langchain.tools import tool
+        
+        @tool
+        def skill_tool_func(**kwargs):
+            try:
+                result = method(**kwargs)
+                return str(result)
+            except Exception as e:
+                return f"Error executing skill {skill_name}: {str(e)}"
+        
+        skill_tool_func.name = f"{skill_name}.{method_name}"
+        skill_tool_func.description = description
+        return skill_tool_func
+    
+    def _get_llm(self):
+        """
+        Get LLM instance based on configuration.
+        
+        Returns:
+            LangChain LLM instance
+        """
+        if not LANGCHAIN_AVAILABLE:
+            raise ImportError("LangChain is not available. Please install langchain package.")
+        
+        llm_config = self.config.get('llm', {})
+        api_type = llm_config.get('api_type', 'openai')
+        
+        if api_type == 'openai':
+            # Check for API key
+            api_key = os.environ.get('OPENAI_API_KEY') or llm_config.get('api_key')
+            if not api_key:
+                raise ValueError("OpenAI API key not found. Set OPENAI_API_KEY environment variable or configure in llm.api_key")
+            
+            model_name = llm_config.get('model', 'gpt-4o-mini')
+            temperature = llm_config.get('temperature', 0.1)
+            max_tokens = llm_config.get('max_tokens', 1000)
+            
+            return ChatOpenAI(
+                model=model_name,
+                temperature=temperature,
+                max_tokens=max_tokens,
+                api_key=api_key,
+                timeout=30
+            )
+        else:
+            raise ValueError(f"Unsupported LLM API type: {api_type}")
+    
+    def create_react_agent(self, tools: List[Any] = None, system_prompt: str = None) -> Any:
+        """
+        Create a ReAct agent with the specified tools.
+        
+        Args:
+            tools: List of tools (skills) to use. If None, uses all available skills.
+            system_prompt: Custom system prompt for the agent
+            
+        Returns:
+            AgentExecutor instance
+        """
+        if not LANGCHAIN_AVAILABLE:
+            logger.error("LangChain is not available. Cannot create ReAct agent.")
+            return None
+        
+        try:
+            # Get LLM
+            llm = self._get_llm()
+            
+            # Convert skills to tools if not provided
+            if tools is None:
+                skills = self.skills_manager.get_all_skills()
+                tools = [self._convert_skill_to_tool(skill) for skill in skills]
+            else:
+                # Convert provided skills to tools
+                tools = [self._convert_skill_to_tool(tool) if not isinstance(tool, BaseTool) else tool for tool in tools]
+            
+            # Handle empty tools list - agent can still work without tools
+            if not tools:
+                logger.info("No tools available for ReAct agent. Creating agent without tools.")
+                # Create a simple agent without tools
+                # For LangChain 1.x, we can use create_agent even without tools
+                # The create_agent function will handle it gracefully
+                if system_prompt is None:
+                    system_prompt = """You are SonAgent, an autonomous AI agent. 
+                    Answer the user's question to the best of your ability."""
+                
+                # Create agent without tools
+                agent = create_agent(
+                    model=llm,
+                    tools=[],  # Empty tools list
+                    system_prompt=system_prompt,
+                    verbose=True
+                )
+                
+                logger.info("Created ReAct agent without tools")
+                return agent
+            
+            # Default system prompt for agent with tools
+            if system_prompt is None:
+                system_prompt = """You are SonAgent, an autonomous AI agent that can use tools to accomplish tasks.
+                
+You have access to the following tools:
+{tools}
+
+Use the following format:
+
+Question: the input question you must answer
+Thought: you should always think about what to do
+Action: the action to take, should be one of [{tool_names}]
+Action Input: the input to the action
+Observation: the result of the action
+... (this Thought/Action/Action Input/Observation can repeat N times)
+Thought: I now know the final answer
+Final Answer: the final answer to the original input question
+
+Begin!
+
+Question: {input}
+Thought:{agent_scratchpad}"""
+            
+            # Create ReAct agent using create_agent
+            # The create_agent function handles the ReAct pattern internally
+            agent = create_agent(
+                model=llm,
+                tools=tools,
+                system_prompt=system_prompt,
+                verbose=True
+            )
+            
+            logger.info(f"Created ReAct agent with {len(tools)} tools")
+            return agent
+            
+        except Exception as e:
+            logger.error(f"Failed to create ReAct agent: {e}")
+            return None
+    
+    def process_query_with_react(self, query: str, tools: List[Any] = None, system_prompt: str = None) -> Dict[str, Any]:
+        """
+        Process a user query using ReAct agent.
+        
+        Args:
+            query: User query
+            tools: List of tools to use (optional)
+            system_prompt: Custom system prompt (optional)
+            
+        Returns:
+            Dictionary with response and metadata
+        """
+        # Save user message
+        self.save_chat_message("user", query)
+        
+        if not LANGCHAIN_AVAILABLE:
+            response_text = "LangChain is not available. Please install langchain package to use ReAct agent."
+            response = {
+                'query': query,
+                'response': response_text,
+                'timestamp': dt_now().isoformat(),
+                'error': 'LangChain not available'
+            }
+            self.save_chat_message("assistant", response_text)
+            return response
+        
+        try:
+            # Create or get agent
+            agent = self.create_react_agent(tools, system_prompt)
+            
+            if agent is None:
+                response_text = "Failed to create ReAct agent."
+                response = {
+                    'query': query,
+                    'response': response_text,
+                    'timestamp': dt_now().isoformat(),
+                    'error': 'Agent creation failed'
+                }
+                self.save_chat_message("assistant", response_text)
+                return response
+            
+            # Execute agent
+            result = agent.invoke({"input": query})
+            
+            # Extract response
+            response_text = result.get('output', 'No response generated')
+            
+            # Save response
+            response = {
+                'query': query,
+                'response': response_text,
+                'intermediate_steps': result.get('intermediate_steps', []),
+                'timestamp': dt_now().isoformat()
+            }
+            
+            self.save_chat_message("assistant", response_text)
+            return response
+            
+        except Exception as e:
+            logger.error(f"Error in ReAct agent execution: {e}")
+            response_text = f"Error processing query with ReAct agent: {str(e)}"
+            response = {
+                'query': query,
+                'response': response_text,
+                'timestamp': dt_now().isoformat(),
+                'error': str(e)
+            }
+            self.save_chat_message("assistant", response_text)
+            return response
+    
+    def get_dynamic_react_tools(self, query: str = None, limit: int = 5) -> List[BaseTool]:
+        """
+        Get dynamic tools for ReAct agent based on query relevance.
+        
+        Args:
+            query: Query to find relevant tools
+            limit: Maximum number of tools to return
+            
+        Returns:
+            List of LangChain Tool objects
+        """
+        if query:
+            # Search for relevant skills
+            search_results = self.search_skills(query, search_type="semantic", limit=limit)
+            skills = [result['skill'] for result in search_results]
+        else:
+            # Get all skills
+            skills = self.skills_manager.get_all_skills()
+            skills = skills[:limit]
+        
+        # Convert to tools
+        tools = [self._convert_skill_to_tool(skill) for skill in skills]
+        return tools
