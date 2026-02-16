@@ -304,8 +304,9 @@ class SonBot(LoggingMixin):
         Returns:
             Unique conversation ID string
         """
-        import uuid
         import time
+        import uuid
+
         # Generate a UUID and combine with timestamp for uniqueness
         unique_id = str(uuid.uuid4())[:8]
         timestamp = int(time.time())
