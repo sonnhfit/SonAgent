@@ -123,7 +123,18 @@ class Telegram(RPCHandler):
         msg = update.message.text.replace('/sonagent', '')
         if len(msg) <= 0:
             msg = "Hello, I'm SonAgent"
-        await self._rpc.chat(msg)
+        
+        logger.info(f"[Telegram] Received message: {msg[:100]}...")
+        try:
+            await self._rpc.chat(msg)
+            logger.debug("[Telegram] Message processed successfully")
+        except Exception as e:
+            logger.error(f"[Telegram] Error processing message: {e}", exc_info=True)
+            # Try to send error message back to user
+            try:
+                await update.message.reply_text(f"Error processing message: {str(e)}")
+            except:
+                pass
 
     def _init(self) -> None:
         """
