@@ -114,3 +114,4 @@ target/
 !*.gitkeep
 repo_tmp/
 /user_data/config.json
+.clinerules/*
