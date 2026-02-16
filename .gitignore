@@ -118,3 +118,8 @@ repo_tmp/
 
 /user_data/memory/*
 __pycache__/*
+
+# Exclude user_data/skills Python files (will be copied from standard_skills)
+/user_data/skills/*.py
+# But keep the directory structure
+!/user_data/skills/.gitkeep
