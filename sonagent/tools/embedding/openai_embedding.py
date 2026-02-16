@@ -1,4 +1,5 @@
 import os
+from typing import List
 
 from openai import OpenAI
 
@@ -11,19 +12,16 @@ class OAIEmbedding(Embedding):
         api_key = os.environ.get('OPENAI_API_KEY')
         self.client = OpenAI(api_key=api_key)
 
-    def embed(self, text: str):
+    def embed(self, text: str) -> List[float]:
         response = self.client.embeddings.create(
             input=text,
             model="text-embedding-3-small"
         )
         return response.data[0].embedding
 
-    def embed_batch(self, texts):
-        result = {}
+    def embed_batch(self, texts: List[str]) -> List[List[float]]:
         response = self.client.embeddings.create(
             input=texts,
             model="text-embedding-3-small"
         )
-        for i, text in enumerate(texts):
-            result[text] = response.data[i].embedding
-        return result
+        return [item.embedding for item in response.data]

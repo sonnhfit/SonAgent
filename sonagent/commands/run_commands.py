@@ -73,23 +73,31 @@ def create_user_data_dir(args: Dict[str, Any]) -> None:
     Create user data directory
     """
     print("Creating user data directory")
-    # print("user_data_dir: ", args)
     current_path = str(os.getcwd())
-    user_data_dir = args["user_data_dir"]
+    user_data_dir = args.get("user_data_dir")
+    
+    # Set default user_data_dir if not provided
     if user_data_dir is None:
-        print(current_path)
         user_data_dir = "user_data"
-        if not os.path.exists(current_path + "/" + user_data_dir):
-            os.mkdir(current_path + "/" + user_data_dir)
+    
+    print(f"Creating directory: {current_path}/{user_data_dir}")
+    
+    # Create main user data directory if it doesn't exist
+    user_data_path = os.path.join(current_path, user_data_dir)
+    if not os.path.exists(user_data_path):
+        os.makedirs(user_data_path)
+        print(f"Created directory: {user_data_path}")
+    
+    # Create skills subdirectory if it doesn't exist
+    skills_path = os.path.join(user_data_path, "skills")
+    if not os.path.exists(skills_path):
+        os.makedirs(skills_path)
+        print(f"Created skills directory: {skills_path}")
+    
+    # Note: We no longer create skills.yaml file since skills are loaded dynamically from the directory
 
-        if not os.path.exists(current_path + f"/{user_data_dir}/skills"):
-            os.mkdir(current_path + f"/{user_data_dir}/skills")
-
-        # Note: We no longer create skills.yaml file since skills are loaded dynamically from the directory
-
-        # create config.json file with string
-        config_exampe = """
-
+    # Create config.json file with default configuration
+    config_example = """
 {
     "initial_state": "running",
     "api_server": {
@@ -131,7 +139,7 @@ def create_user_data_dir(args: Dict[str, Any]) -> None:
         "collection": "memory",
         "host": "localhost",
         "port": 8000,
-        "embedding":  "openai"
+        "embedding": "openai"
     },
     "github": {
         "enabled": false,
@@ -148,10 +156,12 @@ def create_user_data_dir(args: Dict[str, Any]) -> None:
         }
     }
 }
-
-        """
-        with open(current_path + f"/{user_data_dir}/config.json", "w") as file:
-            file.write(config_exampe)
-
-    logger.info(f"[DONE] User data directory created at {current_path}/{user_data_dir}")
+"""
+    
+    config_file_path = os.path.join(user_data_path, "config.json")
+    with open(config_file_path, "w") as file:
+        file.write(config_example)
+    
+    print(f"Created config file: {config_file_path}")
+    logger.info(f"[DONE] User data directory created at {user_data_path}")
     return None
