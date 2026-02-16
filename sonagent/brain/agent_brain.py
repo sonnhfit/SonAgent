@@ -17,6 +17,19 @@ from sonagent.utils.datetime_helpers import dt_now
 
 logger = logging.getLogger(__name__)
 
+# Methods to skip when converting skills to tools (Pydantic and common BaseModel methods)
+SKIP_METHODS = {
+    # Pydantic v1 methods
+    'construct', 'from_orm', 'dict', 'json', 'copy', 'validate', 
+    'parse_obj', 'parse_raw', 'parse_file', 'schema', 'schema_json', 'update_forward_refs',
+    # Pydantic v2 methods
+    'model_construct', 'model_validate', 'model_validate_json', 'model_validate_strings',
+    'model_dump', 'model_dump_json', 'model_copy', 'model_json_schema',
+    'model_parametrized_name', 'model_post_init', 'model_rebuild',
+    # Other common methods to skip
+    'get', 'set', 'values', 'keys', 'items'
+}
+
 # LangChain imports for ReAct agent
 try:
     from langchain.agents import create_agent
@@ -107,7 +120,10 @@ class AgentBrain:
     
     def load_and_index_skills(self):
         """Load skills from skills manager and index them for search."""
+        logger.info("Loading and indexing skills...")
+        
         if self.skills_loaded:
+            logger.debug("Skills already loaded, skipping")
             return
             
         # Clear existing skill indices
@@ -119,16 +135,25 @@ class AgentBrain:
             
         # Get all skills
         skills = self.skills_manager.get_all_skills()
+        logger.info(f"Loaded {len(skills)} skills from skills directory")
+        
+        # Log each skill name for debugging
+        for skill in skills:
+            skill_name = skill.__class__.__name__
+            logger.debug(f"  - Skill loaded: {skill_name}")
         
         # Index skills for semantic search
         if self.embedding:
+            logger.info("Creating embeddings for skill search...")
             self._index_skills_semantic(skills)
+        else:
+            logger.warning("Embedding not available, skipping semantic indexing")
         
         # Index skills for keyword search
         self._index_skills_keywords(skills)
         
         self.skills_loaded = True
-        logger.info(f"Loaded and indexed {len(skills)} skills")
+        logger.info(f"Skill loading and indexing complete")
     
     def _index_skills_semantic(self, skills: List[Any]):
         """Index skills for semantic/embedding-based search."""
@@ -467,6 +492,71 @@ class AgentBrain:
         self.load_and_index_skills()
         logger.info("Skills reloaded and reindexed")
     
+    def _convert_skill_to_tools(self, skill: Any) -> List[BaseTool]:
+        """
+        Convert a SonAgent skill to multiple LangChain Tools (one per method).
+        
+        Args:
+            skill: SonAgent skill object
+            
+        Returns:
+            List of LangChain Tool objects
+        """
+        skill_name = skill.__class__.__name__
+        tools = []
+        
+        logger.debug(f"Converting skill '{skill_name}' to tools (all methods)")
+        
+        # Find all callable public methods
+        for attr_name in dir(skill):
+            # Skip private methods, special methods, and Pydantic methods
+            if attr_name.startswith('_') or attr_name in SKIP_METHODS:
+                continue
+            
+            attr = getattr(skill, attr_name)
+            if not callable(attr):
+                continue
+            
+            method_name = attr_name
+            method = attr
+            
+            # Get the method's docstring if available
+            method_doc = method.__doc__ or ""
+            
+            logger.debug(f"  Found callable method '{method_name}' in {skill_name}")
+            
+            # Create tool function using the tool decorator
+            from langchain.tools import tool
+            
+            # Use method docstring as description
+            func_description = method_doc.strip() if method_doc else f"Execute {skill_name}.{method_name}"
+            
+            # Create a closure to capture the current method reference and description
+            def make_tool_func(skill_instance, method_ref, skill_cls_name, method_nm, description):
+                @tool(description=description)
+                def skill_tool_func(**kwargs):
+                    """Execute the skill method with provided arguments."""
+                    try:
+                        result = method_ref(**kwargs)
+                        return str(result)
+                    except Exception as e:
+                        error_msg = f"Error executing {skill_cls_name}.{method_nm}: {str(e)}"
+                        logger.error(error_msg, exc_info=True)
+                        return error_msg
+                
+                # Use underscore instead of dot to match OpenAI's required pattern: ^[a-zA-Z0-9_-]+$
+                skill_tool_func.name = f"{skill_cls_name}_{method_nm}"
+                return skill_tool_func
+            
+            tool_func = make_tool_func(skill, method, skill_name, method_name, func_description)
+            tools.append(tool_func)
+            logger.info(f"Created tool: {tool_func.name}")
+        
+        if not tools:
+            logger.warning(f"No callable methods found for skill {skill_name}")
+        
+        return tools
+    
     def _convert_skill_to_tool(self, skill: Any) -> BaseTool:
         """
         Convert a SonAgent skill to a LangChain Tool.
@@ -480,6 +570,8 @@ class AgentBrain:
         skill_name = skill.__class__.__name__
         skill_doc = skill.__doc__ or ""
         
+        logger.debug(f"Converting skill to tool: {skill_name}")
+        
         # Extract description from docstring
         description_lines = skill_doc.strip().split('\n')
         description = description_lines[0] if description_lines else f"Skill: {skill_name}"
@@ -489,22 +581,22 @@ class AgentBrain:
         method_name = None
         method_doc = ""
         
-        # List of methods to skip (Pydantic special methods)
-        skip_methods = {'construct', 'model_construct', 'from_orm', 'dict', 'json', 'copy', 'validate'}
-        
+        logger.debug(f"Searching for callable methods in {skill_name}")
         for attr_name in dir(skill):
             # Skip private methods and special Pydantic methods
-            if attr_name.startswith('_') or attr_name in skip_methods:
+            if attr_name.startswith('_') or attr_name in SKIP_METHODS:
                 continue
             if callable(getattr(skill, attr_name)):
                 method = getattr(skill, attr_name)
                 # Get the method's docstring if available
                 method_doc = method.__doc__ or ""
                 method_name = attr_name
+                logger.debug(f"Found callable method '{method_name}' in {skill_name}")
                 break
         
         if not method_name:
             # Default to a generic call method
+            logger.warning(f"No callable method found for skill {skill_name}, creating generic tool")
             def generic_skill_func(**kwargs):
                 return f"Skill {skill_name} executed with args: {kwargs}"
             
@@ -541,6 +633,7 @@ class AgentBrain:
         
         # Use underscore instead of dot to match OpenAI's required pattern: ^[a-zA-Z0-9_-]+$
         skill_tool_func.name = f"{skill_name}_{method_name}"
+        logger.info(f"Created tool: {skill_tool_func.name} with description: {func_description[:100]}...")
         return skill_tool_func
     
     def _get_llm(self):
@@ -595,17 +688,37 @@ class AgentBrain:
             # Get LLM
             llm = self._get_llm()
             
+            logger.info(f"Creating ReAct agent with LLM: {llm.__class__.__name__}")
+            
             # Convert skills to tools if not provided
             if tools is None:
                 skills = self.skills_manager.get_all_skills()
-                tools = [self._convert_skill_to_tool(skill) for skill in skills]
+                logger.info(f"No tools provided, loading all {len(skills)} skills")
+                # Convert each skill to multiple tools (one per method)
+                tools = []
+                for skill in skills:
+                    skill_tools = self._convert_skill_to_tools(skill)
+                    tools.extend(skill_tools)
             else:
                 # Convert provided skills to tools
-                tools = [self._convert_skill_to_tool(tool) if not isinstance(tool, BaseTool) else tool for tool in tools]
+                logger.info(f"Converting {len(tools)} provided tools")
+                converted_tools = []
+                for tool in tools:
+                    if isinstance(tool, BaseTool):
+                        converted_tools.append(tool)
+                    else:
+                        # Convert skill to multiple tools
+                        skill_tools = self._convert_skill_to_tools(tool)
+                        converted_tools.extend(skill_tools)
+                tools = converted_tools
+            
+            logger.info(f"Total tools available for agent: {len(tools)}")
+            for tool in tools:
+                logger.debug(f"  - Tool: {tool.name}")
             
             # Handle empty tools list - agent can still work without tools
             if not tools:
-                logger.info("No tools available for ReAct agent. Creating agent without tools.")
+                logger.warning("No tools available for ReAct agent. Creating agent without tools.")
                 # Create a simple agent without tools
                 # For LangChain 1.x, we can use create_agent even without tools
                 # The create_agent function will handle it gracefully
@@ -630,12 +743,29 @@ class AgentBrain:
 You have access to the following tools:
 {tools}
 
-IMPORTANT: When a user asks you to CREATE or GENERATE a new skill, you MUST call the SkillBuilder tool with the following parameters:
-- skill_name: A valid Python class name (e.g., "PrimeFinder", "WeatherChecker")
-- description: A clear description of what the skill does
-- prompt: Natural language description of what the skill should do (for create_simple_skill method)
+IMPORTANT INSTRUCTIONS FOR SKILL GENERATION:
 
-When calling tools, ALWAYS provide the required arguments in a JSON format within the Action Input.
+When a user asks you to CREATE, GENERATE, or BUILD a new skill, you MUST use one of the SkillBuilder tools:
+
+1. **SkillBuilder_create_simple_skill**: For creating a skill from a natural language description
+   - Use this when the user provides a simple description of what they want
+   - Parameters: skill_name (Python class name), prompt (what the skill should do)
+   - Example: "create a skill to check weather" → call SkillBuilder_create_simple_skill with skill_name="WeatherChecker", prompt="Check the weather in a specified city"
+
+2. **SkillBuilder_generate_skill**: For creating a detailed skill with specific parameters
+   - Use this when you need precise control over the skill structure
+   - Parameters: skill_name, description, method_name (optional), parameters (JSON string), implementation (optional Python code)
+   - Example: For a calculator skill with add/subtract methods, specify the exact parameters
+
+3. **SkillBuilder_test_skill_code**: For testing skill code before deploying
+   - Use this to validate Python skill code
+   - Parameters: code (Python code as string)
+
+IMPORTANT RULES:
+- When calling SkillBuilder tools, provide ALL required arguments as a valid JSON object
+- skill_name must be a valid Python class name (PascalCase, no spaces)
+- Always inform the user after successfully creating a skill that they need to reload skills
+- If skill creation fails, explain the error to the user
 
 Use the following format:
 
@@ -743,10 +873,14 @@ Thought:{agent_scratchpad}"""
             # Add current user query to messages
             messages.append({"role": "user", "content": query})
             
+            logger.info(f"Invoking ReAct agent with query: {query[:100]}...")
+            logger.debug(f"Messages context: {len(messages)} messages")
+            
             # Execute agent with conversation history using 'messages' parameter
             result = agent.invoke({"messages": messages})
 
-            logging.info(f"ReAct agent raw result: {result}")
+            logger.info(f"ReAct agent raw result type: {type(result)}")
+            logger.debug(f"ReAct agent raw result: {result}")
             
             # Extract response - handle different result formats
             response_text = None
@@ -798,7 +932,7 @@ Thought:{agent_scratchpad}"""
         
         Args:
             query: Query to find relevant tools
-            limit: Maximum number of tools to return
+            limit: Maximum number of SKILLS to return (each skill may have multiple methods/tools)
             
         Returns:
             List of LangChain Tool objects
@@ -812,6 +946,10 @@ Thought:{agent_scratchpad}"""
             skills = self.skills_manager.get_all_skills()
             skills = skills[:limit]
         
-        # Convert to tools
-        tools = [self._convert_skill_to_tool(skill) for skill in skills]
+        # Convert to tools (multiple tools per skill)
+        tools = []
+        for skill in skills:
+            skill_tools = self._convert_skill_to_tools(skill)
+            tools.extend(skill_tools)
+        
         return tools

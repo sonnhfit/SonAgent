@@ -71,7 +71,15 @@ class RPC:
         :param msg: Message to send
         :return: None
         """
-        return await self.sonagent.chat(msg)
+        logger.info(f"[RPC] Processing chat message: {msg[:100]}...")
+        try:
+            result = await self.sonagent.chat(msg)
+            logger.debug(f"[RPC] Chat result: {str(result)[:200]}...")
+            logger.info(f"[RPC] Chat completed successfully")
+            return result
+        except Exception as e:
+            logger.error(f"[RPC] Error in chat: {e}", exc_info=True)
+            return f"Error: {str(e)}"
     
     async def ibelieve(self, msg: str) -> bool:
         """

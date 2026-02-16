@@ -98,13 +98,17 @@ class SkillsManager:
 
     def load_skills(self) -> None:
         """Load all skills from the skills directory."""
+        logger.info("Loading skills from directory...")
         skill_names = self.scan_skills_directory()
         BaseLoading.object_type = BaseModel
+        
+        logger.info(f"Found {len(skill_names)} skill files to load")
         
         # Clear existing skills
         self.skill_object_list = []
         
         for skill_name in skill_names:
+            logger.debug(f"Loading skill: {skill_name}")
             try:
                 skill = BaseLoading.load_object(
                     object_name=skill_name, 
@@ -113,9 +117,11 @@ class SkillsManager:
                     extra_dir='user_data/skills'
                 )
                 self.skill_object_list.append(skill)
-                logger.info(f"Successfully loaded skill: {skill_name}")
+                logger.info(f"✓ Successfully loaded skill: {skill_name}")
             except Exception as e:
-                logger.error(f"Failed to load skill {skill_name}: {e}")
+                logger.error(f"✗ Failed to load skill {skill_name}: {e}", exc_info=True)
+        
+        logger.info(f"Loaded {len(self.skill_object_list)} skills successfully")
 
     
     def reload_skills(self) -> None:
