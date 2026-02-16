@@ -41,6 +41,8 @@ sonagent init
 ```
 - 2.2 Please fill in the API key of openai, telegram, and github if you want the agent to create a pull request in the `user_data/config.json` file
 - 2.3 run agent with file path param from step 2.1
+
+**Note:** On first run, standard skills (TextPrinter, WeatherAPISkill, HanoiWeatherChecker, SkillBuilder) are automatically copied to `user_data/skills/`. You can customize or remove these as needed. See [Standard Skills Documentation](docs/STANDARD_SKILLS.md) for more details.
 ```
 sonagent run 
 --config /path/to/user_data/config.json 
