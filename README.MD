@@ -49,7 +49,16 @@ sonagent run
 --datadir /path/to/user_data/  
 --user-data-dir /path/to/user_data/
 ```
+for example:
 
+```
+sonagent run 
+--config user_data/config.json
+--agentdb sqlite:///user_data/agentdb.sqlite
+--memory-url user_data/memory
+--datadir user_data
+--user-data-dir user_data
+```
 #### 3. check rpc channal  
 
 ```
