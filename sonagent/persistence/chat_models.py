@@ -12,6 +12,43 @@ from sonagent.persistence.base import ModelBase
 from sonagent.utils.datetime_helpers import dt_now
 
 
+def _convert_datetime_to_iso(obj: Any) -> Any:
+    """
+    Recursively convert datetime objects to ISO format strings.
+    
+    Args:
+        obj: Any object that may contain datetime objects
+        
+    Returns:
+        Object with datetime objects converted to ISO format strings
+    """
+    if isinstance(obj, datetime):
+        return obj.isoformat()
+    elif isinstance(obj, dict):
+        return {k: _convert_datetime_to_iso(v) for k, v in obj.items()}
+    elif isinstance(obj, list):
+        return [_convert_datetime_to_iso(item) for item in obj]
+    else:
+        return obj
+
+
+def _serialize_metadata(metadata: Optional[Dict[str, Any]]) -> Optional[str]:
+    """
+    Serialize metadata to JSON string, converting datetime objects to ISO format.
+    
+    Args:
+        metadata: Metadata dictionary
+        
+    Returns:
+        JSON string or None if metadata is None
+    """
+    if metadata is None:
+        return None
+    # Convert datetime objects to ISO format strings before serialization
+    processed_metadata = _convert_datetime_to_iso(metadata)
+    return json.dumps(processed_metadata)
+
+
 class ChatMessage(ModelBase):
     """
     Model for storing chat messages in conversations.
@@ -53,7 +90,7 @@ class ChatMessage(ModelBase):
             conversation_id=conversation_id,
             role=role,
             content=content,
-            message_metadata=json.dumps(metadata) if metadata else None
+            message_metadata=_serialize_metadata(metadata)
         )
         cls.session.add(message)
         cls.session.commit()
@@ -188,14 +225,14 @@ class Conversation(ModelBase):
             if title is not None:
                 conversation.title = title
             if metadata is not None:
-                conversation.conversation_metadata = json.dumps(metadata)
+                conversation.conversation_metadata = _serialize_metadata(metadata)
             conversation.updated_at = dt_now()
         else:
             # Create new
             conversation = cls(
                 id=conversation_id,
                 title=title,
-                conversation_metadata=json.dumps(metadata) if metadata else None
+                conversation_metadata=_serialize_metadata(metadata)
             )
             cls.session.add(conversation)
         
