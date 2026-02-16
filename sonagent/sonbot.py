@@ -37,6 +37,12 @@ class SonBot(LoggingMixin):
 
         self.config = config
         
+        # Global conversation ID for consistent chat context
+        # Generate a new conversation ID on startup
+        self.conversation_id = self._generate_conversation_id()
+        
+        logger.info(f"SonBot initialized with conversation_id: {self.conversation_id}")
+        
         memory_url = self.args.get('memory-url', "user_data/memory")
         agentdb = self.args.get('agentdb', "sqlite:///user_data/agentdb.sqlite")
 
@@ -65,7 +71,13 @@ class SonBot(LoggingMixin):
         logger.info(f"SKILLLS NAME: {names}")
         self._schedule = Scheduler()
 
-        self.agent = Agent(memory_path=memory_url, skills=self.skills, config=self.config)
+        # Pass conversation_id to Agent
+        self.agent = Agent(
+            memory_path=memory_url, 
+            skills=self.skills, 
+            config=self.config,
+            conversation_id=self.conversation_id
+        )
         self.rpc: RPCManager = RPCManager(self)
 
         def update():
@@ -284,3 +296,29 @@ class SonBot(LoggingMixin):
             'type': msg_type,
             'status': msg
         })
+    
+    def _generate_conversation_id(self) -> str:
+        """
+        Generate a unique conversation ID.
+        
+        Returns:
+            Unique conversation ID string
+        """
+        import uuid
+        import time
+        # Generate a UUID and combine with timestamp for uniqueness
+        unique_id = str(uuid.uuid4())[:8]
+        timestamp = int(time.time())
+        return f"conv_{timestamp}_{unique_id}"
+    
+    def new_conversation(self) -> str:
+        """
+        Start a new conversation by generating a new conversation ID.
+        
+        Returns:
+            New conversation ID
+        """
+        old_id = self.conversation_id
+        self.conversation_id = self._generate_conversation_id()
+        logger.info(f"Started new conversation: {old_id} -> {self.conversation_id}")
+        return self.conversation_id

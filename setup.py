@@ -53,7 +53,8 @@ required = [
     'schedule==1.2.1',
     'croniter==2.0.3',
     'tabulate==0.9.0',
-    'python-multipart==0.0.9'
+    'python-multipart==0.0.9',
+    'langchain-openai==1.1.9'
 ]
 
 # print(f"Required: {required}")
