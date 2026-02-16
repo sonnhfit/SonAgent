@@ -494,9 +494,18 @@ class AgentBrain:
         
         logger.debug(f"Converting skill '{skill_name}' to tools (all methods)")
         
-        # List of methods to skip (Pydantic special methods and private methods)
-        skip_methods = {'construct', 'model_construct', 'from_orm', 'dict', 'json', 'copy', 'validate', 
-                       'parse_obj', 'parse_raw', 'schema', 'schema_json', 'update_forward_refs'}
+        # List of methods to skip (Pydantic special methods, private methods, and common BaseModel methods)
+        skip_methods = {
+            # Pydantic v1 methods
+            'construct', 'from_orm', 'dict', 'json', 'copy', 'validate', 
+            'parse_obj', 'parse_raw', 'parse_file', 'schema', 'schema_json', 'update_forward_refs',
+            # Pydantic v2 methods
+            'model_construct', 'model_validate', 'model_validate_json', 'model_validate_strings',
+            'model_dump', 'model_dump_json', 'model_copy', 'model_json_schema',
+            'model_parametrized_name', 'model_post_init', 'model_rebuild',
+            # Other common methods to skip
+            'get', 'set', 'values', 'keys', 'items'
+        }
         
         # Find all callable public methods
         for attr_name in dir(skill):
@@ -741,12 +750,29 @@ class AgentBrain:
 You have access to the following tools:
 {tools}
 
-IMPORTANT: When a user asks you to CREATE or GENERATE a new skill, you MUST call the SkillBuilder tool with the following parameters:
-- skill_name: A valid Python class name (e.g., "PrimeFinder", "WeatherChecker")
-- description: A clear description of what the skill does
-- prompt: Natural language description of what the skill should do (for create_simple_skill method)
+IMPORTANT INSTRUCTIONS FOR SKILL GENERATION:
 
-When calling tools, ALWAYS provide the required arguments in a JSON format within the Action Input.
+When a user asks you to CREATE, GENERATE, or BUILD a new skill, you MUST use one of the SkillBuilder tools:
+
+1. **SkillBuilder_create_simple_skill**: For creating a skill from a natural language description
+   - Use this when the user provides a simple description of what they want
+   - Parameters: skill_name (Python class name), prompt (what the skill should do)
+   - Example: "create a skill to check weather" → call SkillBuilder_create_simple_skill with skill_name="WeatherChecker", prompt="Check the weather in a specified city"
+
+2. **SkillBuilder_generate_skill**: For creating a detailed skill with specific parameters
+   - Use this when you need precise control over the skill structure
+   - Parameters: skill_name, description, method_name (optional), parameters (JSON string), implementation (optional Python code)
+   - Example: For a calculator skill with add/subtract methods, specify the exact parameters
+
+3. **SkillBuilder_test_skill_code**: For testing skill code before deploying
+   - Use this to validate Python skill code
+   - Parameters: code (Python code as string)
+
+IMPORTANT RULES:
+- When calling SkillBuilder tools, provide ALL required arguments as a valid JSON object
+- skill_name must be a valid Python class name (PascalCase, no spaces)
+- Always inform the user after successfully creating a skill that they need to reload skills
+- If skill creation fails, explain the error to the user
 
 Use the following format:
 
