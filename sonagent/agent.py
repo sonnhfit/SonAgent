@@ -5,7 +5,6 @@ from datetime import datetime
 
 import yaml
 from croniter import croniter
-from openai import OpenAI
 
 from sonagent.persistence import Belief, Environment, ScheduleJob, Task
 from sonagent.tools import GitManager, LocalCodeManager
