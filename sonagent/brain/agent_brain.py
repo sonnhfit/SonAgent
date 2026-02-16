@@ -599,8 +599,7 @@ class AgentBrain:
                 agent = create_agent(
                     model=llm,
                     tools=[],  # Empty tools list
-                    system_prompt=system_prompt,
-                    verbose=True
+                    system_prompt=system_prompt
                 )
                 
                 logger.info("Created ReAct agent without tools")
@@ -634,8 +633,7 @@ Thought:{agent_scratchpad}"""
             agent = create_agent(
                 model=llm,
                 tools=tools,
-                system_prompt=system_prompt,
-                verbose=True
+                system_prompt=system_prompt
             )
             
             logger.info(f"Created ReAct agent with {len(tools)} tools")
