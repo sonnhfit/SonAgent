@@ -7,7 +7,7 @@ import logging
 import os
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple, Callable
+from typing import Any, Callable, Dict, List, Optional, Tuple
 
 from sonagent.skills.skills_manager import SkillsManager
 from sonagent.tools.embedding.langchain_embedding_wrapper import \
@@ -20,8 +20,8 @@ logger = logging.getLogger(__name__)
 # LangChain imports for ReAct agent
 try:
     from langchain.agents import create_agent
-    from langchain_openai import ChatOpenAI
     from langchain.tools import BaseTool
+    from langchain_openai import ChatOpenAI
     LANGCHAIN_AVAILABLE = True
 except ImportError as e:
     logger.warning(f"LangChain imports failed: {e}")
