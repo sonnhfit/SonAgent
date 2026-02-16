@@ -28,8 +28,13 @@ class SkillsManager:
         skill_names = []
         
         if not self.skills_dir.exists():
-            logger.warning(f"Skills directory does not exist: {self.skills_dir}")
-            return skill_names
+            logger.info(f"Skills directory does not exist, creating: {self.skills_dir}")
+            try:
+                self.skills_dir.mkdir(parents=True, exist_ok=True)
+                logger.info(f"Created skills directory: {self.skills_dir}")
+            except Exception as e:
+                logger.error(f"Failed to create skills directory {self.skills_dir}: {e}")
+                return skill_names
             
         for entry in self.skills_dir.iterdir():
             if entry.suffix == '.py' and entry.is_file() and not entry.name.startswith('__'):
