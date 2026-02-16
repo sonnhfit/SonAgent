@@ -27,8 +27,7 @@ class {class_name}(BaseModel):
     """
 
     def {method_name}(self{method_params}):
-        """
-        {description}
+        """{method_description_for_tool}
         
         Args:
 {args_docs}
@@ -97,6 +96,9 @@ if __name__ == "__main__":
         # Generate args documentation
         args_docs = self._generate_args_docs(parameters)
         
+        # Generate method description for tool (short description for LangChain)
+        method_description_for_tool = self._generate_method_description_for_tool(description, parameters)
+        
         # Generate implementation
         if implementation is None:
             implementation = self._generate_default_implementation(parameters)
@@ -114,6 +116,7 @@ if __name__ == "__main__":
             description=description,
             args_section=args_section,
             method_params=method_params,
+            method_description_for_tool=method_description_for_tool,
             args_docs=args_docs,
             return_description=return_description,
             method_implementation=implementation,
@@ -181,6 +184,41 @@ if __name__ == "__main__":
             docs_lines.append(f"            {param_name} ({param_type}): {param_desc}")
         
         return "\n".join(docs_lines)
+    
+    def _generate_method_description_for_tool(self, description: str, parameters: List[Dict[str, str]]) -> str:
+        """
+        Generate a short description for LangChain tool.
+        
+        Creates a description that includes the skill's purpose and its parameters
+        in a format that LangChain can use effectively.
+        
+        Args:
+            description: The skill description
+            parameters: List of parameter dicts
+            
+        Returns:
+            Short description suitable for LangChain tool
+        """
+        # Start with the description
+        desc = description.strip()
+        
+        # If there are parameters, add them to the description
+        if parameters:
+            param_list = []
+            for param in parameters:
+                param_name = param['name']
+                param_type = param.get('type', 'str')
+                param_desc = param.get('description', '')
+                if param_desc:
+                    param_list.append(f"{param_name} ({param_type}): {param_desc}")
+                else:
+                    param_list.append(f"{param_name} ({param_type})")
+            
+            if param_list:
+                params_str = ", ".join(param_list)
+                desc = f"{desc}. Args: {params_str}"
+        
+        return desc
     
     def _generate_default_implementation(self, parameters: List[Dict[str, str]]) -> str:
         """Generate a default implementation that returns parameter summary."""

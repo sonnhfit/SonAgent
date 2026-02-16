@@ -486,8 +486,12 @@ class AgentBrain:
         
         # Find the first method that's not __init__ or private
         method_name = None
+        method_doc = ""
         for attr_name in dir(skill):
             if not attr_name.startswith('_') and callable(getattr(skill, attr_name)):
+                method = getattr(skill, attr_name)
+                # Get the method's docstring if available
+                method_doc = method.__doc__ or ""
                 method_name = attr_name
                 break
         
@@ -501,6 +505,7 @@ class AgentBrain:
             
             @tool
             def tool_func(**kwargs):
+                """Execute the skill with provided arguments."""
                 return generic_skill_func(**kwargs)
             
             tool_func.name = skill_name
@@ -513,8 +518,13 @@ class AgentBrain:
         # Create tool function using the tool decorator
         from langchain.tools import tool
         
-        @tool
+        # Use method docstring if available, otherwise use class description
+        # Method docstring is more specific and detailed for the tool
+        func_description = method_doc if method_doc else description
+        
+        @tool(description=func_description)
         def skill_tool_func(**kwargs):
+            """Execute the skill with provided arguments."""
             try:
                 result = method(**kwargs)
                 return str(result)
@@ -522,7 +532,6 @@ class AgentBrain:
                 return f"Error executing skill {skill_name}: {str(e)}"
         
         skill_tool_func.name = f"{skill_name}.{method_name}"
-        skill_tool_func.description = description
         return skill_tool_func
     
     def _get_llm(self):
