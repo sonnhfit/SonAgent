@@ -66,31 +66,48 @@ time.sleep(20)
 
     def test_write_skill_new_file(self):
         """Test creating a new skill file"""
-        # Use a temporary directory for testing
+        # Temporarily modify the __file__ attribute for testing
+        import user_data.skills.PythonSandboxSkill as sandbox_module
+        original_file = sandbox_module.__file__
+        
         with tempfile.TemporaryDirectory() as tmpdir:
-            test_skills_dir = Path(tmpdir)
+            # Create a mock __file__ path in the temp directory
+            mock_skill_file = Path(tmpdir) / "PythonSandboxSkill.py"
+            mock_skill_file.write_text("# mock file")
             
-            # Create a test skill in the temp directory
-            skill_name = "TestSkill"
-            skill_code = """from pydantic import BaseModel
+            # Temporarily override the module's __file__ attribute
+            sandbox_module.__file__ = str(mock_skill_file)
+            
+            try:
+                # Create a new skill instance with the modified path
+                sandbox = PythonSandboxSkill()
+                
+                skill_name = "TestSkill"
+                skill_code = """from pydantic import BaseModel
 
 class TestSkill(BaseModel):
     def test_method(self):
         return "test"
 """
-            
-            # Save the skill file directly in temp dir for testing
-            skill_path = test_skills_dir / f"{skill_name}.py"
-            with open(skill_path, 'w') as f:
-                f.write(skill_code)
-            
-            # Verify the file was created
-            assert skill_path.exists()
-            
-            # Verify the content
-            with open(skill_path, 'r') as f:
-                content = f.read()
-                assert "class TestSkill" in content
+                
+                result = sandbox.write_skill(skill_name, skill_code)
+                
+                # Verify the result message
+                assert "Successfully created skill" in result
+                
+                # Verify the file was created
+                expected_path = Path(tmpdir) / f"{skill_name}.py"
+                assert expected_path.exists()
+                
+                # Verify the content
+                with open(expected_path, 'r') as f:
+                    content = f.read()
+                    assert "class TestSkill" in content
+                    assert "def test_method" in content
+                    
+            finally:
+                # Restore the original __file__ attribute
+                sandbox_module.__file__ = original_file
 
     def test_write_skill_validates_code(self):
         """Test that write_skill validates code before creating file"""

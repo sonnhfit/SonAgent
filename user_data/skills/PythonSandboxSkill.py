@@ -1,5 +1,7 @@
 import os
+import re
 import subprocess
+import sys
 import tempfile
 from pathlib import Path
 from typing import Dict, Optional
@@ -58,7 +60,7 @@ class PythonSandboxSkill(BaseModel):
             try:
                 # Execute the code in a subprocess with timeout
                 result = subprocess.run(
-                    ['python', tmp_file_path],
+                    [sys.executable, tmp_file_path],
                     capture_output=True,
                     text=True,
                     timeout=timeout,
@@ -79,8 +81,10 @@ class PythonSandboxSkill(BaseModel):
                 
             finally:
                 # Clean up temporary file
-                if os.path.exists(tmp_file_path):
+                try:
                     os.remove(tmp_file_path)
+                except OSError:
+                    pass  # File already deleted or doesn't exist
                     
         except subprocess.TimeoutExpired:
             error_msg = f"Execution timed out after {timeout} seconds"
@@ -149,13 +153,15 @@ class PythonSandboxSkill(BaseModel):
             
             # Validate the code syntax first
             validation_result = self.validate_skill_code(skill_code)
-            if "error" in validation_result.lower():
+            if validation_result != "Code syntax is valid.":
                 return f"Cannot create skill due to validation error: {validation_result}"
             
-            # Check if the code contains the expected class
-            if f"class {skill_name}" not in skill_code:
-                error_msg = f"Warning: The code does not contain a class named '{skill_name}'. Make sure the class name matches the skill name."
-                IOMsg.send_msg(error_msg)
+            # Check if the code contains the expected class using regex
+            class_pattern = rf'^\s*class\s+{re.escape(skill_name)}\s*[\(:]'
+            if not re.search(class_pattern, skill_code, re.MULTILINE):
+                warning_msg = f"Warning: The code does not appear to contain a class named '{skill_name}'. Make sure the class name matches the skill name."
+                IOMsg.send_msg(warning_msg)
+                # Note: This is a warning only - file creation continues
             
             # Write the skill code to file
             with open(skill_file_path, 'w') as f:
