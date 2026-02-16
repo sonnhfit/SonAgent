@@ -1,7 +1,9 @@
 import ast
 import logging
 import os
+import time
 from datetime import datetime
+from pathlib import Path
 from typing import Any
 
 from croniter import croniter
@@ -71,13 +73,59 @@ class SonBot(LoggingMixin):
     
         self._schedule.every(15).seconds.do(update)
 
+        # Add skill scanning every 10 seconds
+        def scan_skills():
+            self.scan_and_reload_skills()
+        
+        self._schedule.every(10).seconds.do(scan_skills)
+
         # Set initial bot state from config
         initial_state = self.config.get('initial_state')
 
         self.state = State[initial_state.upper()] if initial_state else State.STOPPED
         
         IOMsg.rpc = self.rpc
+        self.last_skill_scan_time = 0
+        self.cached_skill_files = set()
 
+
+    def scan_and_reload_skills(self) -> None:
+        """
+        Scan the skills directory for changes and reload skills if needed.
+        This method is called every 10 seconds by the scheduler.
+        """
+        try:
+            # Get current skill files in the directory
+            skills_dir = Path(self.config['user_data_dir']).joinpath('skills')
+            
+            if not skills_dir.exists():
+                logger.warning(f"Skills directory does not exist: {skills_dir}")
+                return
+                
+            current_files = set()
+            for entry in skills_dir.iterdir():
+                if entry.suffix == '.py' and entry.is_file() and not entry.name.startswith('__'):
+                    # Use file modification time and size to detect changes
+                    stat = entry.stat()
+                    file_key = f"{entry.name}:{stat.st_mtime}:{stat.st_size}"
+                    current_files.add(file_key)
+            
+            # Check if files have changed since last scan
+            if current_files != self.cached_skill_files:
+                logger.info(f"Skill files changed. Current: {len(current_files)} files, Previous: {len(self.cached_skill_files)} files")
+                self.cached_skill_files = current_files
+                
+                # Reload skills
+                self.agent.reload_skills()
+                logger.info("Skills reloaded due to directory changes")
+            else:
+                # Log only occasionally to avoid spam
+                if time.time() - self.last_skill_scan_time > 60:  # Log once per minute
+                    logger.debug(f"No changes in skill directory. Current skill count: {len(self.skills.skill_object_list)}")
+                    self.last_skill_scan_time = time.time()
+                    
+        except Exception as e:
+            logger.error(f"Error scanning skills directory: {e}")
 
     def update_schedule_jobs(self) -> None:
         """
