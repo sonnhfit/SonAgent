@@ -1,0 +1,2 @@
+this agent is designed for auto gencode and load agent skill at runtime.
+that can write python skill code and save to file system, then load and execute the skill code at runtime via chat interaction. or schedule job 
