@@ -330,11 +330,10 @@ class MainTeamAgent:
                 "message": f"Failed to update task {task_id}"
             }
     
-    @tool()
-    def save_chat_message_tool(self, conversation_id: str, role: str, 
-                              content: str, metadata: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    def _save_chat_message(self, conversation_id: str, role: str, 
+                          content: str, metadata: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
         """
-        Save a chat message to persistent storage.
+        Internal method to save a chat message to persistent storage.
         
         Args:
             conversation_id: Unique conversation identifier
@@ -379,6 +378,23 @@ class MainTeamAgent:
             }
     
     @tool()
+    def save_chat_message_tool(self, conversation_id: str, role: str, 
+                              content: str, metadata: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+        """
+        Save a chat message to persistent storage.
+        
+        Args:
+            conversation_id: Unique conversation identifier
+            role: Message role (user, assistant, system)
+            content: Message content
+            metadata: Additional metadata
+            
+        Returns:
+            Dictionary with save information
+        """
+        return self._save_chat_message(conversation_id, role, content, metadata)
+    
+    @tool()
     def get_chat_history_tool(self, conversation_id: str, limit: int = 20) -> List[Dict[str, Any]]:
         """
         Get chat history for a conversation.
@@ -407,10 +423,9 @@ class MainTeamAgent:
             logger.error(f"Error getting chat history: {e}")
             return [{"error": str(e), "message": "Failed to retrieve chat history"}]
     
-    @tool()
-    def extract_tom_tool(self, conversation_text: str, user_id: str = "default") -> Dict[str, Any]:
+    def _extract_tom(self, conversation_text: str, user_id: str = "default") -> Dict[str, Any]:
         """
-        Extract Theory of Mind (TOM) from conversation text.
+        Internal method to extract Theory of Mind (TOM) from conversation text.
         
         Args:
             conversation_text: The conversation text to analyze
@@ -481,6 +496,20 @@ class MainTeamAgent:
                 "error": str(e),
                 "message": "Failed to extract TOM"
             }
+    
+    @tool()
+    def extract_tom_tool(self, conversation_text: str, user_id: str = "default") -> Dict[str, Any]:
+        """
+        Extract Theory of Mind (TOM) from conversation text.
+        
+        Args:
+            conversation_text: The conversation text to analyze
+            user_id: ID of the user
+            
+        Returns:
+            Dictionary with TOM analysis
+        """
+        return self._extract_tom(conversation_text, user_id)
     
     @tool()
     def update_beliefs_tool(self, user_id: str, new_beliefs: List[Dict[str, Any]], 
@@ -742,7 +771,7 @@ class MainTeamAgent:
         try:
             # Save assistant response to chat history if requested
             if save_to_history:
-                self.save_chat_message_tool(
+                self._save_chat_message(
                     conversation_id=conversation_id,
                     role="assistant",
                     content=response,
@@ -814,7 +843,7 @@ class MainTeamAgent:
         Returns:
             Dictionary with task information
         """
-        return self.create_task_tool(content, priority, agent_id)
+        return self.create_task_tool.entrypoint(self, content, priority, agent_id)
     
     @tool()
     def _get_tasks_tool_wrapper(self, status: Optional[str] = None,
@@ -831,7 +860,7 @@ class MainTeamAgent:
         Returns:
             List of task dictionaries
         """
-        return self.get_tasks_tool(status, agent_id, limit)
+        return self.get_tasks_tool.entrypoint(self, status, agent_id, limit)
     
     @tool(requires_confirmation=True)
     def _update_task_tool_wrapper(self, task_id: int, status: Optional[str] = None,
@@ -847,7 +876,7 @@ class MainTeamAgent:
         Returns:
             Dictionary with update information
         """
-        return self.update_task_tool(task_id, status, result)
+        return self.update_task_tool.entrypoint(self, task_id, status, result)
     
     @tool()
     def _extract_tom_tool_wrapper(self, conversation_text: str, user_id: str = "default") -> Dict[str, Any]:
@@ -861,7 +890,7 @@ class MainTeamAgent:
         Returns:
             Dictionary with TOM analysis
         """
-        return self.extract_tom_tool(conversation_text, user_id)
+        return self._extract_tom(conversation_text, user_id)
     
     @tool()
     def _update_beliefs_tool_wrapper(self, user_id: str, new_beliefs: List[Dict[str, Any]],
@@ -972,7 +1001,7 @@ class MainTeamAgent:
         Returns:
             Dictionary with save information
         """
-        return self.save_chat_message_tool(conversation_id, role, content, metadata)
+        return self._save_chat_message(conversation_id, role, content, metadata)
     
     @tool()
     def _get_chat_history_tool_wrapper(self, conversation_id: str, limit: int = 20) -> List[Dict[str, Any]]:
@@ -1007,7 +1036,7 @@ class MainTeamAgent:
                 conversation_id = f"conv_{int(datetime.now().timestamp())}_{user_id}"
             
             # Save user message to chat history
-            self.save_chat_message_tool(
+            self._save_chat_message(
                 conversation_id=conversation_id,
                 role="user",
                 content=user_input,
@@ -1015,14 +1044,14 @@ class MainTeamAgent:
             )
             
             # Extract TOM from user input
-            tom_result = self.extract_tom_tool(user_input, user_id)
+            tom_result = self._extract_tom(user_input, user_id)
             
             # Process request through team
             team_response = self.team.run(user_input)
             
             # Save assistant response to chat history
             if team_response.content:
-                self.save_chat_message_tool(
+                self._save_chat_message(
                     conversation_id=conversation_id,
                     role="assistant",
                     content=team_response.content,
@@ -1071,7 +1100,7 @@ class MainTeamAgent:
                 conversation_id = f"conv_{int(datetime.now().timestamp())}_{user_id}"
             
             # Save user message to chat history
-            self.save_chat_message_tool(
+            self._save_chat_message(
                 conversation_id=conversation_id,
                 role="user",
                 content=user_input,
@@ -1079,7 +1108,7 @@ class MainTeamAgent:
             )
             
             # Extract TOM from user input
-            tom_result = self.extract_tom_tool(user_input, user_id)
+            tom_result = self._extract_tom(user_input, user_id)
             
             # Debug: Log before calling team.arun
             logger.debug(f"Calling team.arun with input: {user_input}")
@@ -1089,7 +1118,7 @@ class MainTeamAgent:
             
             # Save assistant response to chat history
             if team_response.content:
-                self.save_chat_message_tool(
+                self._save_chat_message(
                     conversation_id=conversation_id,
                     role="assistant",
                     content=team_response.content,
