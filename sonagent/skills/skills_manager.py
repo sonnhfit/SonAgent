@@ -76,6 +76,26 @@ class SkillsManager:
             logger.warning(f"Standard skills directory not found: {standard_skills_dir}")
             return
         
+        # Log all files found in standard_skills directory before copying
+        logger.info(f"Scanning standard skills directory: {standard_skills_dir}")
+        all_standard_files = list(standard_skills_dir.rglob('*'))
+        logger.info(f"Found {len(all_standard_files)} total items in standard_skills directory")
+        
+        # Log Python and markdown files that will be considered for copying
+        skill_files_to_copy = []
+        for item in all_standard_files:
+            if item.is_file() and not item.name.startswith('__'):
+                if item.suffix in ['.py', '.md']:
+                    skill_files_to_copy.append(item)
+                else:
+                    logger.debug(f"Skipping non-skill file (wrong extension): {item.relative_to(standard_skills_dir)}")
+            elif item.is_file() and item.name.startswith('__'):
+                logger.debug(f"Skipping special file: {item.relative_to(standard_skills_dir)}")
+        
+        logger.info(f"Found {len(skill_files_to_copy)} skill files to copy from standard_skills")
+        for skill_file in skill_files_to_copy:
+            logger.info(f"  - {skill_file.relative_to(standard_skills_dir)}")
+        
         copied_count = 0
         
         # If agent_id is specified, copy from agent-specific standard skills directory
@@ -113,16 +133,24 @@ class SkillsManager:
             Number of files copied
         """
         copied_count = 0
+        skipped_count = 0
         
         # Walk through all files in source directory
         for item in source_dir.rglob('*'):
-            if item.is_file() and not item.name.startswith('__'):
-                # Skip non-Python and non-markdown files
-                if item.suffix not in ['.py', '.md']:
+            if item.is_file():
+                rel_path = item.relative_to(source_dir)
+                
+                # Check if file should be skipped
+                if item.name.startswith('__'):
+                    logger.info(f"Skipping special file: {rel_path}")
+                    skipped_count += 1
                     continue
                 
-                # Calculate relative path from source_dir
-                rel_path = item.relative_to(source_dir)
+                # Skip non-Python and non-markdown files
+                if item.suffix not in ['.py', '.md']:
+                    logger.info(f"Skipping non-skill file (wrong extension {item.suffix}): {rel_path}")
+                    skipped_count += 1
+                    continue
                 
                 # Create destination path
                 dest_file = dest_dir / rel_path
@@ -137,6 +165,7 @@ class SkillsManager:
                 except Exception as e:
                     logger.error(f"Failed to copy skill {rel_path}: {e}")
         
+        logger.info(f"Copy completed: {copied_count} files copied, {skipped_count} files skipped")
         return copied_count
 
     def scan_skills_directory(self) -> List[str]:
