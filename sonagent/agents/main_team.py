@@ -75,6 +75,13 @@ class MainTeamAgent:
             2. Retrieve task status and information
             3. Update task progress and completion
             4. Always provide task IDs for reference
+            5. After creating a task, ALWAYS inform the user that the task has been saved to the database
+            6. Provide clear confirmation messages in Vietnamese when appropriate
+            
+            When a task is created successfully, make sure to tell the user:
+            - The task has been created and saved to the database
+            - The task ID for reference
+            - The task details (content, priority, status)
             """,
             db=self.db,
             add_history_to_context=True,
@@ -219,6 +226,19 @@ class MainTeamAgent:
             
             logger.info(f"Task created: ID={task.id}, Content={content[:50]}...")
             
+            # Create a detailed confirmation message
+            created_time = task.created_at.strftime('%Y-%m-%d %H:%M:%S') if task.created_at else 'N/A'
+            confirmation_msg = (
+                f"✅ Task đã được tạo thành công!\n\n"
+                f"📋 Chi tiết task:\n"
+                f"- ID: {task.id}\n"
+                f"- Nội dung: {task.content}\n"
+                f"- Trạng thái: {task.status}\n"
+                f"- Độ ưu tiên: {task.priority}\n"
+                f"- Thời gian tạo: {created_time}\n\n"
+                f"Task đã được lưu vào database và sẽ được xử lý theo lịch trình."
+            )
+            
             return {
                 "success": True,
                 "task_id": task.id,
@@ -226,7 +246,7 @@ class MainTeamAgent:
                 "status": task.status,
                 "priority": task.priority,
                 "created_at": task.created_at.isoformat() if task.created_at else None,
-                "message": f"Task created successfully with ID: {task.id}"
+                "message": confirmation_msg
             }
         except Exception as e:
             logger.error(f"Error creating task: {e}")

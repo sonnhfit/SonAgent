@@ -184,7 +184,7 @@ class Telegram(RPCHandler):
         #       problem in _help()).
         valid_keys: List[str] = [
             r'/ibelieve', r'/show_mode$', r'/mode', r'/sum$', r'/show_skills$',
-            r'/reload_skills$', r'/remove_skill', r'/show_schedule$', r'/env$',
+            r'/reload_skills$', r'/remove_skill', r'/show_tasks$', r'/env$',
             r'/add_env', r'/remove_env', r'/reload_env',
             r'/help$', r'/version$'
         ]
@@ -271,16 +271,15 @@ class Telegram(RPCHandler):
             CommandHandler('show_plan', self._show_plan),
             CommandHandler('planning', self._planning),
             CommandHandler('clear_chat', self._clear_short_term_memory),
-            CommandHandler('reincarnate', self._reincarnate),
             CommandHandler('askme', self._askme),
             CommandHandler('ibelieve', self._ibelieve),
             CommandHandler('show_mode', self._show_mode),
             CommandHandler('sum', self._summerize_dialog),
             CommandHandler('show_skills', self._show_skills),
+            CommandHandler('show_tasks', self._show_tasks),
             CommandHandler('env', self._env),
             CommandHandler('add_env', self._add_env),
             CommandHandler('remove_env', self._remove_env),
-            CommandHandler('show_schedule', self._show_schedule),
             CommandHandler('reload_skills', self._reload_skills),
             CommandHandler('reload_env', self._reload_env),
             CommandHandler('remove_skill', self._remove_skill),
@@ -493,13 +492,12 @@ class Telegram(RPCHandler):
             "*/show_plan:* `Show plan`\n"
             "*/planning:* `Planning`\n"
             "*/clear_chat:* `Clear chat`\n"
-            "*/reincarnate:* `Reincarnate`\n"
             "*/askme:* `Ask me`\n"
             "*/ibelieve:* `I believe in you`\n"
             "*/show_mode:* `Show mode`\n"
             "*/sum:* `Summerize dialog`\n"
             "*/show_skills:* `Show skills`\n"
-            "*/show_schedule:* `Show schedule`\n"
+            "*/show_tasks:* `Show tasks`\n"
             "*/reload_skills:* `Reload skills`\n"
             "*/remove_skill:* `Remove skill`\n"
             "*/mode:* `Mode`\n"
@@ -612,17 +610,16 @@ class Telegram(RPCHandler):
             result = "Agent doesn't have any available skills."
         await update.message.reply_text(result)
 
-    async def _show_schedule(self, update: Update, context: CallbackContext) -> None:
+    async def _show_tasks(self, update: Update, context: CallbackContext) -> None:
         """
-        Handler for /show_schedule.
-        Show version information
-        :param bot: telegram bot
+        Handler for /show_tasks.
+        Show current tasks
         :param update: message update
+        :param context: callback context
         :return: None
         """
-        result = await self._rpc.show_schedule()
+        result = await self._rpc.get_tasks()
         await self._send_msg(result, parse_mode=ParseMode.MARKDOWN)
-        # await update.message.reply_text(result, parse_mode=ParseMode.MARKDOWN)
 
     async def _reload_skills(self, update: Update, context: CallbackContext) -> None:
         """
@@ -731,17 +728,6 @@ class Telegram(RPCHandler):
         # logger.info(
         #     f"---- Received message '{text}' from chat {chat_id}"
         # )
-
-    async def _reincarnate(self, update: Update, context: CallbackContext) -> None:
-        """
-        Handler for /reincarnate.
-        Show version information
-        :param bot: telegram bot
-        :param update: message update
-        :return: None
-        """
-        result = await self._rpc.reincarnate()
-        await update.message.reply_text(result)
 
     async def _clear_short_term_memory(self, update: Update, context: CallbackContext) -> None:
         """
