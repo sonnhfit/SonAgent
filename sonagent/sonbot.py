@@ -45,7 +45,7 @@ class SonBot(LoggingMixin):
         logger.info(f"SonBot initialized with conversation_id: {self.conversation_id}")
         
         memory_url = self.args.get('memory-url', "user_data/memory")
-        agentdb = self.args.get('agentdb', "sqlite:///user_data/agentdb.sqlite")
+        agentdb = self.args.get('agentdb', "sqlite:///user_data/agentdb.db")
 
         llm = self.config.get('llm')
         if llm.get('api_type', None) == 'openai':
@@ -53,10 +53,16 @@ class SonBot(LoggingMixin):
             logger.info("Run with openai LLM")
 
         if agentdb is None:
-            agentdb = "sqlite:///user_data/agentdb.sqlite"
+            agentdb = "sqlite:///user_data/agentdb.db"
         
         if memory_url is None:
             memory_url = "./user_data/memory"
+
+        # Initialize MainTeamAgent for team-based processing
+        self.team_agent = None
+        self._init_team_agent()
+
+
         try:
             init_db(agentdb)
         except Exception as e:
@@ -80,9 +86,6 @@ class SonBot(LoggingMixin):
             conversation_id=self.conversation_id
         )
         
-        # Initialize MainTeamAgent for team-based processing
-        self.team_agent = None
-        self._init_team_agent()
         
         self.rpc: RPCManager = RPCManager(self)
 
@@ -111,9 +114,19 @@ class SonBot(LoggingMixin):
         Initialize the MainTeamAgent.
         """
         try:
-            # Use user_data_dir from config for database path
+            # Use the same database as the main agent (agentdb.sqlite)
+            # Get the database URL from args or use default
+            agentdb = self.args.get('agentdb', "sqlite:///user_data/agentdb.db")
+            
+            # Extract the file path from the URL for MainTeamAgent
+            # sqlite:///user_data/agentdb.sqlite -> user_data/agentdb.sqlite
+            # if agentdb.startswith('sqlite:///'):
+            #     db_path = agentdb.replace('sqlite:///', '')
+            # else:
+                # Fallback to default path
             user_data_dir = self.config.get('user_data_dir', 'user_data')
-            db_path = f"{user_data_dir}/agno.db"
+            db_path = f"{user_data_dir}/agentdb.db"
+                
             self.team_agent = MainTeamAgent(
                 config=self.config,
                 db_path=db_path
@@ -274,6 +287,9 @@ class SonBot(LoggingMixin):
     async def show_plan(self) -> str:
         return await self.agent.show_plan()
     
+    async def show_task(self) -> str:
+        return await self.agent.show_task()
+    
     async def show_schedule(self) -> str:
         return await self.agent.show_schedule()
     
@@ -353,17 +369,28 @@ class SonBot(LoggingMixin):
             if isinstance(tasks, list) and len(tasks) > 0 and "error" in tasks[0]:
                 return f"Error retrieving tasks: {tasks[0].get('error')}"
             
-            # Format tasks for display
+            # Format tasks for Telegram display - escape Markdown characters
             task_list = []
             for i, task in enumerate(tasks, 1):
+                # Escape Markdown characters in task content
+                content = task.get('content', '')
+                # Escape special Markdown characters: * _ ` [ ] ( )
+                escaped_content = content.replace('*', '\\*').replace('_', '\\_').replace('`', '\\`')
+                escaped_content = escaped_content.replace('[', '\\[').replace(']', '\\]')
+                escaped_content = escaped_content.replace('(', '\\(').replace(')', '\\)')
+                
+                # Truncate for display
+                display_content = escaped_content[:50] + ('...' if len(escaped_content) > 50 else '')
+                
                 task_list.append(
-                    f"{i}. ID: {task.get('id')}, "
-                    f"Content: {task.get('content', '')[:50]}..., "
-                    f"Status: {task.get('status')}, "
-                    f"Priority: {task.get('priority')}"
+                    f"{i}. *ID:* `{task.get('id')}`\n"
+                    f"   *Content:* {display_content}\n"
+                    f"   *Status:* `{task.get('status')}`\n"
+                    f"   *Priority:* `{task.get('priority')}`"
                 )
             
-            return f"Tasks:\n" + "\n".join(task_list)
+            header = "📋 *Your Tasks:*\n\n"
+            return header + "\n\n".join(task_list)
                 
         except Exception as e:
             logger.error(f"Error getting tasks via team: {e}")

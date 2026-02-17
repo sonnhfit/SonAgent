@@ -56,7 +56,7 @@ for example:
 ```
 sonagent run 
 --config user_data/config.json
---agentdb sqlite:///user_data/agentdb.sqlite
+--agentdb sqlite:///user_data/agentdb.db
 --memory-url user_data/memory
 --datadir user_data
 --user-data-dir user_data

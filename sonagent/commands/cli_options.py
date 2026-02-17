@@ -88,4 +88,11 @@ AVAILABLE_CLI_OPTIONS = {
         help='Agent database url.',
         metavar='PATH',
     ),
+    "log_level": Arg(
+        '--log-level',
+        help='Set logging level (debug, info, warning, error). Default: info.',
+        choices=['debug', 'info', 'warning', 'error'],
+        default='info',
+        metavar='LEVEL',
+    ),
 }

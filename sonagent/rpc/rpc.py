@@ -3,6 +3,7 @@ This module contains class to define a RPC communications
 """
 import logging
 from abc import abstractmethod
+from typing import Any, Dict, Optional
 
 from sonagent.constants import AGENT_MODE
 from sonagent.rpc.rpc_types import RPCSendMsg
@@ -83,6 +84,47 @@ class RPC:
         except Exception as e:
             logger.error(f"[RPC] Error in chat: {e}", exc_info=True)
             return f"Error: {str(e)}"
+    
+    async def confirm_action(self, run_id: str, confirm: bool, 
+                           confirmation_note: Optional[str] = None) -> Dict[str, Any]:
+        """
+        Confirm or reject a paused action.
+        
+        Args:
+            run_id: The run ID to continue
+            confirm: Whether to confirm (True) or reject (False) the action
+            confirmation_note: Optional note to provide when rejecting
+            
+        Returns:
+            Dictionary with confirmation results
+        """
+        logger.info(f"[RPC] Confirming action for run {run_id}: confirm={confirm}")
+        try:
+            # Check if team agent is available
+            if not hasattr(self.sonagent, 'team_agent') or not self.sonagent.team_agent:
+                return {
+                    "success": False,
+                    "error": "Team agent not initialized",
+                    "message": "Please ensure team agent is properly initialized"
+                }
+            
+            # Handle confirmation
+            result = await self.sonagent.team_agent.handle_confirmation(
+                run_id=run_id,
+                confirm=confirm,
+                confirmation_note=confirmation_note
+            )
+            
+            logger.info(f"[RPC] Confirmation handled: success={result.get('success')}")
+            return result
+            
+        except Exception as e:
+            logger.error(f"[RPC] Error confirming action: {e}", exc_info=True)
+            return {
+                "success": False,
+                "error": str(e),
+                "message": "Failed to confirm action"
+            }
     
     async def ibelieve(self, msg: str) -> bool:
         """
@@ -168,6 +210,13 @@ class RPC:
         :return: None
         """
         return await self.sonagent.show_plan()
+    
+    async def show_task(self) -> str:
+        """
+        Show all tasks with detailed information using the Task model.
+        Similar to show_plan but shows all tasks with more details.
+        """
+        return await self.sonagent.show_task()
     
     async def show_mode(self) -> str:
         return self.sonagent.agent_mode

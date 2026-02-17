@@ -290,6 +290,69 @@ class Agent:
             task_text += f"- ID: {task.id}, Content: {task.content[:50]}..., Status: {task.status}, Priority: {task.priority}\n"
         return task_text
 
+    async def show_task(self) -> str:
+        """
+        Show all tasks with detailed information using the Task model.
+        Similar to show_plan but shows all tasks with more details.
+        """
+        all_tasks = Task.get_all_tasks()
+        
+        if not all_tasks:
+            return "No tasks found."
+        
+        # Group tasks by status
+        tasks_by_status = {}
+        for task in all_tasks:
+            status = task.status
+            if status not in tasks_by_status:
+                tasks_by_status[status] = []
+            tasks_by_status[status].append(task)
+        
+        task_text = "All Tasks:\n"
+        task_text += "=" * 50 + "\n"
+        
+        # Show tasks by status
+        for status in sorted(tasks_by_status.keys()):
+            task_text += f"\n{status.upper()} Tasks ({len(tasks_by_status[status])}):\n"
+            task_text += "-" * 30 + "\n"
+            
+            for task in tasks_by_status[status]:
+                # Format dates
+                created_str = task.created_at.strftime("%Y-%m-%d %H:%M") if task.created_at else "N/A"
+                started_str = task.started_at.strftime("%Y-%m-%d %H:%M") if task.started_at else "Not started"
+                completed_str = task.completed_at.strftime("%Y-%m-%d %H:%M") if task.completed_at else "Not completed"
+                
+                task_text += f"ID: {task.id}\n"
+                task_text += f"Content: {task.content[:100]}{'...' if len(task.content) > 100 else ''}\n"
+                task_text += f"Priority: {task.priority} | Retry: {task.retry_count}/{task.max_retries}\n"
+                task_text += f"Created: {created_str} | Started: {started_str} | Completed: {completed_str}\n"
+                
+                if task.agent_id:
+                    task_text += f"Agent: {task.agent_id}\n"
+                
+                if task.scheduled_at:
+                    scheduled_str = task.scheduled_at.strftime("%Y-%m-%d %H:%M") if task.scheduled_at else "N/A"
+                    task_text += f"Scheduled: {scheduled_str}\n"
+                
+                if task.cron_expression:
+                    task_text += f"Cron: {task.cron_expression}\n"
+                
+                task_text += "\n"
+        
+        # Add summary
+        total_tasks = len(all_tasks)
+        pending = len([t for t in all_tasks if t.status == 'pending'])
+        in_progress = len([t for t in all_tasks if t.status == 'in_progress'])
+        done = len([t for t in all_tasks if t.status == 'done'])
+        failed = len([t for t in all_tasks if t.status == 'failed'])
+        cancelled = len([t for t in all_tasks if t.status == 'cancelled'])
+        
+        task_text += "=" * 50 + "\n"
+        task_text += f"Summary: Total: {total_tasks} | Pending: {pending} | In Progress: {in_progress} | "
+        task_text += f"Done: {done} | Failed: {failed} | Cancelled: {cancelled}\n"
+        
+        return task_text
+
     async def show_schedule(self) -> str:
         schedule_jobs = ScheduleJob.get_all_schedule_not_completed_jobs()
         schedule_text = ""

@@ -91,7 +91,20 @@ def setup_logging(config: dict) -> None:
             handler_rf.setFormatter(Formatter(LOGFORMAT))
             logging.root.addHandler(handler_rf)
 
-    logging.root.setLevel(logging.INFO if verbosity < 1 else logging.DEBUG)
+    # Use log_level if provided, otherwise use verbosity for backward compatibility
+    log_level = config.get('log_level', 'info').lower()
+    if log_level == 'debug':
+        logging.root.setLevel(logging.DEBUG)
+    elif log_level == 'info':
+        logging.root.setLevel(logging.INFO)
+    elif log_level == 'warning':
+        logging.root.setLevel(logging.WARNING)
+    elif log_level == 'error':
+        logging.root.setLevel(logging.ERROR)
+    else:
+        # Fallback to verbosity-based logic for backward compatibility
+        logging.root.setLevel(logging.INFO if verbosity < 1 else logging.DEBUG)
+    
     set_loggers(verbosity, config.get('api_server', {}).get('verbosity', 'info'))
 
-    logger.info('Verbosity set to %s', verbosity)
+    logger.info('Log level set to %s (verbosity: %s)', log_level, verbosity)

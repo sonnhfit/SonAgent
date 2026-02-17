@@ -43,6 +43,7 @@ def preprocess_markdown_message(message: str) -> str:
     - Unclosed backticks (inline code)
     - Unclosed code blocks (```)
     - Unmatched square brackets
+    - Unpaired asterisks (causing bold/italic parsing issues)
     - Underscores in words (causing italic parsing issues)
     - Other special characters that could cause parse errors
     
@@ -82,8 +83,16 @@ def preprocess_markdown_message(message: str) -> str:
     if open_brackets > close_brackets:
         result += ']' * (open_brackets - close_brackets)
     
-    # Escape underscores that are not in code blocks or already escaped
-    # This prevents unwanted italic formatting
+    # Fix unpaired asterisks - escape lone asterisks that could cause bold/italic issues
+    # Count asterisks and escape unpaired ones
+    asterisk_count = result.count('*')
+    if asterisk_count % 2 == 1:
+        # Find the last asterisk and escape it
+        last_asterisk_pos = result.rfind('*')
+        if last_asterisk_pos != -1:
+            result = result[:last_asterisk_pos] + '\\*' + result[last_asterisk_pos + 1:]
+    
+    # Escape underscores and asterisks that are not in code blocks or already escaped
     lines = result.split('\n')
     processed_lines = []
     
@@ -116,9 +125,22 @@ def preprocess_markdown_message(message: str) -> str:
                     i += 1
                 continue
             
-            # Escape lone underscores or underscores at the start/end of words
-            # that are likely to cause italic parsing issues
-            if line[i] == '_':
+            # Handle asterisks - escape lone asterisks
+            if line[i] == '*':
+                # Check if this is likely part of a pair
+                # Look ahead and behind to see if there's another asterisk
+                prev_char = processed_line[-1] if processed_line else ' '
+                next_char = line[i + 1] if i + 1 < len(line) else ' '
+                
+                # If it's a single asterisk not part of a pair, escape it
+                # Simple heuristic: if not surrounded by asterisks, escape
+                if prev_char != '*' and next_char != '*':
+                    processed_line += '\\*'
+                else:
+                    processed_line += line[i]
+            
+            # Escape underscores that are not in code blocks or already escaped
+            elif line[i] == '_':
                 # Check if this is likely a variable/identifier (inside word)
                 prev_char = processed_line[-1] if processed_line else ' '
                 next_char = line[i + 1] if i + 1 < len(line) else ' '
@@ -142,8 +164,13 @@ def preprocess_markdown_message(message: str) -> str:
     
     result = '\n'.join(processed_lines)
     
-    # Final cleanup: remove any remaining problematic characters
-    # that could cause "can't find end of entity" errors
+    # Final cleanup: escape parentheses that could be interpreted as part of links
+    # Telegram Markdown links use [text](url), so unpaired parentheses can cause issues
+    open_paren = result.count('(')
+    close_paren = result.count(')')
+    if open_paren > close_paren:
+        # Add missing closing parentheses
+        result += ')' * (open_paren - close_paren)
     
     return result
 
@@ -276,7 +303,7 @@ class Telegram(RPCHandler):
             CommandHandler('show_mode', self._show_mode),
             CommandHandler('sum', self._summerize_dialog),
             CommandHandler('show_skills', self._show_skills),
-            CommandHandler('show_tasks', self._show_tasks),
+            CommandHandler('show_tasks', self._show_task),
             CommandHandler('env', self._env),
             CommandHandler('add_env', self._add_env),
             CommandHandler('remove_env', self._remove_env),
@@ -489,7 +516,8 @@ class Telegram(RPCHandler):
         message = (
             "_Bot Control_\n"
             "------------\n"
-            "*/show_plan:* `Show plan`\n"
+            "*/show_plan:* `Show pending tasks`\n"
+            "*/show_tasks:* `Show all tasks with details`\n"
             "*/planning:* `Planning`\n"
             "*/clear_chat:* `Clear chat`\n"
             "*/askme:* `Ask me`\n"
@@ -497,7 +525,6 @@ class Telegram(RPCHandler):
             "*/show_mode:* `Show mode`\n"
             "*/sum:* `Summerize dialog`\n"
             "*/show_skills:* `Show skills`\n"
-            "*/show_tasks:* `Show tasks`\n"
             "*/reload_skills:* `Reload skills`\n"
             "*/remove_skill:* `Remove skill`\n"
             "*/mode:* `Mode`\n"
@@ -766,6 +793,19 @@ class Telegram(RPCHandler):
 
         result = await self._rpc.show_plan()
         await update.message.reply_text(result)
+
+    async def _show_task(self, update: Update, context: CallbackContext) -> None:
+        """
+        Handler for /show_task.
+        Show detailed task information using the Task model.
+        Similar to show_plan but shows all tasks with more details.
+        :param bot: telegram bot
+        :param update: message update
+        :return: None
+        """
+
+        result = await self._rpc.show_task()
+        await self._send_msg(result, parse_mode=ParseMode.MARKDOWN)
 
     async def _summerize_dialog(self, update: Update, context: CallbackContext) -> None:
         """

@@ -17,6 +17,20 @@ from agno.tools.function import UserInputField
 
 from sonagent.persistence import Task, ChatMessage, Conversation, Belief
 from sonagent.utils.datetime_helpers import dt_now
+from sonagent.agents.agent_tools import (
+    create_task_tool,
+    get_tasks_tool,
+    update_task_tool,
+    save_chat_message_tool,
+    get_chat_history_tool,
+    extract_tom_tool,
+    update_beliefs_tool,
+    analyze_intent_tool,
+    request_feedback_tool,
+    process_feedback_tool,
+    coordinate_agents_tool,
+    respond_to_user_tool
+)
 
 logger = logging.getLogger(__name__)
 
@@ -41,6 +55,9 @@ class MainTeamAgent:
         # Initialize Agno SQLite database
         self.db = SqliteDb(db_file=db_path)
         
+        # Store for paused runs
+        self.paused_runs: Dict[str, Any] = {}
+        
         # Initialize specialized agents
         self._init_agents()
         
@@ -55,9 +72,8 @@ class MainTeamAgent:
         # Debug: Check what type of objects our tools are
         logger.debug(f"Initializing agents with tools...")
         
-        # Create tool functions that are properly bound to this instance
-        # The @tool decorator creates tool objects that need to be callable
-        # We'll create simple wrapper functions that call our instance methods
+        # Use the imported tool functions from agent_tools.py
+        # These are regular functions, not instance methods
         
         # Task Management Agent - handles task creation and management
         self.task_agent = Agent(
@@ -65,9 +81,9 @@ class MainTeamAgent:
             role="Create, manage, and track tasks in the system",
             model=OpenAIResponses(id="gpt-4o-mini"),
             tools=[
-                self._create_task_tool_wrapper,
-                self._get_tasks_tool_wrapper,
-                self._update_task_tool_wrapper
+                create_task_tool,
+                get_tasks_tool,
+                update_task_tool
             ],
             instructions="""
             You are responsible for task management. When users request tasks:
@@ -94,9 +110,9 @@ class MainTeamAgent:
             role="Extract and analyze user's Theory of Mind (beliefs, intentions, mental state)",
             model=OpenAIResponses(id="gpt-4o-mini"),
             tools=[
-                self._extract_tom_tool_wrapper,
-                self._update_beliefs_tool_wrapper,
-                self._analyze_intent_tool_wrapper
+                extract_tom_tool,
+                update_beliefs_tool,
+                analyze_intent_tool
             ],
             instructions="""
             You analyze user's Theory of Mind (TOM). Your responsibilities:
@@ -124,8 +140,8 @@ class MainTeamAgent:
             role="Collect and process human feedback for agent actions",
             model=OpenAIResponses(id="gpt-4o-mini"),
             tools=[
-                self._request_feedback_tool_wrapper,
-                self._process_feedback_tool_wrapper
+                request_feedback_tool,
+                process_feedback_tool
             ],
             instructions="""
             You handle human feedback and approvals. Your responsibilities:
@@ -145,10 +161,10 @@ class MainTeamAgent:
             role="Handle general user queries and coordinate with other agents",
             model=OpenAIResponses(id="gpt-4o-mini"),
             tools=[
-                self._coordinate_agents_tool_wrapper,
-                self._respond_to_user_tool_wrapper,
-                self._save_chat_message_tool_wrapper,
-                self._get_chat_history_tool_wrapper
+                coordinate_agents_tool,
+                respond_to_user_tool,
+                save_chat_message_tool,
+                get_chat_history_tool
             ],
             instructions="""
             You are the primary interface for users. Your responsibilities:
@@ -203,7 +219,7 @@ class MainTeamAgent:
     
     # Tool definitions for agents
     
-    @tool(requires_confirmation=True)
+    @tool()
     def create_task_tool(self, content: str, priority: int = 0, 
                         agent_id: str = "main_team") -> Dict[str, Any]:
         """
@@ -845,201 +861,54 @@ class MainTeamAgent:
         
         return list(set(agent_types))  # Remove duplicates
     
-    # Wrapper methods for tools
-    # These are needed because @tool decorator on instance methods doesn't work correctly
-    # when passed to Agno Agent's tools parameter
-    
-    @tool(requires_confirmation=True)
-    def _create_task_tool_wrapper(self, content: str, priority: int = 0, 
-                                 agent_id: str = "main_team") -> Dict[str, Any]:
+    def _extract_requirements_info(self, run_response) -> List[Dict[str, Any]]:
         """
-        Create a new task in the system.
+        Extract information about active requirements from a paused run response.
         
         Args:
-            content: Task description/content
-            priority: Task priority (0=low, 1=medium, 2=high)
-            agent_id: ID of the agent creating the task
+            run_response: The paused run response
             
         Returns:
-            Dictionary with task information
+            List of requirement information dictionaries
         """
-        # entrypoint is already bound to the instance, don't pass self
-        return self.create_task_tool.entrypoint(content, priority, agent_id)
-    
-    @tool()
-    def _get_tasks_tool_wrapper(self, status: Optional[str] = None,
-                               agent_id: Optional[str] = None,
-                               limit: int = 10) -> List[Dict[str, Any]]:
-        """
-        Get tasks from the system with optional filters.
+        requirements_info = []
         
-        Args:
-            status: Filter by task status (pending, in_progress, done, failed, cancelled)
-            agent_id: Filter by agent ID
-            limit: Maximum number of tasks to return
-            
-        Returns:
-            List of task dictionaries
-        """
-        # entrypoint is already bound to the instance, don't pass self
-        return self.get_tasks_tool.entrypoint(status, agent_id, limit)
-    
-    @tool(requires_confirmation=True)
-    def _update_task_tool_wrapper(self, task_id: int, status: Optional[str] = None,
-                                 result: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
-        """
-        Update a task's status or result.
+        if hasattr(run_response, 'active_requirements'):
+            for requirement in run_response.active_requirements:
+                req_info = {
+                    "type": "unknown",
+                    "tool_name": None,
+                    "tool_args": None,
+                    "needs_confirmation": False,
+                    "needs_user_input": False,
+                    "is_external_tool_execution": False
+                }
+                
+                if hasattr(requirement, 'needs_confirmation') and requirement.needs_confirmation:
+                    req_info["type"] = "confirmation"
+                    req_info["needs_confirmation"] = True
+                    if hasattr(requirement, 'tool'):
+                        req_info["tool_name"] = getattr(requirement.tool, 'tool_name', None)
+                        req_info["tool_args"] = getattr(requirement.tool, 'tool_args', None)
+                
+                elif hasattr(requirement, 'needs_user_input') and requirement.needs_user_input:
+                    req_info["type"] = "user_input"
+                    req_info["needs_user_input"] = True
+                    if hasattr(requirement, 'user_input_schema'):
+                        req_info["user_input_schema"] = requirement.user_input_schema
+                
+                elif hasattr(requirement, 'is_external_tool_execution') and requirement.is_external_tool_execution:
+                    req_info["type"] = "external_execution"
+                    req_info["is_external_tool_execution"] = True
+                    if hasattr(requirement, 'tool_execution'):
+                        req_info["tool_name"] = getattr(requirement.tool_execution, 'tool_name', None)
+                        req_info["tool_args"] = getattr(requirement.tool_execution, 'tool_args', None)
+                
+                requirements_info.append(req_info)
         
-        Args:
-            task_id: ID of the task to update
-            status: New status (in_progress, done, failed, cancelled)
-            result: Task result data
-            
-        Returns:
-            Dictionary with update information
-        """
-        # entrypoint is already bound to the instance, don't pass self
-        return self.update_task_tool.entrypoint(task_id, status, result)
+        return requirements_info
     
-    @tool()
-    def _extract_tom_tool_wrapper(self, conversation_text: str, user_id: str = "default") -> Dict[str, Any]:
-        """
-        Extract Theory of Mind (TOM) from conversation text.
-        
-        Args:
-            conversation_text: The conversation text to analyze
-            user_id: ID of the user
-            
-        Returns:
-            Dictionary with TOM analysis
-        """
-        return self._extract_tom(conversation_text, user_id)
-    
-    @tool()
-    def _update_beliefs_tool_wrapper(self, user_id: str, new_beliefs: List[Dict[str, Any]],
-                                    source: str = "tom_analysis") -> Dict[str, Any]:
-        """
-        Update user's belief system with new beliefs.
-        
-        Args:
-            user_id: ID of the user
-            new_beliefs: List of new beliefs to add
-            source: Source of the beliefs (tom_analysis, direct_input, etc.)
-            
-        Returns:
-            Dictionary with update information
-        """
-        return self.update_beliefs_tool(user_id, new_beliefs, source)
-    
-    @tool()
-    def _analyze_intent_tool_wrapper(self, user_query: str, context: Optional[str] = None) -> Dict[str, Any]:
-        """
-        Analyze user's intent from a query.
-        
-        Args:
-            user_query: The user's query
-            context: Optional context about the conversation
-            
-        Returns:
-            Dictionary with intent analysis
-        """
-        return self.analyze_intent_tool(user_query, context)
-    
-    @tool(requires_user_input=True, user_input_fields=["feedback"])
-    def _request_feedback_tool_wrapper(self, action: str, context: str,
-                                      feedback: Optional[str] = None) -> Dict[str, Any]:
-        """
-        Request human feedback for an agent action.
-        
-        Args:
-            action: The action requiring feedback
-            context: Context about why feedback is needed
-            feedback: User feedback (collected via user input)
-            
-        Returns:
-            Dictionary with feedback information
-        """
-        return self.request_feedback_tool(action, context, feedback)
-    
-    @tool()
-    def _process_feedback_tool_wrapper(self, action: str, feedback: str,
-                                      learning_note: Optional[str] = None) -> Dict[str, Any]:
-        """
-        Process and incorporate user feedback into agent learning.
-        
-        Args:
-            action: The action that received feedback
-            feedback: User feedback text
-            learning_note: Optional note about what was learned
-            
-        Returns:
-            Dictionary with processing information
-        """
-        return self.process_feedback_tool(action, feedback, learning_note)
-    
-    @tool()
-    def _coordinate_agents_tool_wrapper(self, request: str,
-                                       agent_types: List[str] = None) -> Dict[str, Any]:
-        """
-        Coordinate multiple agents to handle a complex request.
-        
-        Args:
-            request: The user request to handle
-            agent_types: Types of agents to involve (task, tom, feedback, assistant)
-            
-        Returns:
-            Dictionary with coordination results
-        """
-        return self.coordinate_agents_tool(request, agent_types)
-    
-    @tool()
-    def _respond_to_user_tool_wrapper(self, response: str,
-                                     conversation_id: str,
-                                     save_to_history: bool = True) -> Dict[str, Any]:
-        """
-        Send a response to the user and optionally save to chat history.
-        
-        Args:
-            response: The response to send to user
-            conversation_id: Conversation identifier
-            save_to_history: Whether to save the response to chat history
-            
-        Returns:
-            Dictionary with response information
-        """
-        return self.respond_to_user_tool(response, conversation_id, save_to_history)
-    
-    @tool()
-    def _save_chat_message_tool_wrapper(self, conversation_id: str, role: str,
-                                       content: str, metadata: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
-        """
-        Save a chat message to persistent storage.
-        
-        Args:
-            conversation_id: Unique conversation identifier
-            role: Message role (user, assistant, system)
-            content: Message content
-            metadata: Additional metadata
-            
-        Returns:
-            Dictionary with save information
-        """
-        return self._save_chat_message(conversation_id, role, content, metadata)
-    
-    @tool()
-    def _get_chat_history_tool_wrapper(self, conversation_id: str, limit: int = 20) -> List[Dict[str, Any]]:
-        """
-        Get chat history for a conversation.
-        
-        Args:
-            conversation_id: Conversation identifier
-            limit: Maximum number of messages to return
-            
-        Returns:
-            List of chat message dictionaries
-        """
-        return self.get_chat_history_tool(conversation_id, limit)
-    
+ 
     def process_user_request(self, user_input: str, conversation_id: str = None, 
                             user_id: str = "default") -> Dict[str, Any]:
         """
@@ -1139,6 +1008,27 @@ class MainTeamAgent:
             # Process request through team asynchronously
             team_response = await self.team.arun(user_input)
             
+            # Check if the run is paused and needs confirmation
+            if hasattr(team_response, 'is_paused') and team_response.is_paused:
+                logger.info(f"Team run paused. Active requirements: {len(team_response.active_requirements) if hasattr(team_response, 'active_requirements') else 'unknown'}")
+                
+                # Handle paused run - return special result indicating need for confirmation
+                result = {
+                    "success": True,
+                    "conversation_id": conversation_id,
+                    "user_id": user_id,
+                    "user_input": user_input,
+                    "assistant_response": None,
+                    "tom_analysis": tom_result.get("tom_analysis") if tom_result.get("success") else None,
+                    "run_paused": True,
+                    "run_id": team_response.run_id if hasattr(team_response, 'run_id') else None,
+                    "active_requirements": self._extract_requirements_info(team_response),
+                    "message": "Team run paused for confirmation. Please confirm or reject the action."
+                }
+                
+                logger.info(f"Async request paused: conversation={conversation_id}, user={user_id}")
+                return result
+            
             # Save assistant response to chat history
             if team_response.content:
                 self._save_chat_message(
@@ -1169,4 +1059,116 @@ class MainTeamAgent:
                 "success": False,
                 "error": str(e),
                 "message": "Failed to process user request"
+            }
+    
+    async def handle_confirmation(self, run_id: str, confirm: bool, 
+                                 confirmation_note: Optional[str] = None) -> Dict[str, Any]:
+        """
+        Handle confirmation for a paused team run.
+        
+        Args:
+            run_id: The run ID to continue
+            confirm: Whether to confirm (True) or reject (False) the action
+            confirmation_note: Optional note to provide when rejecting
+            
+        Returns:
+            Dictionary with continuation results
+        """
+        try:
+            logger.info(f"Handling confirmation for run {run_id}: confirm={confirm}, note={confirmation_note}")
+            
+            # In Agno, when a run is paused, we need to:
+            # 1. Get the run response (which should be stored somewhere)
+            # 2. Handle the active requirements
+            # 3. Continue the run
+            
+            # For now, we'll implement a simplified version
+            # In production, you would need to store run responses and retrieve them by run_id
+            
+            # Since we can't easily retrieve the run by ID, we'll create a new approach
+            # The system should handle this at the RPC level by storing the paused run
+            
+            return {
+                "success": False,
+                "error": "Run retrieval not implemented",
+                "message": "Please implement run storage and retrieval for paused runs"
+            }
+            
+        except Exception as e:
+            logger.error(f"Error handling confirmation: {e}", exc_info=True)
+            return {
+                "success": False,
+                "error": str(e),
+                "message": "Failed to handle confirmation"
+            }
+    
+    async def continue_paused_run(self, run_response, confirm: bool = True,
+                                 confirmation_note: Optional[str] = None) -> Dict[str, Any]:
+        """
+        Continue a paused run after handling confirmation.
+        
+        Args:
+            run_response: The paused run response
+            confirm: Whether to confirm (True) or reject (False) the action
+            confirmation_note: Optional note to provide when rejecting
+            
+        Returns:
+            Dictionary with continuation results
+        """
+        try:
+            if not hasattr(run_response, 'is_paused') or not run_response.is_paused:
+                return {
+                    "success": False,
+                    "error": "Run is not paused",
+                    "message": "Cannot continue a run that is not paused"
+                }
+            
+            # Handle active requirements
+            if hasattr(run_response, 'active_requirements'):
+                for requirement in run_response.active_requirements:
+                    if hasattr(requirement, 'needs_confirmation') and requirement.needs_confirmation:
+                        if confirm:
+                            # Confirm the requirement
+                            if hasattr(requirement, 'confirm'):
+                                requirement.confirm()
+                            elif hasattr(requirement, 'confirmed'):
+                                requirement.confirmed = True
+                        else:
+                            # Reject the requirement
+                            if hasattr(requirement, 'reject'):
+                                requirement.reject()
+                            elif hasattr(requirement, 'confirmed'):
+                                requirement.confirmed = False
+                            
+                            # Add confirmation note if provided
+                            if confirmation_note and hasattr(requirement, 'confirmation_note'):
+                                requirement.confirmation_note = confirmation_note
+            
+            # Continue the run
+            continued_response = await self.team.acontinue_run(run_response=run_response)
+            
+            # Check if the continued run is also paused (might need more input)
+            if hasattr(continued_response, 'is_paused') and continued_response.is_paused:
+                return {
+                    "success": True,
+                    "run_paused_again": True,
+                    "run_id": continued_response.run_id if hasattr(continued_response, 'run_id') else None,
+                    "active_requirements": self._extract_requirements_info(continued_response),
+                    "message": "Run continued but paused again for additional requirements"
+                }
+            
+            # Run completed successfully
+            return {
+                "success": True,
+                "assistant_response": continued_response.content if hasattr(continued_response, 'content') else None,
+                "run_id": continued_response.run_id if hasattr(continued_response, 'run_id') else None,
+                "message": "Run completed successfully"
+            }
+            
+        except Exception as e:
+            logger.error(f"Error continuing paused run: {e}", exc_info=True)
+            return {
+                "success": False,
+                "error": str(e),
+                "message": "Failed to continue paused run"
             }

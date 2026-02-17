@@ -123,3 +123,6 @@ __pycache__/*
 /user_data/skills/*.py
 # But keep the directory structure
 !/user_data/skills/.gitkeep
+
+*.db
+config.json

@@ -5,6 +5,7 @@ from typing import Any, Dict
 
 from sonagent.configuration import load_config_file, export_api_keys_to_env
 from sonagent.exceptions import OperationalException
+from sonagent.loggers import setup_logging
 
 logger = logging.getLogger(__name__)
 
@@ -56,6 +57,15 @@ def start_sonagent(args: Dict[str, Any]) -> int:
         if user_data_dir is None:
             user_data_dir = "user_data"
         config["user_data_dir"] = user_data_dir
+        
+        # Add command line arguments to config for logging
+        config["verbosity"] = args.get("verbosity", 0)
+        config["log_level"] = args.get("log_level", "info")
+        config["logfile"] = args.get("logfile")
+        
+        # Setup logging with config
+        setup_logging(config)
+        
         worker = Worker(args, config=config)
         worker.run()
     except Exception as e:
