@@ -196,7 +196,6 @@ class MainTeamAgent:
     
     # Tool definitions for agents
     
-    @tool(requires_confirmation=True)
     def create_task_tool(self, content: str, priority: int = 0, 
                         agent_id: str = "main_team") -> Dict[str, Any]:
         """
@@ -236,7 +235,6 @@ class MainTeamAgent:
                 "message": "Failed to create task"
             }
     
-    @tool()
     def get_tasks_tool(self, status: Optional[str] = None, 
                       agent_id: Optional[str] = None,
                       limit: int = 10) -> List[Dict[str, Any]]:
@@ -284,7 +282,6 @@ class MainTeamAgent:
             logger.error(f"Error getting tasks: {e}")
             return [{"error": str(e), "message": "Failed to retrieve tasks"}]
     
-    @tool(requires_confirmation=True)
     def update_task_tool(self, task_id: int, status: Optional[str] = None,
                         result: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
         """
@@ -330,7 +327,6 @@ class MainTeamAgent:
                 "message": f"Failed to update task {task_id}"
             }
     
-    @tool()
     def save_chat_message_tool(self, conversation_id: str, role: str, 
                               content: str, metadata: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
         """
@@ -378,7 +374,6 @@ class MainTeamAgent:
                 "message": "Failed to save chat message"
             }
     
-    @tool()
     def get_chat_history_tool(self, conversation_id: str, limit: int = 20) -> List[Dict[str, Any]]:
         """
         Get chat history for a conversation.
@@ -407,7 +402,6 @@ class MainTeamAgent:
             logger.error(f"Error getting chat history: {e}")
             return [{"error": str(e), "message": "Failed to retrieve chat history"}]
     
-    @tool()
     def extract_tom_tool(self, conversation_text: str, user_id: str = "default") -> Dict[str, Any]:
         """
         Extract Theory of Mind (TOM) from conversation text.
@@ -482,7 +476,6 @@ class MainTeamAgent:
                 "message": "Failed to extract TOM"
             }
     
-    @tool()
     def update_beliefs_tool(self, user_id: str, new_beliefs: List[Dict[str, Any]], 
                            source: str = "tom_analysis") -> Dict[str, Any]:
         """
@@ -536,7 +529,6 @@ class MainTeamAgent:
                 "message": "Failed to update beliefs"
             }
     
-    @tool()
     def analyze_intent_tool(self, user_query: str, context: Optional[str] = None) -> Dict[str, Any]:
         """
         Analyze user's intent from a query.
@@ -598,7 +590,6 @@ class MainTeamAgent:
                 "message": "Failed to analyze intent"
             }
     
-    @tool(requires_user_input=True, user_input_fields=["feedback"])
     def request_feedback_tool(self, action: str, context: str, 
                              feedback: Optional[str] = None) -> Dict[str, Any]:
         """
@@ -642,7 +633,6 @@ class MainTeamAgent:
                 "message": "Failed to process feedback"
             }
     
-    @tool()
     def process_feedback_tool(self, action: str, feedback: str, 
                              learning_note: Optional[str] = None) -> Dict[str, Any]:
         """
@@ -684,7 +674,6 @@ class MainTeamAgent:
                 "message": "Failed to process feedback"
             }
     
-    @tool()
     def coordinate_agents_tool(self, request: str, 
                               agent_types: List[str] = None) -> Dict[str, Any]:
         """
@@ -724,7 +713,6 @@ class MainTeamAgent:
                 "message": "Failed to coordinate agents"
             }
     
-    @tool()
     def respond_to_user_tool(self, response: str, 
                             conversation_id: str,
                             save_to_history: bool = True) -> Dict[str, Any]:
