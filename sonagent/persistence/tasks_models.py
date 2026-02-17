@@ -26,6 +26,7 @@ class Task(ModelBase):
     payload: Mapped[Optional[Dict[str, Any]]] = mapped_column(JSON, nullable=True)
     result: Mapped[Optional[Dict[str, Any]]] = mapped_column(JSON, nullable=True)
     scheduled_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    cron_expression: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
     started_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
     completed_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
     retry_count: Mapped[int] = mapped_column(Integer, default=0)
@@ -67,13 +68,15 @@ class Task(ModelBase):
     @staticmethod
     def create_task(agent_id: str, content: str, priority: int = 0, 
                    payload: Optional[Dict[str, Any]] = None,
-                   scheduled_at: Optional[datetime] = None) -> "Task":
+                   scheduled_at: Optional[datetime] = None,
+                   cron_expression: Optional[str] = None) -> "Task":
         task = Task(
             agent_id=agent_id,
             content=content,
             priority=priority,
             payload=payload,
             scheduled_at=scheduled_at,
+            cron_expression=cron_expression,
             status='pending'
         )
         Task.session.add(task)

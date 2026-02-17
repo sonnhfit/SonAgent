@@ -79,24 +79,53 @@ class AgentBrain:
         
         # Initialize collections
         self._init_collections()
+    
+    def _init_collections(self) -> None:
+        """Initialize vector DB collections for skill search."""
+        try:
+            # Create skill search collection if it doesn't exist
+            self.vector_db.create_collection(
+                name=self.skill_search_collection,
+                get_or_create=True
+            )
+            self.vector_db.create_collection(
+                name=self.skill_keyword_collection,
+                get_or_create=True
+            )
+            logger.info("Vector DB collections initialized")
+        except Exception as e:
+            logger.warning(f"Could not initialize collections: {e}")
         
         # Load and index skills
         self.skills_loaded = False
         self.load_and_index_skills()
-        
-        # Index skills for semantic search if embedding is available
-        if self.embedding and self.embedding.is_available():
-            m_config = self.config.get('llm', {})
+    
+    def _generate_conversation_id(self) -> str:
+        """Generate a new conversation ID."""
+        import uuid
+        return f"conv_{int(datetime.now().timestamp())}_{uuid.uuid4().hex[:8]}"
+    
+    def load_and_index_skills(self) -> None:
+        """Load and index skills for search."""
+        try:
+            # Get skills from skills manager
             skills = self.skills_manager.get_all_skills()
-            self._index_skills_semantic(skills)
-        else:
-            logger.warning("Embedding not available, skipping semantic indexing")
-        
-        # Index skills for keyword search
-        self._index_skills_keywords(skills)
-        
-        self.skills_loaded = True
-        logger.info(f"Skill loading and indexing complete")
+            logger.info(f"Loaded {len(skills)} skills for indexing")
+            
+            # Index for semantic search if embedding is available
+            if self.embedding and self.embedding.is_available():
+                self._index_skills_semantic(skills)
+            else:
+                logger.warning("Embedding not available, skipping semantic indexing")
+            
+            # Index for keyword search
+            self._index_skills_keywords(skills)
+            
+            self.skills_loaded = True
+            logger.info(f"Skill loading and indexing complete")
+        except Exception as e:
+            logger.error(f"Error loading and indexing skills: {e}")
+            self.skills_loaded = False
     
     def _index_skills_semantic(self, skills: List[Any]):
         """Index skills for semantic/embedding-based search."""
