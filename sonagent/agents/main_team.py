@@ -56,7 +56,7 @@ class MainTeamAgent:
         self.task_agent = Agent(
             name="Task Agent",
             role="Create, manage, and track tasks in the system",
-            model=OpenAIResponses(id="gpt-4o"),
+            model=OpenAIResponses(id="gpt-4o-mini"),
             tools=[self.create_task_tool, self.get_tasks_tool, self.update_task_tool],
             instructions="""
             You are responsible for task management. When users request tasks:
@@ -74,7 +74,7 @@ class MainTeamAgent:
         self.tom_agent = Agent(
             name="TOM Agent",
             role="Extract and analyze user's Theory of Mind (beliefs, intentions, mental state)",
-            model=OpenAIResponses(id="gpt-4o"),
+            model=OpenAIResponses(id="gpt-4o-mini"),
             tools=[self.extract_tom_tool, self.update_beliefs_tool, self.analyze_intent_tool],
             instructions="""
             You analyze user's Theory of Mind (TOM). Your responsibilities:
@@ -100,7 +100,7 @@ class MainTeamAgent:
         self.feedback_agent = Agent(
             name="Feedback Agent",
             role="Collect and process human feedback for agent actions",
-            model=OpenAIResponses(id="gpt-4o"),
+            model=OpenAIResponses(id="gpt-4o-mini"),
             tools=[self.request_feedback_tool, self.process_feedback_tool],
             instructions="""
             You handle human feedback and approvals. Your responsibilities:
@@ -118,7 +118,7 @@ class MainTeamAgent:
         self.assistant_agent = Agent(
             name="Assistant Agent",
             role="Handle general user queries and coordinate with other agents",
-            model=OpenAIResponses(id="gpt-4o"),
+            model=OpenAIResponses(id="gpt-4o-mini"),
             tools=[self.coordinate_agents_tool, self.respond_to_user_tool, 
                    self.save_chat_message_tool, self.get_chat_history_tool],
             instructions="""
@@ -141,7 +141,7 @@ class MainTeamAgent:
         """Initialize the main team with all agents."""
         self.team = Team(
             name="Main Team",
-            model=OpenAIResponses(id="gpt-4o"),
+            model=OpenAIResponses(id="gpt-4o-mini"),
             members=[
                 self.assistant_agent,
                 self.task_agent,

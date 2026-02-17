@@ -125,7 +125,7 @@ def create_user_data_dir(args: Dict[str, Any]) -> None:
         "api_type": "openai",
         "api_key": "",
         "params": {
-            "model": "gpt-3.5-turbo",
+            "model": "gpt-4o-mini",
             "temperature": 0.5,
             "max_tokens": 100,
             "top_p": 1,
