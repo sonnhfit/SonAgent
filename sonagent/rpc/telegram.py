@@ -203,14 +203,14 @@ class Telegram(RPCHandler):
         section.
         """
         self._keyboard: List[List[Union[str, KeyboardButton]]] = [
-            ['/ibelieve', '/mode', '/show_mode', '/sum', '/version', '/help']
+            ['/ibelieve', '/sum', '/version', '/help']
         ]
         # do not allow commands with mandatory arguments and critical cmds
         # TODO: DRY! - its not good to list all valid cmds here. But otherwise
         #       this needs refactoring of the whole telegram module (same
         #       problem in _help()).
         valid_keys: List[str] = [
-            r'/ibelieve', r'/show_mode$', r'/mode', r'/sum$', r'/show_skills$',
+            r'/ibelieve', r'/sum$', r'/show_skills$',
             r'/reload_skills$', r'/remove_skill', r'/show_tasks$', r'/env$',
             r'/add_env', r'/remove_env', r'/reload_env',
             r'/help$', r'/version$'
@@ -295,12 +295,8 @@ class Telegram(RPCHandler):
 
         # Register command handler and start telegram message polling
         handles = [
-            CommandHandler('show_plan', self._show_plan),
-            CommandHandler('planning', self._planning),
             CommandHandler('clear_chat', self._clear_short_term_memory),
-            CommandHandler('askme', self._askme),
             CommandHandler('ibelieve', self._ibelieve),
-            CommandHandler('show_mode', self._show_mode),
             CommandHandler('sum', self._summerize_dialog),
             CommandHandler('show_skills', self._show_skills),
             CommandHandler('show_tasks', self._show_task),
@@ -310,7 +306,6 @@ class Telegram(RPCHandler):
             CommandHandler('reload_skills', self._reload_skills),
             CommandHandler('reload_env', self._reload_env),
             CommandHandler('remove_skill', self._remove_skill),
-            CommandHandler('mode', self._mode),
             CommandHandler('help', self._help),
             CommandHandler('version', self._version),
             CommandHandler('sonagent', self.echo),
@@ -516,18 +511,13 @@ class Telegram(RPCHandler):
         message = (
             "_Bot Control_\n"
             "------------\n"
-            "*/show_plan:* `Show pending tasks`\n"
             "*/show_tasks:* `Show all tasks with details`\n"
-            "*/planning:* `Planning`\n"
             "*/clear_chat:* `Clear chat`\n"
-            "*/askme:* `Ask me`\n"
             "*/ibelieve:* `I believe in you`\n"
-            "*/show_mode:* `Show mode`\n"
             "*/sum:* `Summerize dialog`\n"
             "*/show_skills:* `Show skills`\n"
             "*/reload_skills:* `Reload skills`\n"
             "*/remove_skill:* `Remove skill`\n"
-            "*/mode:* `Mode`\n"
             "*/env:* `Environment`\n"
             "*/add_env:* `Add environment`\n"
             "*/remove_env:* `Remove environment`\n"
@@ -681,16 +671,6 @@ class Telegram(RPCHandler):
 
         await update.message.reply_text(result)
 
-    async def _show_mode(self, update: Update, context: CallbackContext) -> None:
-            """
-            Handler for /_show_mode.
-            :param bot: telegram bot
-            :param update: message update
-            :return: None
-            """
-            result = await self._rpc.show_mode()
-            await update.message.reply_text(result)
-
     async def _ibelieve(self, update: Update, context: CallbackContext) -> None:
         """
         Handler for /ibelieve.
@@ -707,40 +687,6 @@ class Telegram(RPCHandler):
         else:
             result = "What do you believe?"
 
-        await update.message.reply_text(result)
-
-    async def _mode(self, update: Update, context: CallbackContext) -> None:
-        """
-        Handler for /ibelieve.
-        Show version information
-        :param bot: telegram bot
-        :param update: message update
-        :return: None
-        """
-        result = ""
-        msg = update.message.text.replace('/mode', '')
-
-        if len(msg) > 0:
-            result = await self._rpc.mode(msg.strip())
-        else:
-            result = "You need give a mode like: chat, coding"
-
-        await update.message.reply_text(result)
-
-    async def _askme(self, update: Update, context: CallbackContext) -> None:
-        """
-        Handler for /askme.
-        Show version information
-        :param bot: telegram bot
-        :param update: message update
-        :return: None
-        """
-        result = "I believe in you!"
-        msg = update.message.text.replace('/askme', '')
-        if len(msg) <= 0:
-            msg = "What do you ask me?"
-        
-        result = await self._rpc.askme(msg)
         await update.message.reply_text(result)
 
     async def _handle_messages(self, update: Update, context: CallbackContext)  -> None:
@@ -765,33 +711,6 @@ class Telegram(RPCHandler):
         :return: None
         """
         result = await self._rpc.clear_short_term_memory()
-        await update.message.reply_text(result)
-
-    async def _planning(self, update: Update, context: CallbackContext) -> None:
-        """
-        Handler for /planning.
-        Show version information
-        :param bot: telegram bot
-        :param update: message update
-        :return: None
-        """
-        msg = update.message.text.replace('/planning', '')
-        if len(msg) <= 0:
-            msg = "What do you want to plan?"
-        
-        result = await self._rpc.planning(msg)
-        await update.message.reply_text(result)
-
-    async def _show_plan(self, update: Update, context: CallbackContext) -> None:
-        """
-        Handler for /show_plan.
-        Show version information
-        :param bot: telegram bot
-        :param update: message update
-        :return: None
-        """
-
-        result = await self._rpc.show_plan()
         await update.message.reply_text(result)
 
     async def _show_task(self, update: Update, context: CallbackContext) -> None:

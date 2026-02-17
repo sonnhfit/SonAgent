@@ -31,7 +31,6 @@ class SonBot(LoggingMixin):
     def __init__(self, config: dict, args: Any = None) -> None:
 
         self.state = State.STOPPED
-        self.agent_mode = "chat"
         
         self.args = args
         os.environ["TOKENIZERS_PARALLELISM"] = "false"
@@ -257,17 +256,10 @@ class SonBot(LoggingMixin):
                 logger.error(f"Error notifying chat event: {e}")
             return chat
     
-    async def get_mode(self) -> str:
-        return self.agent_mode
-    
     async def remove_skill(self, skill_name: str) -> str:
         result = self.agent.remove_skill(skill_name)
         self.reload_skills()
         return result
-    
-    async def change_agent_mode(self, mode: str) -> str:
-        self.agent_mode = mode
-        return f"Agent mode changed to {mode}"
     
     async def ibelieve(self, input: str) -> str:
         return await self.agent.ibelieve(input)
@@ -275,18 +267,9 @@ class SonBot(LoggingMixin):
     async def reincarnate(self) -> str:
         return await self.agent.reincarnate()
     
-    async def askme(self, input: str) -> str:
-        return await self.agent.askme(input)
-    
     async def clear_short_term_memory(self) -> str:
         return await self.agent.clear_short_term_memory()
 
-    async def planning(self, goal: str) -> str:
-        return await self.agent.planning(goal)
-
-    async def show_plan(self) -> str:
-        return await self.agent.show_plan()
-    
     async def show_task(self) -> str:
         return await self.agent.show_task()
     
