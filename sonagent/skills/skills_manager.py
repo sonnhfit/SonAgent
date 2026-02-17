@@ -1,8 +1,9 @@
 import logging
 import os
 import shutil
+import time
 from pathlib import Path
-from typing import Any, List
+from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel
 
@@ -16,13 +17,24 @@ class SkillsManager:
 
     # load, and get skills from config
 
-    def __init__(self, sonagent) -> None:
+    def __init__(self, sonagent, agent_id: Optional[str] = None) -> None:
         self.skill_object_list: List[BaseModel] = []
+        self.llm_skills: Dict[str, str] = {}  # markdown/LLM skills
         self.config = sonagent.config
         self.skills_area = "son_skills"
-        self.skills_dir = Path(self.config['user_data_dir']).joinpath('skills')
+        self.agent_id = agent_id  # Agent ID for loading agent-specific skills
+        
+        # Set skills directory based on agent_id
+        if agent_id:
+            # Agent-specific skills directory: user_data/skills/{agent_id}/
+            self.skills_dir = Path(self.config['user_data_dir']).joinpath('skills', agent_id)
+        else:
+            # Shared skills directory: user_data/skills/
+            self.skills_dir = Path(self.config['user_data_dir']).joinpath('skills')
+        
         self.last_scan_time = 0
         self.cached_skill_files = set()
+        self.scan_interval = 60  # Scan every 60 seconds
         
         # Copy standard skills if user_data/skills is empty
         self.copy_standard_skills_if_needed()
@@ -82,6 +94,74 @@ class SkillsManager:
                 skill_names.append(skill_name)
                 
         return skill_names
+    
+    def scan_llm_skills(self) -> Dict[str, str]:
+        """
+        Scan for LLM/markdown skills (instruction files).
+        
+        Returns:
+            Dictionary of skill_name -> skill_content
+        """
+        llm_skills = {}
+        
+        if not self.skills_dir.exists():
+            return llm_skills
+        
+        # Scan for .md files (LLM skills)
+        for entry in self.skills_dir.iterdir():
+            if entry.suffix == '.md' and entry.is_file() and not entry.name.startswith('__'):
+                try:
+                    skill_name = entry.stem
+                    with open(entry, 'r', encoding='utf-8') as f:
+                        content = f.read()
+                    llm_skills[skill_name] = content
+                    logger.info(f"Found LLM skill: {skill_name}")
+                except Exception as e:
+                    logger.error(f"Failed to read LLM skill {entry.name}: {e}")
+        
+        return llm_skills
+    
+    def should_scan(self) -> bool:
+        """
+        Check if it's time to scan skills directory.
+        
+        Returns:
+            True if should scan, False otherwise
+        """
+        current_time = time.time()
+        if current_time - self.last_scan_time >= self.scan_interval:
+            return True
+        return False
+    
+    def periodic_scan_and_reload(self) -> bool:
+        """
+        Periodically scan and reload skills if changes detected.
+        
+        Returns:
+            True if skills were reloaded, False otherwise
+        """
+        if not self.should_scan():
+            return False
+        
+        self.last_scan_time = time.time()
+        
+        # Get current skill files
+        current_skill_files = set()
+        if self.skills_dir.exists():
+            for entry in self.skills_dir.iterdir():
+                if (entry.suffix in ['.py', '.md'] and 
+                    entry.is_file() and 
+                    not entry.name.startswith('__')):
+                    current_skill_files.add(entry.name)
+        
+        # Check if skills have changed
+        if current_skill_files != self.cached_skill_files:
+            logger.info(f"Skills changed. Reloading... (Agent: {self.agent_id or 'shared'})")
+            self.cached_skill_files = current_skill_files
+            self.reload_skills()
+            return True
+        
+        return False
 
     def load_register_skills_name(self) -> List[str]:
         """Get list of skill names from scanning the skills directory."""
@@ -90,17 +170,25 @@ class SkillsManager:
 
     def load_skills(self) -> None:
         """Load all skills from the skills directory."""
-        logger.info("Loading skills from directory...")
+        logger.info(f"Loading skills from directory: {self.skills_dir} (Agent: {self.agent_id or 'shared'})")
+        
+        # Load Python skills
         skill_names = self.scan_skills_directory()
         BaseLoading.object_type = BaseModel
         
-        logger.info(f"Found {len(skill_names)} skill files to load")
+        logger.info(f"Found {len(skill_names)} Python skill files to load")
         
         # Clear existing skills
         self.skill_object_list = []
         
         # Prepare kwargs to pass config to skills
         kwargs = {'config': self.config}
+        
+        # Determine extra_dir based on agent_id
+        if self.agent_id:
+            extra_dir = f'user_data/skills/{self.agent_id}'
+        else:
+            extra_dir = 'user_data/skills'
         
         for skill_name in skill_names:
             logger.debug(f"Loading skill: {skill_name}")
@@ -109,24 +197,38 @@ class SkillsManager:
                     object_name=skill_name, 
                     config=self.config, 
                     kwargs=kwargs, 
-                    extra_dir='user_data/skills'
+                    extra_dir=extra_dir
                 )
                 self.skill_object_list.append(skill)
                 logger.info(f"✓ Successfully loaded skill: {skill_name}")
             except Exception as e:
                 logger.error(f"✗ Failed to load skill {skill_name}: {e}", exc_info=True)
         
-        logger.info(f"Loaded {len(self.skill_object_list)} skills successfully")
+        logger.info(f"Loaded {len(self.skill_object_list)} Python skills successfully")
+        
+        # Load LLM/markdown skills
+        self.llm_skills = self.scan_llm_skills()
+        logger.info(f"Loaded {len(self.llm_skills)} LLM skills successfully")
 
     
     def reload_skills(self) -> None:
         """Reload all skills from the skills directory."""
         self.skill_object_list = []
+        self.llm_skills = {}
         self.load_skills()
 
 
     def get_all_skills(self) -> List[BaseModel]:
         return self.skill_object_list
+    
+    def get_llm_skills(self) -> Dict[str, str]:
+        """
+        Get all LLM/markdown skills.
+        
+        Returns:
+            Dictionary of skill_name -> skill_content
+        """
+        return self.llm_skills
     
     def search_skill_function_by_semantic_query(self, query: str, memory) -> List[BaseModel]:
         results = memory.search(

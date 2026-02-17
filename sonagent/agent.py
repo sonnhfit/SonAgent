@@ -7,6 +7,8 @@ from pathlib import Path
 import yaml
 from croniter import croniter
 
+from sonagent.agent_registry import AgentRegistry
+from sonagent.agents import MainAgent
 from sonagent.brain import AgentBrain
 from sonagent.persistence import Belief, Environment, ScheduleJob, Task
 from sonagent.tools import GitManager, LocalCodeManager
@@ -20,6 +22,10 @@ class Agent:
         self.config = config
 
         logger.debug(f"Init memory with path {memory_path}.")
+        
+        # Initialize agent registry
+        self.agent_registry = AgentRegistry()
+        logger.info("Agent registry initialized")
 
         # Initialize brain with dynamic skill loading and search
         # Pass conversation_id if provided, otherwise brain will generate default
@@ -36,6 +42,17 @@ class Agent:
         # Keep skills for backward compatibility
         self.skills = skills
         self.skills_dict = {}
+        
+        # Initialize main agent
+        self.main_agent = MainAgent(
+            config=config,
+            skills_manager=skills,
+            agent_registry=self.agent_registry
+        )
+        logger.info("Main agent initialized")
+        
+        # Store sub-agents
+        self.sub_agents = {}
 
         logger.info("--------- Start skill.---------")
         # Start skills through brain
