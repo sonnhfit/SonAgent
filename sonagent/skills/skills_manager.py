@@ -50,6 +50,25 @@ class SkillsManager:
                 logger.error(f"Failed to create skills directory {self.skills_dir}: {e}")
                 return
         
+        # Check if skills directory already has files
+        skill_files = list(self.skills_dir.rglob('*'))
+        if skill_files:
+            logger.info(f"Skills directory already has {len(skill_files)} files. Emptying it first...")
+            # Empty the skills directory
+            for item in self.skills_dir.iterdir():
+                if item.is_file():
+                    try:
+                        item.unlink()
+                        logger.info(f"Removed file: {item}")
+                    except Exception as e:
+                        logger.error(f"Failed to remove file {item}: {e}")
+                elif item.is_dir():
+                    try:
+                        shutil.rmtree(item)
+                        logger.info(f"Removed directory: {item}")
+                    except Exception as e:
+                        logger.error(f"Failed to remove directory {item}: {e}")
+        
         # Get the path to standard skills directory
         standard_skills_dir = Path(__file__).parent.parent.joinpath('standard_skills')
         
