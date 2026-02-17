@@ -169,75 +169,23 @@ return result'''
         self.assertIn('def sum_calculator', code)
 
 
+@unittest.skip("SkillBuilder module has been removed")
 class TestSkillBuilderIntegration(unittest.TestCase):
-    """Integration tests for SkillBuilder."""
+    """Integration tests for SkillBuilder (skipped - module removed)."""
     
     def setUp(self):
-        # Mock IOMsg
-        class MockIOMsg:
-            @staticmethod
-            def send_msg(msg):
-                pass
-        
-        import sonagent.rpc as rpc_module
-        rpc_module.IOMsg = MockIOMsg
-        
-        # Add skills directory to path
-        sys.path.insert(0, str(Path(__file__).parent.parent / 'user_data' / 'skills'))
-        
-        # Set environment variable
-        self.tmpdir = tempfile.mkdtemp()
-        os.environ['USER_DATA_DIR'] = self.tmpdir
+        pass
     
     def tearDown(self):
-        # Clean up
-        import shutil
-        if Path(self.tmpdir).exists():
-            shutil.rmtree(self.tmpdir)
+        pass
     
     def test_create_simple_skill(self):
         """Test creating a simple skill through SkillBuilder."""
-        from SkillBuilder import SkillBuilder
-        
-        builder = SkillBuilder()
-        result = builder.create_simple_skill(
-            skill_name='IntegrationTestSkill',
-            prompt='Test skill for integration'
-        )
-        
-        self.assertIn('created', result)
-        
-        # Verify file was created
-        skill_file = Path(self.tmpdir) / 'skills' / 'IntegrationTestSkill.py'
-        self.assertTrue(skill_file.exists())
+        pass
     
     def test_generate_skill_with_parameters(self):
         """Test generating a skill with parameters."""
-        from SkillBuilder import SkillBuilder
-        
-        builder = SkillBuilder()
-        
-        parameters = json.dumps([
-            {'name': 'value', 'type': 'int', 'description': 'Input value'}
-        ])
-        
-        result = builder.generate_skill(
-            skill_name='DoubleSkill',
-            description='Double a number',
-            parameters=parameters,
-            implementation='result = value * 2\nIOMsg.send_msg(str(result))\nreturn result'
-        )
-        
-        self.assertIn('successfully', result)
-        
-        # Verify file
-        skill_file = Path(self.tmpdir) / 'skills' / 'DoubleSkill.py'
-        self.assertTrue(skill_file.exists())
-        
-        # Verify content
-        code = skill_file.read_text()
-        self.assertIn('class DoubleSkill', code)
-        self.assertIn('value * 2', code)
+        pass
 
 
 def run_tests():

@@ -42,26 +42,8 @@ def example_1_simple_skill():
     print("Example 1: Create Simple Weather Skill from Prompt")
     print("="*60)
     
-    from SkillBuilder import SkillBuilder
-    
-    builder = SkillBuilder()
-    
-    # Create a simple skill from a prompt
-    result = builder.create_simple_skill(
-        skill_name='HanoiWeatherChecker',
-        prompt='Check the current weather in Hanoi, Vietnam'
-    )
-    
-    print(f"\nResult: {result}")
-    
-    # Test the generated skill
-    if 'successfully' in result:
-        print("\n--- Testing Generated Skill ---")
-        from HanoiWeatherChecker import HanoiWeatherChecker
-        
-        checker = HanoiWeatherChecker()
-        weather_result = checker.hanoi_weather_checker('Get current weather')
-        print(f"Skill output: {weather_result}")
+    print("\nSKIPPED: SkillBuilder module has been removed")
+    print("This example would have created a HanoiWeatherChecker skill")
 
 
 def example_2_advanced_skill():
@@ -70,86 +52,8 @@ def example_2_advanced_skill():
     print("Example 2: Create Advanced Weather API Skill")
     print("="*60)
     
-    from SkillBuilder import SkillBuilder
-    
-    builder = SkillBuilder()
-    
-    # Define parameters for the skill
-    parameters = json.dumps([
-        {
-            'name': 'city',
-            'type': 'str',
-            'description': 'Name of the city to check weather'
-        },
-        {
-            'name': 'country_code',
-            'type': 'str',
-            'description': 'Two-letter country code (e.g., VN, US)'
-        },
-        {
-            'name': 'units',
-            'type': 'str',
-            'description': 'Temperature units: metric (Celsius) or imperial (Fahrenheit)'
-        }
-    ])
-    
-    # Define the implementation
-    implementation = '''import os
-# In a real implementation, you would use an API key from environment
-# api_key = os.environ.get('OPENWEATHER_API_KEY', 'demo-key')
-api_key = 'demo-key'
-
-# Construct API URL
-location = f"{city},{country_code}"
-url = f"https://api.openweathermap.org/data/2.5/weather?q={location}&appid={api_key}&units={units}"
-
-# In a real implementation, you would make the actual API call:
-# import requests
-# response = requests.get(url)
-# weather_data = response.json()
-
-# For this demo, we'll return the URL that would be called
-result = f"Weather API endpoint: {url}\\n"
-result += f"City: {city}, Country: {country_code}\\n"
-result += f"Units: {units}\\n"
-result += "In production, this would fetch real weather data."
-
-IOMsg.send_msg(result)
-return result'''
-    
-    # Generate the skill
-    result = builder.generate_skill(
-        skill_name='WeatherAPISkill',
-        description='Get weather information for any city using OpenWeatherMap API',
-        method_name='get_weather',
-        parameters=parameters,
-        implementation=implementation
-    )
-    
-    print(f"\nResult: {result}")
-    
-    # Test the generated skill
-    if 'successfully' in result:
-        print("\n--- Testing Generated Skill ---")
-        from WeatherAPISkill import WeatherAPISkill
-        
-        api = WeatherAPISkill()
-        
-        # Test with Hanoi
-        hanoi_weather = api.get_weather(
-            city='Hanoi',
-            country_code='VN',
-            units='metric'
-        )
-        print(f"\nHanoi Weather:\n{hanoi_weather}")
-        
-        # Test with another city
-        tokyo_weather = api.get_weather(
-            city='Tokyo',
-            country_code='JP',
-            units='metric'
-        )
-        print(f"\nTokyo Weather:\n{tokyo_weather}")
+    print("\nSKIPPED: SkillBuilder module has been removed")
+    print("This example would have created a WeatherAPISkill with parameters")
 
 
 def example_3_test_sandbox():
@@ -158,33 +62,8 @@ def example_3_test_sandbox():
     print("Example 3: Test Skill Code in Sandbox")
     print("="*60)
     
-    from SkillBuilder import SkillBuilder
-    
-    builder = SkillBuilder()
-    
-    # Example skill code to test
-    test_code = '''from pydantic import BaseModel
-from sonagent.rpc import IOMsg
-
-class CalculatorSkill(BaseModel):
-    """Simple calculator skill."""
-    
-    def add(self, a: int, b: int) -> int:
-        """Add two numbers."""
-        result = a + b
-        IOMsg.send_msg(f"Adding {a} + {b} = {result}")
-        return result
-    
-    def multiply(self, a: int, b: int) -> int:
-        """Multiply two numbers."""
-        result = a * b
-        IOMsg.send_msg(f"Multiplying {a} * {b} = {result}")
-        return result
-'''
-    
-    print("Testing skill code in sandbox...")
-    result = builder.test_skill_code(test_code)
-    print(f"\nTest Result: {result}")
+    print("\nSKIPPED: SkillBuilder module has been removed")
+    print("This example would have tested skill code in a sandbox")
 
 
 def example_4_reload_skills():
@@ -234,6 +113,9 @@ def main():
     print("="*60)
     print("SkillBuilder Examples - Dynamic Skill Generation")
     print("="*60)
+    print("\nNOTE: SkillBuilder module has been removed from the project.")
+    print("These examples are now placeholders showing what would have been demonstrated.")
+    print("="*60)
     
     # Mock IOMsg for examples
     mock_iomsg()
@@ -246,14 +128,12 @@ def main():
         example_4_reload_skills()
         
         print("\n" + "="*60)
-        print("All examples completed successfully!")
+        print("Examples completed (as placeholders)")
         print("="*60)
         
-        print("\n--- Next Steps ---")
-        print("1. Check the generated skills in user_data/skills/")
-        print("2. Edit the generated skills to add real implementations")
-        print("3. Use the skills in your agent by calling reload_skills()")
-        print("4. The agent will automatically load and index new skills")
+        print("\n--- Note ---")
+        print("The SkillBuilder module was removed from the project.")
+        print("Dynamic skill generation functionality may be reimplemented differently.")
         
     except Exception as e:
         print(f"\n!!! Error running examples: {e}")
