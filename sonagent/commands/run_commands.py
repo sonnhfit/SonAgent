@@ -3,7 +3,7 @@ import os
 import signal
 from typing import Any, Dict
 
-from sonagent.configuration import load_config_file
+from sonagent.configuration import load_config_file, export_api_keys_to_env
 from sonagent.exceptions import OperationalException
 
 logger = logging.getLogger(__name__)
@@ -44,6 +44,8 @@ def start_sonagent(args: Dict[str, Any]) -> int:
 
         try:
             config = load_config_file(args["config"][0])
+            # Export API keys from config to environment variables
+            export_api_keys_to_env(config)
         except Exception as e:
             config = config
             raise OperationalException("Error loading config file: " + str(e))
