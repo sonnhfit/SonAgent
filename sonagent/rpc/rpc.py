@@ -1,11 +1,14 @@
 """
 This module contains class to define a RPC communications
 """
+import logging
 from abc import abstractmethod
 
 from sonagent.constants import AGENT_MODE
 from sonagent.rpc.rpc_types import RPCSendMsg
 from sonagent.utils.utils import init_evironment
+
+logger = logging.getLogger(__name__)
 
 
 class RPCException(Exception):
