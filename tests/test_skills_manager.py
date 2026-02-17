@@ -75,7 +75,7 @@ class TestSkillsManager(unittest.TestCase):
         # Check that TextPrinter is now the original from standard_skills
         skill_names = [f.stem for f in skill_files]
         self.assertIn('TextPrinter', skill_names, "TextPrinter should be in standard skills")
-        self.assertIn('SkillBuilder', skill_names, "SkillBuilder should be in standard skills")
+        # Note: SkillBuilder was removed from standard_skills
     
     def test_scan_skills_directory(self):
         """Test scanning the skills directory."""
