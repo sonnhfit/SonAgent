@@ -863,7 +863,8 @@ class MainTeamAgent:
         Returns:
             Dictionary with task information
         """
-        return self.create_task_tool.entrypoint(self, content, priority, agent_id)
+        # entrypoint is already bound to the instance, don't pass self
+        return self.create_task_tool.entrypoint(content, priority, agent_id)
     
     @tool()
     def _get_tasks_tool_wrapper(self, status: Optional[str] = None,
@@ -880,7 +881,8 @@ class MainTeamAgent:
         Returns:
             List of task dictionaries
         """
-        return self.get_tasks_tool.entrypoint(self, status, agent_id, limit)
+        # entrypoint is already bound to the instance, don't pass self
+        return self.get_tasks_tool.entrypoint(status, agent_id, limit)
     
     @tool(requires_confirmation=True)
     def _update_task_tool_wrapper(self, task_id: int, status: Optional[str] = None,
@@ -896,7 +898,8 @@ class MainTeamAgent:
         Returns:
             Dictionary with update information
         """
-        return self.update_task_tool.entrypoint(self, task_id, status, result)
+        # entrypoint is already bound to the instance, don't pass self
+        return self.update_task_tool.entrypoint(task_id, status, result)
     
     @tool()
     def _extract_tom_tool_wrapper(self, conversation_text: str, user_id: str = "default") -> Dict[str, Any]:

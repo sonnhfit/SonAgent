@@ -308,7 +308,8 @@ class SonBot(LoggingMixin):
             return "Team agent not initialized. Please switch to team mode first."
         
         try:
-            result = self.team_agent.create_task_tool(
+            # create_task_tool is decorated with @tool, so we need to call it properly
+            result = self.team_agent.create_task_tool.entrypoint(
                 content=content,
                 priority=priority
             )
@@ -339,7 +340,9 @@ class SonBot(LoggingMixin):
             return "Team agent not initialized. Please switch to team mode first."
         
         try:
-            tasks = self.team_agent.get_tasks_tool(
+            # get_tasks_tool is decorated with @tool, so we need to call it properly
+            # The @tool decorator returns a Tool object with an entrypoint attribute
+            tasks = self.team_agent.get_tasks_tool.entrypoint(
                 status=status,
                 limit=limit
             )
@@ -383,7 +386,8 @@ class SonBot(LoggingMixin):
             return "Team agent not initialized. Please switch to team mode first."
         
         try:
-            update_result = self.team_agent.update_task_tool(
+            # update_task_tool is decorated with @tool, so we need to call it properly
+            update_result = self.team_agent.update_task_tool.entrypoint(
                 task_id=task_id,
                 status=status,
                 result=result_data
@@ -416,7 +420,8 @@ class SonBot(LoggingMixin):
         
         try:
             conv_id = conversation_id or self.conversation_id
-            messages = self.team_agent.get_chat_history_tool(
+            # get_chat_history_tool is decorated with @tool, so we need to call it properly
+            messages = self.team_agent.get_chat_history_tool.entrypoint(
                 conversation_id=conv_id,
                 limit=limit
             )
@@ -456,7 +461,8 @@ class SonBot(LoggingMixin):
             return "Team agent not initialized. Please switch to team mode first."
         
         try:
-            result = self.team_agent.extract_tom_tool(
+            # extract_tom_tool is decorated with @tool, so we need to call it properly
+            result = self.team_agent.extract_tom_tool.entrypoint(
                 conversation_text=conversation_text,
                 user_id=user_id
             )
@@ -510,7 +516,8 @@ class SonBot(LoggingMixin):
             return "Team agent not initialized. Please switch to team mode first."
         
         try:
-            result = self.team_agent.request_feedback_tool(
+            # request_feedback_tool is decorated with @tool, so we need to call it properly
+            result = self.team_agent.request_feedback_tool.entrypoint(
                 action=action,
                 context=context
             )
