@@ -179,14 +179,6 @@ class RPC:
         init_evironment()
         return "Env reloaded"
     
-    async def askme(self, msg: str) -> str:
-        """
-        Send a chat message to all registered rpc modules.
-        :param msg: Message to send
-        :return: None
-        """
-        return await self.sonagent.askme(msg)
-
     async def clear_short_term_memory(self) -> str:
         """
         Send a chat message to all registered rpc modules.
@@ -195,31 +187,12 @@ class RPC:
         """
         return await self.sonagent.clear_short_term_memory()
     
-    async def planning(self, msg: str) -> str:
-        """
-        Send a chat message to all registered rpc modules.
-        :param msg: Message to send
-        :return: None
-        """
-        return await self.sonagent.planning(msg)
-    
-    async def show_plan(self) -> str:
-        """
-        Send a chat message to all registered rpc modules.
-        :param msg: Message to send
-        :return: None
-        """
-        return await self.sonagent.show_plan()
-    
     async def show_task(self) -> str:
         """
         Show all tasks with detailed information using the Task model.
         Similar to show_plan but shows all tasks with more details.
         """
         return await self.sonagent.show_task()
-    
-    async def show_mode(self) -> str:
-        return self.sonagent.agent_mode
     
     async def show_skills(self) -> str:
         return self.sonagent.show_skills()
@@ -232,12 +205,6 @@ class RPC:
     
     async def remove_skill(self, skill_name: str) -> str:
         return await self.sonagent.remove_skill(skill_name)
-    
-    async def mode(self, mode: str) -> str:
-        if mode in AGENT_MODE:
-            self.sonagent.agent_mode = mode
-            return f"set agent mode is {mode}"
-        return f'not done: agent mode is not validate ({str(AGENT_MODE)})'
     
     async def summerize_dialog(self) -> str:
         return self.sonagent.agent.short_term_memory.summerize_dialog()

@@ -189,32 +189,6 @@ class Agent:
             result += str(self.excute_subtask(task))
         return result
 
-    async def create_plan_and_running(self, goal_plan: str) -> str:
-        # Create a new task for this plan
-        task = Task.create_task(
-            agent_id="agent",
-            content=goal_plan,
-            priority=0
-        )
-        
-        # Execute the plan
-        plan_json = await self.planning(goal=goal_plan)
-
-        # replace ```json to empty string
-        plan_json = plan_json.replace("```json", "").replace("```", "")
-        plan_json = json.loads(plan_json)
-
-        logger.info(f"plan_json: {plan_json}")
-        tasks = plan_json.get("subtasks", [])
-
-        result = ""
-        for subtask in tasks:
-            result += str(await self.excute_plan_task(subtask))
-        
-        # Mark task as completed
-        task.complete({"result": result})
-        return result
-
     async def create_schedule_for_task_or_plan(self, goal_plan: str) -> str:
         # TODO: Reimplement schedule creation with new brain system
         logger.warning("Schedule creation is temporarily disabled - brain system not implemented")
@@ -266,30 +240,11 @@ class Agent:
             logger.error(f"Error gen belief: {e}")
             return False
 
-    async def askme(self, question: str) -> str:
-        # TODO: Reimplement askme with new memory and brain systems
-        logger.warning("Askme is temporarily disabled - memory and brain systems not implemented")
-        return "Askme is temporarily disabled - memory and brain systems not implemented"
-
     async def reincarnate(self) -> str:
         if self.delete_everything():
             return "Reincarnate successfully."
         else:
             return "Reincarnate failed."
-
-    async def planning(self, goal: str) -> str:
-        # TODO: Reimplement planning with new memory and brain systems
-        logger.warning("Planning is temporarily disabled - memory and brain systems not implemented")
-        return "Planning is temporarily disabled - memory and brain systems not implemented"
-
-    async def show_plan(self) -> str:
-        # This method is now deprecated since we're using tasks instead of plans
-        # We'll show pending tasks instead
-        tasks = Task.get_pending_tasks()
-        task_text = "Pending Tasks:\n"
-        for task in tasks:
-            task_text += f"- ID: {task.id}, Content: {task.content[:50]}..., Status: {task.status}, Priority: {task.priority}\n"
-        return task_text
 
     async def show_task(self) -> str:
         """
