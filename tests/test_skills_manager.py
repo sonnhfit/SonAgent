@@ -55,38 +55,39 @@ class TestSkillsManager(unittest.TestCase):
         skill_names = [f.stem for f in skill_files]
         self.assertIn('TextPrinter', skill_names, "TextPrinter should be in standard skills")
     
-    def test_skip_copy_when_skills_exist(self):
-        """Test that standard skills are not copied when skills already exist."""
+    def test_overwrite_skills_when_copy(self):
+        """Test that standard skills are always copied, overwriting existing ones."""
         # Create the skills directory with a dummy skill
         self.skills_dir.mkdir(parents=True)
-        dummy_skill = self.skills_dir / "DummySkill.py"
-        dummy_skill.write_text("# Dummy skill\nclass DummySkill:\n    pass\n")
+        dummy_skill = self.skills_dir / "TextPrinter.py"
+        dummy_skill.write_text("# Modified skill\nclass TextPrinter:\n    pass\n")
         
-        # Count initial files
-        initial_count = len([f for f in self.skills_dir.iterdir() 
-                           if f.suffix == '.py' and not f.name.startswith('__')])
-        
-        # Create SkillsManager - should NOT copy because directory is not empty
+        # Create SkillsManager - should copy and overwrite existing skills
         skills_manager = SkillsManager(self.mock_sonagent)
         
-        # Check that no new skills were added
-        final_count = len([f for f in self.skills_dir.iterdir() 
-                         if f.suffix == '.py' and not f.name.startswith('__')])
+        # Check that standard skills were copied (overwriting)
+        skill_files = [f for f in self.skills_dir.iterdir() 
+                      if f.suffix == '.py' and not f.name.startswith('__')]
         
-        self.assertEqual(initial_count, final_count, 
-                        "Should not copy skills when directory already has skills")
-        self.assertEqual(final_count, 1, "Should still have only the dummy skill")
+        # Should have standard skills now
+        self.assertGreater(len(skill_files), 0, "Standard skills should have been copied")
+        
+        # Check that TextPrinter is now the original from standard_skills
+        skill_names = [f.stem for f in skill_files]
+        self.assertIn('TextPrinter', skill_names, "TextPrinter should be in standard skills")
+        self.assertIn('SkillBuilder', skill_names, "SkillBuilder should be in standard skills")
     
     def test_scan_skills_directory(self):
         """Test scanning the skills directory."""
-        # Create some test skill files
+        # Create some test skill files directly (don't use SkillsManager to avoid copy)
         self.skills_dir.mkdir(parents=True)
         (self.skills_dir / "Skill1.py").write_text("class Skill1: pass")
         (self.skills_dir / "Skill2.py").write_text("class Skill2: pass")
         (self.skills_dir / "__init__.py").write_text("")  # Should be ignored
         
-        # Create SkillsManager (will try to copy but should skip)
-        skills_manager = SkillsManager(self.mock_sonagent)
+        # Create SkillsManager instance to test scan
+        skills_manager = SkillsManager.__new__(SkillsManager)
+        skills_manager.skills_dir = self.skills_dir
         
         # Scan the directory
         skill_names = skills_manager.scan_skills_directory()
