@@ -52,12 +52,23 @@ class MainTeamAgent:
     def _init_agents(self):
         """Initialize specialized agents for the team."""
         
+        # Debug: Check what type of objects our tools are
+        logger.debug(f"Initializing agents with tools...")
+        
+        # Create tool functions that are properly bound to this instance
+        # The @tool decorator creates tool objects that need to be callable
+        # We'll create simple wrapper functions that call our instance methods
+        
         # Task Management Agent - handles task creation and management
         self.task_agent = Agent(
             name="Task Agent",
             role="Create, manage, and track tasks in the system",
             model=OpenAIResponses(id="gpt-4o-mini"),
-            tools=[self.create_task_tool, self.get_tasks_tool, self.update_task_tool],
+            tools=[
+                self._create_task_tool_wrapper,
+                self._get_tasks_tool_wrapper,
+                self._update_task_tool_wrapper
+            ],
             instructions="""
             You are responsible for task management. When users request tasks:
             1. Create tasks with clear descriptions and priorities
@@ -75,7 +86,11 @@ class MainTeamAgent:
             name="TOM Agent",
             role="Extract and analyze user's Theory of Mind (beliefs, intentions, mental state)",
             model=OpenAIResponses(id="gpt-4o-mini"),
-            tools=[self.extract_tom_tool, self.update_beliefs_tool, self.analyze_intent_tool],
+            tools=[
+                self._extract_tom_tool_wrapper,
+                self._update_beliefs_tool_wrapper,
+                self._analyze_intent_tool_wrapper
+            ],
             instructions="""
             You analyze user's Theory of Mind (TOM). Your responsibilities:
             1. Extract user's beliefs, desires, intentions, and mental state from conversations
@@ -101,7 +116,10 @@ class MainTeamAgent:
             name="Feedback Agent",
             role="Collect and process human feedback for agent actions",
             model=OpenAIResponses(id="gpt-4o-mini"),
-            tools=[self.request_feedback_tool, self.process_feedback_tool],
+            tools=[
+                self._request_feedback_tool_wrapper,
+                self._process_feedback_tool_wrapper
+            ],
             instructions="""
             You handle human feedback and approvals. Your responsibilities:
             1. Request user feedback when agent actions need approval
@@ -119,8 +137,12 @@ class MainTeamAgent:
             name="Assistant Agent",
             role="Handle general user queries and coordinate with other agents",
             model=OpenAIResponses(id="gpt-4o-mini"),
-            tools=[self.coordinate_agents_tool, self.respond_to_user_tool, 
-                   self.save_chat_message_tool, self.get_chat_history_tool],
+            tools=[
+                self._coordinate_agents_tool_wrapper,
+                self._respond_to_user_tool_wrapper,
+                self._save_chat_message_tool_wrapper,
+                self._get_chat_history_tool_wrapper
+            ],
             instructions="""
             You are the primary interface for users. Your responsibilities:
             1. Handle general user queries and conversations
@@ -136,6 +158,8 @@ class MainTeamAgent:
             add_history_to_context=True,
             num_history_runs=3
         )
+        
+        logger.debug(f"Agents initialized successfully")
     
     def _init_team(self):
         """Initialize the main team with all agents."""
@@ -772,6 +796,198 @@ class MainTeamAgent:
         
         return list(set(agent_types))  # Remove duplicates
     
+    # Wrapper methods for tools
+    # These are needed because @tool decorator on instance methods doesn't work correctly
+    # when passed to Agno Agent's tools parameter
+    
+    @tool(requires_confirmation=True)
+    def _create_task_tool_wrapper(self, content: str, priority: int = 0, 
+                                 agent_id: str = "main_team") -> Dict[str, Any]:
+        """
+        Create a new task in the system.
+        
+        Args:
+            content: Task description/content
+            priority: Task priority (0=low, 1=medium, 2=high)
+            agent_id: ID of the agent creating the task
+            
+        Returns:
+            Dictionary with task information
+        """
+        return self.create_task_tool(content, priority, agent_id)
+    
+    @tool()
+    def _get_tasks_tool_wrapper(self, status: Optional[str] = None,
+                               agent_id: Optional[str] = None,
+                               limit: int = 10) -> List[Dict[str, Any]]:
+        """
+        Get tasks from the system with optional filters.
+        
+        Args:
+            status: Filter by task status (pending, in_progress, done, failed, cancelled)
+            agent_id: Filter by agent ID
+            limit: Maximum number of tasks to return
+            
+        Returns:
+            List of task dictionaries
+        """
+        return self.get_tasks_tool(status, agent_id, limit)
+    
+    @tool(requires_confirmation=True)
+    def _update_task_tool_wrapper(self, task_id: int, status: Optional[str] = None,
+                                 result: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+        """
+        Update a task's status or result.
+        
+        Args:
+            task_id: ID of the task to update
+            status: New status (in_progress, done, failed, cancelled)
+            result: Task result data
+            
+        Returns:
+            Dictionary with update information
+        """
+        return self.update_task_tool(task_id, status, result)
+    
+    @tool()
+    def _extract_tom_tool_wrapper(self, conversation_text: str, user_id: str = "default") -> Dict[str, Any]:
+        """
+        Extract Theory of Mind (TOM) from conversation text.
+        
+        Args:
+            conversation_text: The conversation text to analyze
+            user_id: ID of the user
+            
+        Returns:
+            Dictionary with TOM analysis
+        """
+        return self.extract_tom_tool(conversation_text, user_id)
+    
+    @tool()
+    def _update_beliefs_tool_wrapper(self, user_id: str, new_beliefs: List[Dict[str, Any]],
+                                    source: str = "tom_analysis") -> Dict[str, Any]:
+        """
+        Update user's belief system with new beliefs.
+        
+        Args:
+            user_id: ID of the user
+            new_beliefs: List of new beliefs to add
+            source: Source of the beliefs (tom_analysis, direct_input, etc.)
+            
+        Returns:
+            Dictionary with update information
+        """
+        return self.update_beliefs_tool(user_id, new_beliefs, source)
+    
+    @tool()
+    def _analyze_intent_tool_wrapper(self, user_query: str, context: Optional[str] = None) -> Dict[str, Any]:
+        """
+        Analyze user's intent from a query.
+        
+        Args:
+            user_query: The user's query
+            context: Optional context about the conversation
+            
+        Returns:
+            Dictionary with intent analysis
+        """
+        return self.analyze_intent_tool(user_query, context)
+    
+    @tool(requires_user_input=True, user_input_fields=["feedback"])
+    def _request_feedback_tool_wrapper(self, action: str, context: str,
+                                      feedback: Optional[str] = None) -> Dict[str, Any]:
+        """
+        Request human feedback for an agent action.
+        
+        Args:
+            action: The action requiring feedback
+            context: Context about why feedback is needed
+            feedback: User feedback (collected via user input)
+            
+        Returns:
+            Dictionary with feedback information
+        """
+        return self.request_feedback_tool(action, context, feedback)
+    
+    @tool()
+    def _process_feedback_tool_wrapper(self, action: str, feedback: str,
+                                      learning_note: Optional[str] = None) -> Dict[str, Any]:
+        """
+        Process and incorporate user feedback into agent learning.
+        
+        Args:
+            action: The action that received feedback
+            feedback: User feedback text
+            learning_note: Optional note about what was learned
+            
+        Returns:
+            Dictionary with processing information
+        """
+        return self.process_feedback_tool(action, feedback, learning_note)
+    
+    @tool()
+    def _coordinate_agents_tool_wrapper(self, request: str,
+                                       agent_types: List[str] = None) -> Dict[str, Any]:
+        """
+        Coordinate multiple agents to handle a complex request.
+        
+        Args:
+            request: The user request to handle
+            agent_types: Types of agents to involve (task, tom, feedback, assistant)
+            
+        Returns:
+            Dictionary with coordination results
+        """
+        return self.coordinate_agents_tool(request, agent_types)
+    
+    @tool()
+    def _respond_to_user_tool_wrapper(self, response: str,
+                                     conversation_id: str,
+                                     save_to_history: bool = True) -> Dict[str, Any]:
+        """
+        Send a response to the user and optionally save to chat history.
+        
+        Args:
+            response: The response to send to user
+            conversation_id: Conversation identifier
+            save_to_history: Whether to save the response to chat history
+            
+        Returns:
+            Dictionary with response information
+        """
+        return self.respond_to_user_tool(response, conversation_id, save_to_history)
+    
+    @tool()
+    def _save_chat_message_tool_wrapper(self, conversation_id: str, role: str,
+                                       content: str, metadata: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+        """
+        Save a chat message to persistent storage.
+        
+        Args:
+            conversation_id: Unique conversation identifier
+            role: Message role (user, assistant, system)
+            content: Message content
+            metadata: Additional metadata
+            
+        Returns:
+            Dictionary with save information
+        """
+        return self.save_chat_message_tool(conversation_id, role, content, metadata)
+    
+    @tool()
+    def _get_chat_history_tool_wrapper(self, conversation_id: str, limit: int = 20) -> List[Dict[str, Any]]:
+        """
+        Get chat history for a conversation.
+        
+        Args:
+            conversation_id: Conversation identifier
+            limit: Maximum number of messages to return
+            
+        Returns:
+            List of chat message dictionaries
+        """
+        return self.get_chat_history_tool(conversation_id, limit)
+    
     def process_user_request(self, user_input: str, conversation_id: str = None, 
                             user_id: str = "default") -> Dict[str, Any]:
         """
@@ -865,6 +1081,9 @@ class MainTeamAgent:
             # Extract TOM from user input
             tom_result = self.extract_tom_tool(user_input, user_id)
             
+            # Debug: Log before calling team.arun
+            logger.debug(f"Calling team.arun with input: {user_input}")
+            
             # Process request through team asynchronously
             team_response = await self.team.arun(user_input)
             
@@ -893,7 +1112,7 @@ class MainTeamAgent:
             return result
             
         except Exception as e:
-            logger.error(f"Error processing async user request: {e}")
+            logger.error(f"Error processing async user request: {e}", exc_info=True)
             return {
                 "success": False,
                 "error": str(e),
