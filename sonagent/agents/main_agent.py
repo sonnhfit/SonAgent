@@ -1,6 +1,9 @@
 """
 Main Agent - Coordinates all other agents in the system.
 Handles user communication, task creation, and task management.
+
+The Main Agent uses sonagent/brain/agent_brain.py with LangChain LLM and tools
+for processing user queries through the ReAct agent pattern.
 """
 import asyncio
 import logging
@@ -17,8 +20,14 @@ class MainAgent(BaseAgent):
     """
     Main Agent that coordinates all sub-agents.
     
+    Inherits from BaseAgent which provides:
+    - AgentBrain integration (sonagent/brain/agent_brain.py)
+    - LangChain LLM support with ReAct agent
+    - Tool/skill loading and execution
+    - Chat processing with conversation history
+    
     Responsibilities:
-    - Communicate with users (Q&A)
+    - Communicate with users (Q&A) using AgentBrain
     - Create and manage tasks
     - Monitor sub-agent status
     - Coordinate task execution across agents
@@ -33,6 +42,11 @@ class MainAgent(BaseAgent):
     ):
         """
         Initialize the main agent.
+        
+        The parent BaseAgent.__init__() automatically initializes:
+        - self.brain: AgentBrain instance (from sonagent/brain/agent_brain.py)
+        - LangChain LLM and ReAct agent for tool-based reasoning
+        - Skills converted to LangChain tools
         
         Args:
             config: Configuration dictionary
@@ -91,13 +105,16 @@ class MainAgent(BaseAgent):
         """
         Process chat message from user.
         
+        Uses BaseAgent.chat() which processes queries through AgentBrain's
+        ReAct agent with LangChain LLM and tools.
+        
         Args:
             message: User message
             
         Returns:
             Response string
         """
-        # Use parent class chat method
+        # Use parent class chat method (uses self.brain.process_query_with_react)
         return await self.chat(message)
     
     async def _create_task(self, task_data: Dict[str, Any]) -> str:
