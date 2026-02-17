@@ -1,8 +1,11 @@
 """
 Skill Generator for creating new skills dynamically.
 Generates Python code for skills following the SonAgent skill template.
+Uses LLM to generate actual implementation code.
 """
+import json
 import logging
+import os
 import re
 from pathlib import Path
 from typing import Dict, Optional, List, Any
@@ -11,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 
 class SkillGenerator:
-    """Generate skill code from descriptions and specifications."""
+    """Generate skill code from descriptions and specifications using LLM."""
     
     SKILL_TEMPLATE = '''from pydantic import BaseModel
 
@@ -59,9 +62,64 @@ if __name__ == "__main__":
     print(result)
 '''
     
-    def __init__(self):
+    # System prompt for LLM to generate skill code
+    LLM_SYSTEM_PROMPT = """You are a Python code generator for SonAgent skills. 
+Your task is to generate Python skill code based on the provided template and requirements.
+
+The skill should:
+1. Be a Pydantic BaseModel class
+2. Have the method implementation that actually accomplishes the described task
+3. Use IOMsg.send_msg() to send messages
+4. Return meaningful results
+5. Follow Python best practices
+
+IMPORTANT:
+- Only generate the method implementation code, not the entire class template
+- The implementation should be indented with 8 spaces (for inclusion in a class method)
+- Include proper error handling
+- Make the implementation actually useful, not just placeholder code
+- Use type hints where appropriate"""
+
+    def __init__(self, config: Dict[str, Any] = None):
         """Initialize skill generator."""
         self.template = self.SKILL_TEMPLATE
+        self.config = config or {}
+        self._llm = None
+    
+    def _get_llm(self):
+        """Get LLM instance for code generation."""
+        if self._llm is not None:
+            return self._llm
+        
+        try:
+            from langchain_openai import ChatOpenAI
+            
+            # Get config from environment or use default
+            llm_config = self.config.get('llm', {})
+            api_type = llm_config.get('api_type', 'openai')
+            
+            if api_type == 'openai':
+                api_key = os.environ.get('OPENAI_API_KEY') or llm_config.get('api_key')
+                if not api_key:
+                    logger.warning("OpenAI API key not found. Will use template-based generation.")
+                    return None
+                
+                model_name = llm_config.get('model', 'gpt-4o-mini')
+                self._llm = ChatOpenAI(
+                    model=model_name,
+                    temperature=0.1,
+                    max_tokens=2000,
+                    api_key=api_key,
+                    timeout=30
+                )
+                logger.info(f"LLM initialized: {model_name}")
+                return self._llm
+        except ImportError:
+            logger.warning("langchain_openai not available. Will use template-based generation.")
+        except Exception as e:
+            logger.warning(f"Failed to initialize LLM: {e}. Will use template-based generation.")
+        
+        return None
     
     def generate_skill(
         self,
@@ -114,9 +172,24 @@ if __name__ == "__main__":
         # Generate method description for tool (short description for LangChain)
         method_description_for_tool = self._generate_method_description_for_tool(description, parameters)
         
-        # Generate implementation
+        # Generate implementation - try LLM first, then fallback to template
         if implementation is None:
-            implementation = self._generate_default_implementation(parameters)
+            # Try to generate with LLM
+            llm_implementation = self._generate_implementation_with_llm(
+                skill_name=skill_name,
+                description=description,
+                method_name=method_name,
+                parameters=parameters,
+                return_description=return_description
+            )
+            
+            if llm_implementation:
+                implementation = llm_implementation
+                logger.info("Used LLM-generated implementation")
+            else:
+                # Fallback to default template
+                implementation = self._generate_default_implementation(parameters)
+                logger.info("Used default template implementation (LLM not available)")
         else:
             # Ensure implementation is properly indented
             implementation = self._indent_code(implementation, 8)
@@ -235,6 +308,107 @@ if __name__ == "__main__":
         
         return desc
     
+    def _generate_implementation_with_llm(
+        self,
+        skill_name: str,
+        description: str,
+        method_name: str,
+        parameters: List[Dict[str, str]],
+        return_description: str
+    ) -> Optional[str]:
+        """
+        Generate implementation code using LLM.
+        
+        Args:
+            skill_name: Name of the skill class
+            description: Description of what the skill does
+            method_name: Name of the main method
+            parameters: List of parameter dicts
+            return_description: Description of return value
+            
+        Returns:
+            Generated implementation code or None if LLM is not available
+        """
+        llm = self._get_llm()
+        if llm is None:
+            return None
+        
+        # Build the prompt for LLM
+        params_info = ""
+        if parameters:
+            params_info = "Parameters:\n"
+            for param in parameters:
+                param_name = param['name']
+                param_type = param.get('type', 'str')
+                param_desc = param.get('description', 'No description')
+                params_info += f"  - {param_name} ({param_type}): {param_desc}\n"
+        else:
+            params_info = "  - No parameters\n"
+        
+        user_prompt = f"""Generate a Python skill implementation for SonAgent.
+
+Skill Name: {skill_name}
+Method Name: {method_name}
+Description: {description}
+{params_info}
+Return: {return_description}
+
+Requirements:
+1. The implementation should actually accomplish the described task
+2. Use IOMsg.send_msg() to send messages/updates
+3. Return meaningful results
+4. Include proper error handling
+5. Output ONLY the method implementation code (no class, no docstring)
+6. The code should be indented with 8 spaces (for a class method)
+7. No TODO comments - actually implement the logic
+
+Example format:
+        try:
+            # Your implementation here
+            result = "some result"
+            IOMsg.send_msg(f"Processing: {{result}}")
+            return result
+        except Exception as e:
+            IOMsg.send_msg(f"Error: {{str(e)}}")
+            return f"Error: {{str(e)}}"
+
+Generate the implementation now:"""
+        
+        try:
+            logger.info(f"Generating implementation for {skill_name}.{method_name} using LLM")
+            
+            response = llm.invoke(user_prompt)
+            
+            # Extract content from the response
+            if hasattr(response, 'content'):
+                implementation = response.content
+            else:
+                implementation = str(response)
+            
+            # Clean up the implementation
+            implementation = implementation.strip()
+            
+            # Remove markdown code blocks if present
+            if implementation.startswith("```python"):
+                implementation = implementation[10:]
+            elif implementation.startswith("```"):
+                implementation = implementation[3:]
+            
+            if implementation.endswith("```"):
+                implementation = implementation[:-3]
+            
+            implementation = implementation.strip()
+            
+            # Ensure it's properly indented
+            implementation = self._indent_code(implementation, 8)
+            
+            logger.info(f"Successfully generated implementation using LLM")
+            return implementation
+            
+        except Exception as e:
+            logger.error(f"Failed to generate implementation with LLM: {e}")
+            return None
+    
     def _generate_default_implementation(self, parameters: List[Dict[str, str]]) -> str:
         """Generate a default implementation that returns parameter summary."""
         if not parameters:
@@ -314,7 +488,7 @@ return result'''
     ) -> str:
         """
         Generate a simple skill from a natural language prompt.
-        This is a basic implementation that could be enhanced with LLM integration.
+        Uses LLM to generate actual implementation code.
         
         Args:
             prompt: Natural language description of what the skill should do
@@ -323,11 +497,9 @@ return result'''
         Returns:
             Generated skill code
         """
-        # For now, create a simple skill that returns the prompt
-        # This can be enhanced with LLM integration to generate proper implementation
-        
         method_name = self._class_to_snake_case(skill_name)
         
+        # Default parameters - can be enhanced with LLM to infer better parameters
         parameters = [
             {
                 'name': 'input_text',
@@ -336,16 +508,13 @@ return result'''
             }
         ]
         
-        implementation = f'''# TODO: Implement actual logic for: {prompt}
-result = f"Processing: {{input_text}}"
-IOMsg.send_msg(result)
-return result'''
-        
+        # For simple prompt, we call generate_skill which will use LLM to generate implementation
+        # Pass implementation=None so LLM will generate it
         return self.generate_skill(
             skill_name=skill_name,
             description=prompt,
             method_name=method_name,
             parameters=parameters,
-            implementation=implementation,
+            implementation=None,  # Let LLM generate the implementation
             return_description="Result of the operation"
         )

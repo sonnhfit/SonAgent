@@ -37,6 +37,9 @@ class SkillBuilder(BaseModel):
     - Example: def calculate(): is public, def _validate_input(): is private
     - a skill only have one publich method that use for tool with function docs string 
     """
+    
+    # Configuration for LLM (passed from outside)
+    config: Dict[str, Any] = {}
 
     def _parse_parameters(self, parameters: Optional[str]) -> Optional[List[Dict]]:
         """Parse JSON parameters string into a list of parameter dictionaries."""
@@ -82,8 +85,8 @@ class SkillBuilder(BaseModel):
             # Parse parameters if provided
             params_list = self._parse_parameters(parameters)
             
-            # Create skill generator
-            generator = SkillGenerator()
+            # Create skill generator with config
+            generator = SkillGenerator(config=self.config)
             
             # Generate skill code
             code = generator.generate_skill(
@@ -164,8 +167,8 @@ class SkillBuilder(BaseModel):
             str: Status message with path to saved skill or error message
         """
         try:
-            # Create skill generator
-            generator = SkillGenerator()
+            # Create skill generator with config
+            generator = SkillGenerator(config=self.config)
             
             # Generate simple skill from prompt
             code = generator.generate_simple_skill_from_prompt(
@@ -183,7 +186,7 @@ class SkillBuilder(BaseModel):
                 IOMsg.send_msg(error_msg)
                 return error_msg
             
-            IOMsg.send_msg("✓ Generated skill validated successfully")
+            # IOMsg.send_msg("✓ Generated skill validated successfully")
             
             # Get skills directory
             skills_dir = self._get_skills_directory()
@@ -193,7 +196,7 @@ class SkillBuilder(BaseModel):
             
             success_msg = f"✓ Skill '{skill_name}' created from prompt!\n"
             success_msg += f"File: {skill_file}\n"
-            success_msg += "Note: This is a template. You may need to edit the implementation.\n"
+            success_msg += "Note: This skill was generated with LLM. You may need to edit the implementation.\n"
             success_msg += "To use this skill, reload skills with the reload_skills command."
             
             IOMsg.send_msg(success_msg)

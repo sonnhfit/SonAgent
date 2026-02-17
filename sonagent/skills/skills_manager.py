@@ -99,13 +99,16 @@ class SkillsManager:
         # Clear existing skills
         self.skill_object_list = []
         
+        # Prepare kwargs to pass config to skills
+        kwargs = {'config': self.config}
+        
         for skill_name in skill_names:
             logger.debug(f"Loading skill: {skill_name}")
             try:
                 skill = BaseLoading.load_object(
                     object_name=skill_name, 
                     config=self.config, 
-                    kwargs={}, 
+                    kwargs=kwargs, 
                     extra_dir='user_data/skills'
                 )
                 self.skill_object_list.append(skill)
