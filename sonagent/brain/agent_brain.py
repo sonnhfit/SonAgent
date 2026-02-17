@@ -84,73 +84,10 @@ class AgentBrain:
         self.skills_loaded = False
         self.load_and_index_skills()
         
-        logger.info(f"AgentBrain initialized successfully with conversation_id: {self.conversation_id}")
-    
-    def _check_openai_config(self) -> bool:
-        """Check if OpenAI configuration is available."""
-        llm_config = self.config.get('llm', {})
-        return llm_config.get('api_type') == 'openai' and os.environ.get('OPENAI_API_KEY')
-    
-    def _generate_conversation_id(self) -> str:
-        """
-        Generate a unique conversation ID.
-        
-        Returns:
-            Unique conversation ID string
-        """
-        import time
-        import uuid
-
-        # Generate a UUID and combine with timestamp for uniqueness
-        unique_id = str(uuid.uuid4())[:8]
-        timestamp = int(time.time())
-        return f"conv_{timestamp}_{unique_id}"
-    
-    def _init_collections(self):
-        """Initialize vector database collections."""
-        # Create collections if they don't exist
-        try:
-            self.vector_db.get_collection(self.chat_history_collection)
-        except:
-            pass  # Collection will be created on first use
-            
-        try:
-            self.vector_db.get_collection(self.skill_search_collection)
-        except:
-            pass
-            
-        try:
-            self.vector_db.get_collection(self.skill_keyword_collection)
-        except:
-            pass
-    
-    def load_and_index_skills(self):
-        """Load skills from skills manager and index them for search."""
-        logger.info("Loading and indexing skills...")
-        
-        if self.skills_loaded:
-            logger.debug("Skills already loaded, skipping")
-            return
-            
-        # Clear existing skill indices
-        try:
-            self.vector_db.delete_collection(self.skill_search_collection)
-            self.vector_db.delete_collection(self.skill_keyword_collection)
-        except:
-            pass
-            
-        # Get all skills
-        skills = self.skills_manager.get_all_skills()
-        logger.info(f"Loaded {len(skills)} skills from skills directory")
-        
-        # Log each skill name for debugging
-        for skill in skills:
-            skill_name = skill.__class__.__name__
-            logger.debug(f"  - Skill loaded: {skill_name}")
-        
-        # Index skills for semantic search
-        if self.embedding:
-            logger.info("Creating embeddings for skill search...")
+        # Index skills for semantic search if embedding is available
+        if self.embedding and self.embedding.is_available():
+            m_config = self.config.get('llm', {})
+            skills = self.skills_manager.get_all_skills()
             self._index_skills_semantic(skills)
         else:
             logger.warning("Embedding not available, skipping semantic indexing")
@@ -677,7 +614,31 @@ class AgentBrain:
         logger.info(f"Created tool: {skill_tool_func.name} with description: {func_description[:100]}...")
         return skill_tool_func
     
+    def _format_tools_for_system_prompt(self, tools: List[Any]) -> str:
+        """
+        Format tools list into a string description for the system prompt.
+        
+        Args:
+            tools: List of LangChain Tool objects
+            
+        Returns:
+            Formatted string describing all available tools
+        """
+        if not tools:
+            return "No tools available."
+        
+        tool_descriptions = []
+        for tool in tools:
+            tool_name = getattr(tool, 'name', 'unknown')
+            tool_desc = getattr(tool, 'description', 'No description')
+            
+            # Format: - tool_name: description
+            tool_descriptions.append(f"- {tool_name}: {tool_desc}")
+        
+        return "\n".join(tool_descriptions)
+    
     def _get_llm(self):
+
         """
         Get LLM instance based on configuration.
         
@@ -779,10 +740,17 @@ class AgentBrain:
             
             # Default system prompt for agent with tools
             if system_prompt is None:
-                system_prompt = """You are SonAgent, an autonomous AI agent that can use tools to accomplish tasks.
+                # Format tools descriptions for system prompt
+                tools_description = self._format_tools_for_system_prompt(tools)
+                
+                # Get tool names for the prompt
+                tool_names = [getattr(t, 'name', 'unknown') for t in tools]
+                tool_names_str = ", ".join(tool_names)
+                
+                system_prompt = f"""You are SonAgent, an autonomous AI agent that can use tools to accomplish tasks.
 
 You have access to the following tools:
-{tools}
+{tools_description}
 
 IMPORTANT INSTRUCTIONS FOR SKILL GENERATION:
 
@@ -812,7 +780,7 @@ Use the following format:
 
 Question: the input question you must answer
 Thought: you should always think about what to do
-Action: the action to take, should be one of [{tool_names}]
+Action: the action to take, should be one of [{tool_names_str}]
 Action Input: the input to the action (MUST be a valid JSON string with all required arguments)
 Observation: the result of the action
 ... (this Thought/Action/Action Input/Observation can repeat N times)
@@ -822,7 +790,7 @@ Final Answer: the final answer to the original input question
 Begin!
 
 Question: {input}
-Thought:{agent_scratchpad}"""
+Thought: {{agent_scratchpad}}"""
             
             # Create ReAct agent using create_agent
             # The create_agent function handles the ReAct pattern internally
@@ -1064,11 +1032,28 @@ Thought:{agent_scratchpad}"""
             return response
         
         # Get default system prompt if not provided
+        # First convert tools to LangChain tools if they are skills
+        if tools is None:
+            tools = self.skills_manager.get_all_skills()
+            # Convert skills to tools
+            converted_tools = []
+            for skill in tools:
+                skill_tools = self._convert_skill_to_tools(skill)
+                converted_tools.extend(skill_tools)
+            tools = converted_tools
+        
         if system_prompt is None:
-            system_prompt = """You are SonAgent, an autonomous AI agent that can use tools to accomplish tasks.
+            # Format tools descriptions for system prompt
+            tools_description = self._format_tools_for_system_prompt(tools)
+            
+            # Get tool names for the prompt
+            tool_names = [getattr(t, 'name', 'unknown') for t in tools]
+            tool_names_str = ", ".join(tool_names)
+            
+            system_prompt = f"""You are SonAgent, an autonomous AI agent that can use tools to accomplish tasks.
 
 You have access to the following tools:
-{tools}
+{tools_description}
 
 IMPORTANT INSTRUCTIONS FOR SKILL GENERATION:
 
@@ -1098,7 +1083,7 @@ Use the following format:
 
 Question: the input question you must answer
 Thought: you should always think about what to do
-Action: the action to take, should be one of [{tool_names}]
+Action: the action to take, should be one of [{tool_names_str}]
 Action Input: the input to the action (MUST be a valid JSON string with all required arguments)
 Observation: the result of the action
 ... (this Thought/Action/Action Input/Observation can repeat N times)
@@ -1108,7 +1093,7 @@ Final Answer: the final answer to the original input question
 Begin!
 
 Question: {input}
-Thought:{agent_scratchpad}"""
+Thought: {{agent_scratchpad}}"""
         
         try:
             # Create or get agent

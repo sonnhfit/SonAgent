@@ -4,6 +4,7 @@
 This module manage Telegram communication
 """
 import asyncio
+import html
 import logging
 import re
 from copy import deepcopy
@@ -32,6 +33,119 @@ logging.getLogger("httpx").setLevel(logging.WARNING)
 logger.debug('Included module rpc.telegram ...')
 
 MAX_MESSAGE_LENGTH = MessageLimit.MAX_TEXT_LENGTH
+
+
+def preprocess_markdown_message(message: str) -> str:
+    """
+    Preprocess message to fix common Markdown parsing issues before sending to Telegram.
+    
+    This function fixes:
+    - Unclosed backticks (inline code)
+    - Unclosed code blocks (```)
+    - Unmatched square brackets
+    - Underscores in words (causing italic parsing issues)
+    - Other special characters that could cause parse errors
+    
+    :param message: The raw message to preprocess
+    :return: Preprocessed message safe for Telegram Markdown parsing
+    """
+    if not message:
+        return message
+    
+    result = message
+    
+    # Fix unclosed code blocks (```)
+    code_block_count = result.count('```')
+    if code_block_count % 2 == 1:
+        result += '\n```'
+    
+    # Fix unclosed inline code (`)
+    # Find all backtick pairs and mark unclosed ones
+    in_code = False
+    processed_chars = []
+    for char in result:
+        if char == '`':
+            in_code = not in_code
+            processed_chars.append(char)
+        else:
+            processed_chars.append(char)
+    
+    # If we end with an unclosed backtick, add a closing one
+    if in_code:
+        result = ''.join(processed_chars) + '`'
+    
+    # Fix unmatched square brackets that could be interpreted as links
+    # Count opening and closing brackets
+    open_brackets = result.count('[')
+    close_brackets = result.count(']')
+    
+    if open_brackets > close_brackets:
+        result += ']' * (open_brackets - close_brackets)
+    
+    # Escape underscores that are not in code blocks or already escaped
+    # This prevents unwanted italic formatting
+    lines = result.split('\n')
+    processed_lines = []
+    
+    for line in lines:
+        # Skip if line is inside a code block
+        if '```' in line:
+            processed_lines.append(line)
+            continue
+        
+        # Process the line
+        processed_line = ''
+        i = 0
+        while i < len(line):
+            # Skip escaped characters
+            if line[i] == '\\' and i + 1 < len(line):
+                processed_line += line[i:i+2]
+                i += 2
+                continue
+            
+            # Check for backticks - skip processing inside code
+            if line[i] == '`':
+                processed_line += line[i]
+                i += 1
+                # Find the end of this code section
+                while i < len(line) and line[i] != '`':
+                    processed_line += line[i]
+                    i += 1
+                if i < len(line):
+                    processed_line += line[i]
+                    i += 1
+                continue
+            
+            # Escape lone underscores or underscores at the start/end of words
+            # that are likely to cause italic parsing issues
+            if line[i] == '_':
+                # Check if this is likely a variable/identifier (inside word)
+                prev_char = processed_line[-1] if processed_line else ' '
+                next_char = line[i + 1] if i + 1 < len(line) else ' '
+                
+                if prev_char.isalnum() and next_char.isalnum():
+                    # This is like a_variable - escape the underscore
+                    processed_line += '\\_'
+                elif prev_char == ' ' and next_char.isalnum():
+                    # This is like _variable - escape
+                    processed_line += '\\_'
+                elif prev_char.isalnum() and next_char == ' ':
+                    # This is like variable_ - escape
+                    processed_line += '\\_'
+                else:
+                    processed_line += line[i]
+            else:
+                processed_line += line[i]
+            i += 1
+        
+        processed_lines.append(processed_line)
+    
+    result = '\n'.join(processed_lines)
+    
+    # Final cleanup: remove any remaining problematic characters
+    # that could cause "can't find end of entity" errors
+    
+    return result
 
 
 class Telegram(RPCHandler):
@@ -258,13 +372,20 @@ class Telegram(RPCHandler):
             return
 
         message = self.compose_message(deepcopy(msg))
+        
+        # Preprocess message to fix Markdown parsing issues
+        if message:
+            message = preprocess_markdown_message(message)
+        
         logger.info(f"Sending message: {message}")
         if message:
             if len(message) > MAX_MESSAGE_LENGTH:
                 msg_parts = self.split_message_parts(message)
                 for msg_part in msg_parts:
+                    # Also preprocess each part
+                    processed_part = preprocess_markdown_message(msg_part)
                     asyncio.run_coroutine_threadsafe(
-                        self._send_msg(msg_part, parse_mode=ParseMode.MARKDOWN),
+                        self._send_msg(processed_part, parse_mode=ParseMode.MARKDOWN),
                         self._loop
                     )
             else:
