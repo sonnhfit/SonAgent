@@ -533,9 +533,27 @@ class AgentBrain:
             
             # Create tool function using the tool decorator
             from langchain.tools import tool
+            import inspect
             
-            # Use method docstring as description
-            func_description = method_doc.strip() if method_doc else f"Execute {skill_name}.{method_name}"
+            # Get method signature to include parameter info in description
+            try:
+                sig = inspect.signature(method)
+                param_info = []
+                for param_name, param in sig.parameters.items():
+                    if param_name in ('self', 'cls'):
+                        continue
+                    if param.default == inspect.Parameter.empty:
+                        param_info.append(f"{param_name} (required)")
+                    else:
+                        param_info.append(f"{param_name} (optional)")
+                
+                if param_info:
+                    func_description = f"{method_doc.strip() if method_doc else f'Execute {skill_name}.{method_name}'}\n\nParameters: {', '.join(param_info)}"
+                else:
+                    func_description = method_doc.strip() if method_doc else f"Execute {skill_name}.{method_name}"
+            except Exception:
+                # Fallback to just docstring if signature inspection fails
+                func_description = method_doc.strip() if method_doc else f"Execute {skill_name}.{method_name}"
             
             # Create a closure to capture the current method reference and description
             def make_tool_func(skill_instance, method_ref, skill_cls_name, method_nm, description):
@@ -543,8 +561,25 @@ class AgentBrain:
                 def skill_tool_func(**kwargs):
                     """Execute the skill method with provided arguments."""
                     try:
+                        # Check for required arguments that might be missing
+                        import inspect
+                        sig = inspect.signature(method_ref)
+                        missing_args = []
+                        for param_name, param in sig.parameters.items():
+                            if param.default == inspect.Parameter.empty and param_name not in kwargs:
+                                missing_args.append(param_name)
+                        
+                        if missing_args:
+                            return f"Error: Missing required arguments: {', '.join(missing_args)}. Please provide all required arguments."
+                        
                         result = method_ref(**kwargs)
                         return str(result)
+                    except TypeError as e:
+                        if "missing" in str(e) and "required positional argument" in str(e):
+                            return f"Error: {str(e)}. Please provide all required arguments."
+                        error_msg = f"Error executing {skill_cls_name}.{method_nm}: {str(e)}"
+                        logger.error(error_msg, exc_info=True)
+                        return error_msg
                     except Exception as e:
                         error_msg = f"Error executing {skill_cls_name}.{method_nm}: {str(e)}"
                         logger.error(error_msg, exc_info=True)
