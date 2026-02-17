@@ -614,8 +614,8 @@ class Telegram(RPCHandler):
         """
         Handler for /show_tasks.
         Show current tasks
-        :param bot: telegram bot
         :param update: message update
+        :param context: callback context
         :return: None
         """
         result = await self._rpc.get_tasks()

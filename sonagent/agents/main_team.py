@@ -227,6 +227,7 @@ class MainTeamAgent:
             logger.info(f"Task created: ID={task.id}, Content={content[:50]}...")
             
             # Create a detailed confirmation message
+            created_time = task.created_at.strftime('%Y-%m-%d %H:%M:%S') if task.created_at else 'N/A'
             confirmation_msg = (
                 f"✅ Task đã được tạo thành công!\n\n"
                 f"📋 Chi tiết task:\n"
@@ -234,7 +235,7 @@ class MainTeamAgent:
                 f"- Nội dung: {task.content}\n"
                 f"- Trạng thái: {task.status}\n"
                 f"- Độ ưu tiên: {task.priority}\n"
-                f"- Thời gian tạo: {task.created_at.strftime('%Y-%m-%d %H:%M:%S') if task.created_at else 'N/A'}\n\n"
+                f"- Thời gian tạo: {created_time}\n\n"
                 f"Task đã được lưu vào database và sẽ được xử lý theo lịch trình."
             )
             
