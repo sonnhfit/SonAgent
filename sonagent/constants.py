@@ -5,4 +5,4 @@ PROCESS_THROTTLE_SECS = 1  # seconds
 
 DEFAULT_CONFIG = 'config.json'
 
-AGENT_MODE = ['coding', 'chat']
+AGENT_MODE = ['coding', 'chat', 'team']

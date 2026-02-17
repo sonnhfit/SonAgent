@@ -4,12 +4,13 @@ import os
 import time
 from datetime import datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, Dict, Optional
 
 from croniter import croniter
 from schedule import Scheduler
 
 from sonagent.agent import Agent
+from sonagent.agents import MainTeamAgent
 from sonagent.enums.enums import State
 from sonagent.enums.rpcmessagetype import RPCMessageType
 from sonagent.loggers.logging_mixin import LoggingMixin
@@ -78,6 +79,11 @@ class SonBot(LoggingMixin):
             config=self.config,
             conversation_id=self.conversation_id
         )
+        
+        # Initialize MainTeamAgent for team-based processing
+        self.team_agent = None
+        self._init_team_agent()
+        
         self.rpc: RPCManager = RPCManager(self)
 
         def update():
@@ -99,6 +105,23 @@ class SonBot(LoggingMixin):
         IOMsg.rpc = self.rpc
         self.last_skill_scan_time = 0
         self.cached_skill_files = set()
+    
+    def _init_team_agent(self) -> None:
+        """
+        Initialize the MainTeamAgent.
+        """
+        try:
+            # Use user_data_dir from config for database path
+            user_data_dir = self.config.get('user_data_dir', 'user_data')
+            db_path = f"{user_data_dir}/agno.db"
+            self.team_agent = MainTeamAgent(
+                config=self.config,
+                db_path=db_path
+            )
+            logger.info(f"MainTeamAgent initialized successfully with db_path: {db_path}")
+        except Exception as e:
+            logger.error(f"Failed to initialize MainTeamAgent: {e}")
+            self.team_agent = None
 
 
     def scan_and_reload_skills(self) -> None:
@@ -174,21 +197,52 @@ class SonBot(LoggingMixin):
                     ScheduleJob.session.commit()
     
     async def chat(self, input: str) -> str:
-        if self.agent_mode == "chat":
-
+        """
+        Process chat message using team agent.
+        Main agent chỉ chịu trách nhiệm chat thông thường như một trợ lý.
+        
+        Args:
+            input: User input message
+            
+        Returns:
+            Assistant response
+        """
+        # Always use team agent if available
+        if self.team_agent:
+            try:
+                result = await self.team_agent.process_user_request_async(
+                    user_input=input,
+                    conversation_id=self.conversation_id,
+                    user_id="default"
+                )
+                
+                if result.get("success"):
+                    response = result.get("assistant_response", "No response generated")
+                    
+                    # Notify chat event
+                    try:
+                        self.notify_chat_event(response)
+                    except Exception as e:
+                        logger.error(f"Error notifying chat event: {e}")
+                    
+                    return response
+                else:
+                    error_msg = result.get("error", "Unknown error")
+                    logger.error(f"Team agent failed: {error_msg}")
+                    return f"Error: {error_msg}"
+                    
+            except Exception as e:
+                logger.error(f"Error in team agent chat: {e}")
+                return f"Error processing your message: {str(e)}"
+        else:
+            # Fallback to original agent if team agent is not available
+            logger.warning("Team agent not available, falling back to original agent")
             chat = await self.agent.chat(input)
             try:
                 self.notify_chat_event(chat)
             except Exception as e:
                 logger.error(f"Error notifying chat event: {e}")
             return chat
-        else:
-            code_chat = await self.agent.chat_code(input)
-            try:
-                self.notify_chat_event(code_chat)
-            except Exception as e:
-                logger.error(f"Error notifying code chat event: {e}")
-            return code_chat
     
     async def get_mode(self) -> str:
         return self.agent_mode
@@ -237,6 +291,261 @@ class SonBot(LoggingMixin):
     
     def reload_skills(self) -> str:
         return self.agent.reload_skills()
+    
+    # Team agent specific methods
+    async def create_task_via_team(self, content: str, priority: int = 0) -> str:
+        """
+        Create a task using team agent.
+        
+        Args:
+            content: Task description
+            priority: Task priority
+            
+        Returns:
+            Task creation result
+        """
+        if not self.team_agent:
+            return "Team agent not initialized. Please switch to team mode first."
+        
+        try:
+            result = self.team_agent.create_task_tool(
+                content=content,
+                priority=priority
+            )
+            
+            if result.get("success"):
+                task_id = result.get("task_id")
+                return f"Task created successfully with ID: {task_id}"
+            else:
+                error_msg = result.get("error", "Unknown error")
+                return f"Failed to create task: {error_msg}"
+                
+        except Exception as e:
+            logger.error(f"Error creating task via team: {e}")
+            return f"Error creating task: {str(e)}"
+    
+    async def get_tasks_via_team(self, status: Optional[str] = None, limit: int = 10) -> str:
+        """
+        Get tasks using team agent.
+        
+        Args:
+            status: Filter by task status
+            limit: Maximum number of tasks
+            
+        Returns:
+            Formatted task list
+        """
+        if not self.team_agent:
+            return "Team agent not initialized. Please switch to team mode first."
+        
+        try:
+            tasks = self.team_agent.get_tasks_tool(
+                status=status,
+                limit=limit
+            )
+            
+            if not tasks:
+                return "No tasks found."
+            
+            if isinstance(tasks, list) and len(tasks) > 0 and "error" in tasks[0]:
+                return f"Error retrieving tasks: {tasks[0].get('error')}"
+            
+            # Format tasks for display
+            task_list = []
+            for i, task in enumerate(tasks, 1):
+                task_list.append(
+                    f"{i}. ID: {task.get('id')}, "
+                    f"Content: {task.get('content', '')[:50]}..., "
+                    f"Status: {task.get('status')}, "
+                    f"Priority: {task.get('priority')}"
+                )
+            
+            return f"Tasks:\n" + "\n".join(task_list)
+                
+        except Exception as e:
+            logger.error(f"Error getting tasks via team: {e}")
+            return f"Error retrieving tasks: {str(e)}"
+    
+    async def update_task_via_team(self, task_id: int, status: str, 
+                                  result_data: Optional[Dict[str, Any]] = None) -> str:
+        """
+        Update a task using team agent.
+        
+        Args:
+            task_id: Task ID
+            status: New status
+            result_data: Task result data
+            
+        Returns:
+            Update result
+        """
+        if not self.team_agent:
+            return "Team agent not initialized. Please switch to team mode first."
+        
+        try:
+            update_result = self.team_agent.update_task_tool(
+                task_id=task_id,
+                status=status,
+                result=result_data
+            )
+            
+            if update_result.get("success"):
+                return f"Task {task_id} updated successfully to status: {status}"
+            else:
+                error_msg = update_result.get("error", "Unknown error")
+                return f"Failed to update task: {error_msg}"
+                
+        except Exception as e:
+            logger.error(f"Error updating task via team: {e}")
+            return f"Error updating task: {str(e)}"
+    
+    async def get_chat_history_via_team(self, conversation_id: Optional[str] = None, 
+                                       limit: int = 20) -> str:
+        """
+        Get chat history using team agent.
+        
+        Args:
+            conversation_id: Conversation ID (uses current if None)
+            limit: Maximum number of messages
+            
+        Returns:
+            Formatted chat history
+        """
+        if not self.team_agent:
+            return "Team agent not initialized. Please switch to team mode first."
+        
+        try:
+            conv_id = conversation_id or self.conversation_id
+            messages = self.team_agent.get_chat_history_tool(
+                conversation_id=conv_id,
+                limit=limit
+            )
+            
+            if not messages:
+                return f"No chat history found for conversation: {conv_id}"
+            
+            if isinstance(messages, list) and len(messages) > 0 and "error" in messages[0]:
+                return f"Error retrieving chat history: {messages[0].get('error')}"
+            
+            # Format messages for display
+            history = []
+            for i, msg in enumerate(messages, 1):
+                role = msg.get('role', 'unknown').upper()
+                content = msg.get('content', '')[:100]
+                timestamp = msg.get('created_at', '')[:19]
+                history.append(f"{i}. [{role}] {timestamp}: {content}...")
+            
+            return f"Chat History for {conv_id}:\n" + "\n".join(history)
+                
+        except Exception as e:
+            logger.error(f"Error getting chat history via team: {e}")
+            return f"Error retrieving chat history: {str(e)}"
+    
+    async def extract_tom_via_team(self, conversation_text: str, user_id: str = "default") -> str:
+        """
+        Extract Theory of Mind using team agent.
+        
+        Args:
+            conversation_text: Conversation text to analyze
+            user_id: User identifier
+            
+        Returns:
+            TOM analysis result
+        """
+        if not self.team_agent:
+            return "Team agent not initialized. Please switch to team mode first."
+        
+        try:
+            result = self.team_agent.extract_tom_tool(
+                conversation_text=conversation_text,
+                user_id=user_id
+            )
+            
+            if result.get("success"):
+                tom_analysis = result.get("tom_analysis", {})
+                
+                # Format TOM analysis for display
+                analysis_parts = []
+                analysis_parts.append(f"TOM Analysis for user {user_id}:")
+                
+                beliefs = tom_analysis.get("extracted_beliefs", [])
+                if beliefs:
+                    analysis_parts.append(f"Beliefs: {len(beliefs)} found")
+                    for i, belief in enumerate(beliefs[:3], 1):  # Show first 3
+                        analysis_parts.append(f"  {i}. {belief}")
+                
+                intentions = tom_analysis.get("inferred_intentions", [])
+                if intentions:
+                    analysis_parts.append(f"Intentions: {len(intentions)} found")
+                    for i, intent in enumerate(intentions[:3], 1):  # Show first 3
+                        analysis_parts.append(f"  {i}. {intent}")
+                
+                emotional_state = tom_analysis.get("emotional_state", "unknown")
+                analysis_parts.append(f"Emotional State: {emotional_state}")
+                
+                summary = tom_analysis.get("summary", "No summary available")
+                analysis_parts.append(f"Summary: {summary}")
+                
+                return "\n".join(analysis_parts)
+            else:
+                error_msg = result.get("error", "Unknown error")
+                return f"Failed to extract TOM: {error_msg}"
+                
+        except Exception as e:
+            logger.error(f"Error extracting TOM via team: {e}")
+            return f"Error extracting TOM: {str(e)}"
+    
+    async def request_feedback_via_team(self, action: str, context: str) -> str:
+        """
+        Request human feedback using team agent.
+        
+        Args:
+            action: The action requiring feedback
+            context: Context about why feedback is needed
+            
+        Returns:
+            Feedback request message
+        """
+        if not self.team_agent:
+            return "Team agent not initialized. Please switch to team mode first."
+        
+        try:
+            result = self.team_agent.request_feedback_tool(
+                action=action,
+                context=context
+            )
+            
+            if result.get("success"):
+                if result.get("needs_feedback"):
+                    return f"Feedback requested for action: {action}\nContext: {context}\nPlease provide your feedback."
+                else:
+                    return f"Feedback processed for action: {action}"
+            else:
+                error_msg = result.get("error", "Unknown error")
+                return f"Failed to request feedback: {error_msg}"
+                
+        except Exception as e:
+            logger.error(f"Error requesting feedback via team: {e}")
+            return f"Error requesting feedback: {str(e)}"
+    
+    def get_team_agent_info(self) -> Dict[str, Any]:
+        """
+        Get information about the team agent.
+        
+        Returns:
+            Team agent information dictionary
+        """
+        if not self.team_agent:
+            return {"initialized": False, "message": "Team agent not initialized"}
+        
+        return {
+            "initialized": True,
+            "agent_type": "MainTeamAgent",
+            "db_path": self.team_agent.db_path if hasattr(self.team_agent, 'db_path') else "unknown",
+            "team_name": self.team_agent.team.name if hasattr(self.team_agent, 'team') else "unknown",
+            "member_count": len(self.team_agent.team.members) if hasattr(self.team_agent, 'team') else 0,
+            "conversation_id": self.conversation_id
+        }
     
     def cleanup(self) -> None:
         """

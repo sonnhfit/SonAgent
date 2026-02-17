@@ -37,13 +37,13 @@ required = [
     'SQLAlchemy==2.0.46',
     'python-telegram-bot==22.6',
     'arrow==1.3.0',
-    'fastapi==0.108.0',
+    'fastapi==0.129.0',
     'pydantic==2.12.5',
     'typing-extensions>=4.12.0',
     'annotated-types>=0.6.0',
     'typing-inspection>=0.4.2',
-    'uvicorn==0.25.0',
-    'pyjwt==2.8.0',
+    'uvicorn>=0.31.1',
+    'pyjwt[crypto]>=2.10.1',
     'aiofiles==23.2.1',
     'psutil==5.9.7',
     'python-rapidjson==1.14',
@@ -54,8 +54,9 @@ required = [
     'croniter==2.0.3',
     'tabulate==0.9.0',
     'python-multipart==0.0.9',
-    'langchain-openai==1.1.9',
-    'langchain==1.2.10'
+    'agno==2.5.2',
+    'groq==1.0.0',
+    'openai==2.21.0'
 ]
 
 # print(f"Required: {required}")

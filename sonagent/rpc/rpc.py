@@ -192,3 +192,143 @@ class RPC:
     
     async def summerize_dialog(self) -> str:
         return self.sonagent.agent.short_term_memory.summerize_dialog()
+    
+    # Team agent methods
+    async def create_task(self, content: str, priority: int = 0) -> str:
+        """
+        Create a task using team agent.
+        
+        Args:
+            content: Task description
+            priority: Task priority
+            
+        Returns:
+            Task creation result
+        """
+        logger.info(f"[RPC] Creating task: {content[:50]}...")
+        try:
+            result = await self.sonagent.create_task_via_team(content, priority)
+            logger.info(f"[RPC] Task creation completed")
+            return result
+        except Exception as e:
+            logger.error(f"[RPC] Error creating task: {e}", exc_info=True)
+            return f"Error: {str(e)}"
+    
+    async def get_tasks(self, status: str = None, limit: int = 10) -> str:
+        """
+        Get tasks using team agent.
+        
+        Args:
+            status: Filter by task status
+            limit: Maximum number of tasks
+            
+        Returns:
+            Task list
+        """
+        logger.info(f"[RPC] Getting tasks, status={status}, limit={limit}")
+        try:
+            result = await self.sonagent.get_tasks_via_team(status, limit)
+            logger.info(f"[RPC] Task retrieval completed")
+            return result
+        except Exception as e:
+            logger.error(f"[RPC] Error getting tasks: {e}", exc_info=True)
+            return f"Error: {str(e)}"
+    
+    async def update_task(self, task_id: int, status: str, result_data: str = None) -> str:
+        """
+        Update a task using team agent.
+        
+        Args:
+            task_id: Task ID
+            status: New status
+            result_data: Task result data (JSON string)
+            
+        Returns:
+            Update result
+        """
+        logger.info(f"[RPC] Updating task {task_id} to status {status}")
+        try:
+            import json
+            result_dict = json.loads(result_data) if result_data else None
+            result = await self.sonagent.update_task_via_team(task_id, status, result_dict)
+            logger.info(f"[RPC] Task update completed")
+            return result
+        except Exception as e:
+            logger.error(f"[RPC] Error updating task: {e}", exc_info=True)
+            return f"Error: {str(e)}"
+    
+    async def get_chat_history(self, conversation_id: str = None, limit: int = 20) -> str:
+        """
+        Get chat history using team agent.
+        
+        Args:
+            conversation_id: Conversation ID (uses current if None)
+            limit: Maximum number of messages
+            
+        Returns:
+            Chat history
+        """
+        logger.info(f"[RPC] Getting chat history, conversation_id={conversation_id}, limit={limit}")
+        try:
+            result = await self.sonagent.get_chat_history_via_team(conversation_id, limit)
+            logger.info(f"[RPC] Chat history retrieval completed")
+            return result
+        except Exception as e:
+            logger.error(f"[RPC] Error getting chat history: {e}", exc_info=True)
+            return f"Error: {str(e)}"
+    
+    async def extract_tom(self, conversation_text: str, user_id: str = "default") -> str:
+        """
+        Extract Theory of Mind using team agent.
+        
+        Args:
+            conversation_text: Conversation text to analyze
+            user_id: User identifier
+            
+        Returns:
+            TOM analysis result
+        """
+        logger.info(f"[RPC] Extracting TOM for user {user_id}")
+        try:
+            result = await self.sonagent.extract_tom_via_team(conversation_text, user_id)
+            logger.info(f"[RPC] TOM extraction completed")
+            return result
+        except Exception as e:
+            logger.error(f"[RPC] Error extracting TOM: {e}", exc_info=True)
+            return f"Error: {str(e)}"
+    
+    async def request_feedback(self, action: str, context: str) -> str:
+        """
+        Request human feedback using team agent.
+        
+        Args:
+            action: The action requiring feedback
+            context: Context about why feedback is needed
+            
+        Returns:
+            Feedback request message
+        """
+        logger.info(f"[RPC] Requesting feedback for action: {action}")
+        try:
+            result = await self.sonagent.request_feedback_via_team(action, context)
+            logger.info(f"[RPC] Feedback request completed")
+            return result
+        except Exception as e:
+            logger.error(f"[RPC] Error requesting feedback: {e}", exc_info=True)
+            return f"Error: {str(e)}"
+    
+    async def get_team_agent_info(self) -> dict:
+        """
+        Get information about the team agent.
+        
+        Returns:
+            Team agent information
+        """
+        logger.info(f"[RPC] Getting team agent info")
+        try:
+            result = self.sonagent.get_team_agent_info()
+            logger.info(f"[RPC] Team agent info retrieval completed")
+            return result
+        except Exception as e:
+            logger.error(f"[RPC] Error getting team agent info: {e}", exc_info=True)
+            return {"error": str(e), "message": "Failed to get team agent info"}

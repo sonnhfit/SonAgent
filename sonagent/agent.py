@@ -7,9 +7,6 @@ from pathlib import Path
 import yaml
 from croniter import croniter
 
-from sonagent.agent_registry import AgentRegistry
-from sonagent.agents import MainAgent
-from sonagent.brain import AgentBrain
 from sonagent.persistence import Belief, Environment, ScheduleJob, Task
 from sonagent.tools import GitManager, LocalCodeManager
 from sonagent.utils.datetime_helpers import dt_now
@@ -23,40 +20,25 @@ class Agent:
 
         logger.debug(f"Init memory with path {memory_path}.")
         
-        # Initialize agent registry
-        self.agent_registry = AgentRegistry()
-        logger.info("Agent registry initialized")
-
-        # Initialize brain with dynamic skill loading and search
-        # Pass conversation_id if provided, otherwise brain will generate default
-        self.brain = AgentBrain(
-            config=config, 
-            skills_manager=skills,
-            conversation_id=conversation_id
-        )
-        
         # Store conversation_id for reference
-        self.conversation_id = self.brain.conversation_id
+        self.conversation_id = conversation_id or self._generate_conversation_id()
         logger.debug(f"Agent initialized with conversation_id: {self.conversation_id}")
         
         # Keep skills for backward compatibility
         self.skills = skills
         self.skills_dict = {}
         
-        # Initialize main agent
-        self.main_agent = MainAgent(
-            config=config,
-            skills_manager=skills,
-            agent_registry=self.agent_registry
-        )
-        logger.info("Main agent initialized")
+        # Main agent is no longer used - chat functionality is handled by MainTeamAgent
+        self.main_agent = None
+        logger.info("Main agent initialization skipped (using MainTeamAgent instead)")
         
         # Store sub-agents
         self.sub_agents = {}
 
         logger.info("--------- Start skill.---------")
-        # Start skills through brain
-        self.brain.load_and_index_skills()
+        # Load skills
+        self.skills.reload_skills()
+        self.init_skills_dict()
         logger.info("--------- Start Done.---------")
 
         # git manager
@@ -72,9 +54,6 @@ class Agent:
             self.git_manager = LocalCodeManager(
                 local_repo_path=self.config.get("user_data_dir")
             )
-
-        # load skill dict
-        self.init_skills_dict()
 
     def remove_skill(self, skill_name):
         # With dynamic skill loading, we can't remove skills from a YAML file.
@@ -104,8 +83,8 @@ class Agent:
 
     def _reload_skills(self):
         logger.info("--------- reload skill.---------")
-        # Use brain to reload and reindex skills
-        self.brain.reload_skills()
+        # Reload skills
+        self.skills.reload_skills()
         # Also update skills dict for backward compatibility
         self.skills_dict = {}
         self.init_skills_dict()
@@ -242,8 +221,7 @@ class Agent:
 
     async def chat(self, input: str) -> str:
         """
-        Process chat input using ReAct agent by default.
-        Falls back to basic processing if ReAct is not available.
+        Process chat input.
         
         Args:
             input: User input message
@@ -252,33 +230,10 @@ class Agent:
             Response string
         """
         try:
-            # Always try to use ReAct agent first
-            result = self.brain.process_query_with_react(input)
-            
-            # Extract response from ReAct result
-            response = result.get('response', '')
-            
-            # Check for errors - if ReAct failed, fall back to basic processing
-            if 'error' in result and 'LangChain not available' in result['error']:
-                logger.info("ReAct agent not available, falling back to basic processing")
-                result = self.brain.process_query(input)
-                response = result.get('response', '')
-                
-                # If we found relevant skills, mention them
-                relevant_skills = result.get('relevant_skills', [])
-                if relevant_skills:
-                    response += f"\n\nRelevant skills found: {', '.join(relevant_skills)}"
-                    response += "\nYou can use these skills by calling them directly."
-            elif 'error' in result:
-                # Other ReAct errors - include in response but still return what we have
-                response += f"\n\nNote: {result['error']}"
-            
-            # Log intermediate steps if available
-            intermediate_steps = result.get('intermediate_steps', [])
-            if intermediate_steps:
-                logger.debug(f"ReAct agent took {len(intermediate_steps)} steps")
-            
-            return response
+            # MainAgent is no longer used - chat is handled by MainTeamAgent in sonbot.py
+            # This is a fallback implementation for when team agent is not available
+            logger.warning("Using fallback chat implementation - MainTeamAgent should handle chat")
+            return f"I received your message: '{input}'. Chat functionality is now handled by the team agent system. Please ensure MainTeamAgent is initialized."
         except Exception as e:
             logger.error(f"Error in chat: {e}")
             return f"Error processing your message: {str(e)}"
@@ -289,11 +244,13 @@ class Agent:
         return "Chat code is temporarily disabled - memory and brain systems not implemented"
 
     async def clear_short_term_memory(self) -> str:
-        """Clear chat history from brain and start new conversation."""
+        """Clear chat history and start new conversation."""
         try:
-            # Clear chat history using global conversation_id and start new conversation
-            self.brain.clear_chat_history(start_new_conversation=True)
-            return f"Chat history cleared successfully. New conversation started with ID: {self.brain.conversation_id}"
+            # Generate new conversation ID
+            old_id = self.conversation_id
+            self.conversation_id = self._generate_conversation_id()
+            logger.info(f"Cleared chat history and started new conversation: {old_id} -> {self.conversation_id}")
+            return f"Chat history cleared successfully. New conversation started with ID: {self.conversation_id}"
         except Exception as e:
             logger.error(f"Error clearing chat history: {e}")
             return f"Error clearing chat history: {str(e)}"
@@ -344,3 +301,18 @@ class Agent:
             schedule_text += f"Recurrence: {job.is_recurring}\n\n"
 
         return schedule_text
+    
+    def _generate_conversation_id(self) -> str:
+        """
+        Generate a unique conversation ID.
+        
+        Returns:
+            Unique conversation ID string
+        """
+        import time
+        import uuid
+
+        # Generate a UUID and combine with timestamp for uniqueness
+        unique_id = str(uuid.uuid4())[:8]
+        timestamp = int(time.time())
+        return f"conv_{timestamp}_{unique_id}"
