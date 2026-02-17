@@ -5,7 +5,6 @@ import logging
 from abc import abstractmethod
 from typing import Any, Dict, Optional
 
-from sonagent.constants import AGENT_MODE
 from sonagent.rpc.rpc_types import RPCSendMsg
 from sonagent.utils.utils import init_evironment
 
