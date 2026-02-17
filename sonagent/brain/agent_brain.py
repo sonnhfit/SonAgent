@@ -781,30 +781,6 @@ class AgentBrain:
 You have access to the following tools:
 {tools_description}
 
-IMPORTANT INSTRUCTIONS FOR SKILL GENERATION:
-
-When a user asks you to CREATE, GENERATE, or BUILD a new skill, you MUST use one of the SkillBuilder tools:
-
-1. **SkillBuilder_create_simple_skill**: For creating a skill from a natural language description
-   - Use this when the user provides a simple description of what they want
-   - Parameters: skill_name (Python class name), prompt (what the skill should do)
-   - Example: "create a skill to check weather" → call SkillBuilder_create_simple_skill with skill_name="WeatherChecker", prompt="Check the weather in a specified city"
-
-2. **SkillBuilder_generate_skill**: For creating a detailed skill with specific parameters
-   - Use this when you need precise control over the skill structure
-   - Parameters: skill_name, description, method_name (optional), parameters (JSON string), implementation (optional Python code)
-   - Example: For a calculator skill with add/subtract methods, specify the exact parameters
-
-3. **SkillBuilder_test_skill_code**: For testing skill code before deploying
-   - Use this to validate Python skill code
-   - Parameters: code (Python code as string)
-
-IMPORTANT RULES:
-- When calling SkillBuilder tools, provide ALL required arguments as a valid JSON object
-- skill_name must be a valid Python class name (PascalCase, no spaces)
-- Always inform the user after successfully creating a skill that they need to reload skills
-- If skill creation fails, explain the error to the user
-
 Use the following format:
 
 Question: the input question you must answer
@@ -820,7 +796,8 @@ Begin!
 
 Question: {input}
 Thought: {{agent_scratchpad}}"""
-            
+
+            logger.info(f"system message: {system_prompt}")
             # Create ReAct agent using create_agent
             # The create_agent function handles the ReAct pattern internally
             agent = create_agent(
