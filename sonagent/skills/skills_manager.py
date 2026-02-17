@@ -74,21 +74,51 @@ class SkillsManager:
                         except Exception as e:
                             logger.error(f"Failed to copy agent skill {skill_file.name}: {e}")
         else:
-            # Copy all Python files from standard_skills root to user_data/skills (shared skills)
-            for skill_file in standard_skills_dir.iterdir():
-                if skill_file.suffix == '.py' and skill_file.is_file() and not skill_file.name.startswith('__'):
-                    try:
-                        dest_file = self.skills_dir / skill_file.name
-                        shutil.copy2(skill_file, dest_file)
-                        logger.info(f"Copied standard skill: {skill_file.name} to {dest_file}")
-                        copied_count += 1
-                    except Exception as e:
-                        logger.error(f"Failed to copy skill {skill_file.name}: {e}")
+            # Copy all files from standard_skills, preserving directory structure
+            copied_count = self._copy_skills_preserving_structure(standard_skills_dir, self.skills_dir)
         
         if copied_count > 0:
             logger.info(f"Successfully copied {copied_count} standard skill(s) to {self.skills_dir}")
         else:
             logger.info("No standard skills found to copy")
+    
+    def _copy_skills_preserving_structure(self, source_dir: Path, dest_dir: Path) -> int:
+        """
+        Copy skills from source directory to destination directory, preserving structure.
+        
+        Args:
+            source_dir: Source directory containing skills
+            dest_dir: Destination directory to copy skills to
+            
+        Returns:
+            Number of files copied
+        """
+        copied_count = 0
+        
+        # Walk through all files in source directory
+        for item in source_dir.rglob('*'):
+            if item.is_file() and not item.name.startswith('__'):
+                # Skip non-Python and non-markdown files
+                if item.suffix not in ['.py', '.md']:
+                    continue
+                
+                # Calculate relative path from source_dir
+                rel_path = item.relative_to(source_dir)
+                
+                # Create destination path
+                dest_file = dest_dir / rel_path
+                
+                # Create parent directories if they don't exist
+                dest_file.parent.mkdir(parents=True, exist_ok=True)
+                
+                try:
+                    shutil.copy2(item, dest_file)
+                    logger.info(f"Copied skill: {rel_path} to {dest_file}")
+                    copied_count += 1
+                except Exception as e:
+                    logger.error(f"Failed to copy skill {rel_path}: {e}")
+        
+        return copied_count
 
     def scan_skills_directory(self) -> List[str]:
         """Scan the skills directory for Python files and return skill names."""
@@ -103,8 +133,9 @@ class SkillsManager:
                 logger.error(f"Failed to create skills directory {self.skills_dir}: {e}")
                 return skill_names
             
-        for entry in self.skills_dir.iterdir():
-            if entry.suffix == '.py' and entry.is_file() and not entry.name.startswith('__'):
+        # Scan recursively for Python files
+        for entry in self.skills_dir.rglob('*.py'):
+            if entry.is_file() and not entry.name.startswith('__'):
                 # Remove .py extension to get skill name
                 skill_name = entry.stem
                 skill_names.append(skill_name)
@@ -123,9 +154,9 @@ class SkillsManager:
         if not self.skills_dir.exists():
             return llm_skills
         
-        # Scan for .md files (LLM skills)
-        for entry in self.skills_dir.iterdir():
-            if entry.suffix == '.md' and entry.is_file() and not entry.name.startswith('__'):
+        # Scan recursively for .md files (LLM skills)
+        for entry in self.skills_dir.rglob('*.md'):
+            if entry.is_file() and not entry.name.startswith('__'):
                 try:
                     skill_name = entry.stem
                     with open(entry, 'r', encoding='utf-8') as f:
@@ -161,14 +192,16 @@ class SkillsManager:
         
         self.last_scan_time = time.time()
         
-        # Get current skill files
+        # Get current skill files (recursively)
         current_skill_files = set()
         if self.skills_dir.exists():
-            for entry in self.skills_dir.iterdir():
+            for entry in self.skills_dir.rglob('*'):
                 if (entry.suffix in ['.py', '.md'] and 
                     entry.is_file() and 
                     not entry.name.startswith('__')):
-                    current_skill_files.add(entry.name)
+                    # Use relative path to track files in subdirectories
+                    rel_path = entry.relative_to(self.skills_dir)
+                    current_skill_files.add(str(rel_path))
         
         # Check if skills have changed
         if current_skill_files != self.cached_skill_files:
@@ -208,17 +241,49 @@ class SkillsManager:
         
         for skill_name in skill_names:
             logger.debug(f"Loading skill: {skill_name}")
+            
+            # Find the actual file path for this skill
+            skill_file_path = None
+            for entry in self.skills_dir.rglob('*.py'):
+                if entry.stem == skill_name and entry.is_file() and not entry.name.startswith('__'):
+                    skill_file_path = entry
+                    break
+            
+            if skill_file_path:
+                # Calculate the directory containing the skill file
+                skill_dir = skill_file_path.parent
+                # Use the directory containing the skill file as extra_dir
+                skill_extra_dir = str(skill_dir)
+            else:
+                # Fall back to default extra_dir
+                skill_extra_dir = extra_dir
+            
             try:
+                # First try with the skill_name as-is (filename stem)
                 skill = BaseLoading.load_object(
                     object_name=skill_name, 
                     config=self.config, 
                     kwargs=kwargs, 
-                    extra_dir=extra_dir
+                    extra_dir=skill_extra_dir
                 )
                 self.skill_object_list.append(skill)
                 logger.info(f"✓ Successfully loaded skill: {skill_name}")
             except Exception as e:
-                logger.error(f"✗ Failed to load skill {skill_name}: {e}", exc_info=True)
+                # If that fails, try converting snake_case to CamelCase
+                # e.g., "task_management" -> "TaskManagement"
+                try:
+                    # Convert snake_case to CamelCase
+                    camel_case_name = ''.join(word.capitalize() for word in skill_name.split('_'))
+                    skill = BaseLoading.load_object(
+                        object_name=camel_case_name, 
+                        config=self.config, 
+                        kwargs=kwargs, 
+                        extra_dir=skill_extra_dir
+                    )
+                    self.skill_object_list.append(skill)
+                    logger.info(f"✓ Successfully loaded skill: {skill_name} (as {camel_case_name})")
+                except Exception as e2:
+                    logger.error(f"✗ Failed to load skill {skill_name} (tried as {skill_name} and {camel_case_name}): {e2}", exc_info=True)
         
         logger.info(f"Loaded {len(self.skill_object_list)} Python skills successfully")
         
