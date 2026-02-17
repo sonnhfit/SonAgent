@@ -57,17 +57,33 @@ class SkillsManager:
             logger.warning(f"Standard skills directory not found: {standard_skills_dir}")
             return
         
-        # Copy all Python files from standard_skills to user_data/skills (overwrite if exists)
         copied_count = 0
-        for skill_file in standard_skills_dir.iterdir():
-            if skill_file.suffix == '.py' and skill_file.is_file() and not skill_file.name.startswith('__'):
-                try:
-                    dest_file = self.skills_dir / skill_file.name
-                    shutil.copy2(skill_file, dest_file)
-                    logger.info(f"Copied standard skill: {skill_file.name} to {dest_file}")
-                    copied_count += 1
-                except Exception as e:
-                    logger.error(f"Failed to copy skill {skill_file.name}: {e}")
+        
+        # If agent_id is specified, copy from agent-specific standard skills directory
+        if self.agent_id:
+            agent_standard_skills_dir = standard_skills_dir.joinpath(self.agent_id)
+            if agent_standard_skills_dir.exists():
+                # Copy all files (Python and markdown) from agent-specific standard_skills
+                for skill_file in agent_standard_skills_dir.iterdir():
+                    if skill_file.is_file() and not skill_file.name.startswith('__'):
+                        try:
+                            dest_file = self.skills_dir / skill_file.name
+                            shutil.copy2(skill_file, dest_file)
+                            logger.info(f"Copied agent-specific standard skill: {skill_file.name} to {dest_file}")
+                            copied_count += 1
+                        except Exception as e:
+                            logger.error(f"Failed to copy agent skill {skill_file.name}: {e}")
+        else:
+            # Copy all Python files from standard_skills root to user_data/skills (shared skills)
+            for skill_file in standard_skills_dir.iterdir():
+                if skill_file.suffix == '.py' and skill_file.is_file() and not skill_file.name.startswith('__'):
+                    try:
+                        dest_file = self.skills_dir / skill_file.name
+                        shutil.copy2(skill_file, dest_file)
+                        logger.info(f"Copied standard skill: {skill_file.name} to {dest_file}")
+                        copied_count += 1
+                    except Exception as e:
+                        logger.error(f"Failed to copy skill {skill_file.name}: {e}")
         
         if copied_count > 0:
             logger.info(f"Successfully copied {copied_count} standard skill(s) to {self.skills_dir}")

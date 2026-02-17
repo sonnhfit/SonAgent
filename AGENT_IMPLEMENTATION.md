@@ -235,8 +235,14 @@ result = await main_agent.process("List all tasks")
 # Create skills manager for specific agent
 data_agent_skills = SkillsManager(sonagent, agent_id="data_agent")
 
-# Skills will be loaded from: user_data/skills/data_agent/
+# Skills are automatically copied from: sonagent/standard_skills/data_agent/
+# to: user_data/skills/data_agent/
 ```
+
+**Adding New Starter Skills:**
+1. Place skills in `sonagent/standard_skills/{agent_id}/`
+2. Skills are automatically copied to `user_data/skills/{agent_id}/` at startup
+3. Both Python (.py) and markdown (.md) skills are supported
 
 #### Task Management
 
@@ -276,18 +282,24 @@ sonagent/
 │   ├── __init__.py
 │   ├── base_agent.py         # New: Base agent class
 │   └── main_agent.py         # New: Main coordinator agent
-└── skills/
-    └── skills_manager.py     # Updated: Enhanced skills loading
+├── skills/
+│   └── skills_manager.py     # Updated: Enhanced skills loading
+└── standard_skills/          # Updated: Agent starter skills
+    ├── SkillBuilder.py       # Shared starter skills
+    ├── TextPrinter.py
+    └── main_agent/           # New: Main agent starter skills
+        ├── README.md
+        └── TaskManagement.md # Example LLM skill
 
 docs/
 └── AGENT_SYSTEM.md           # New: Comprehensive documentation
 
-user_data/skills/
-├── SkillBuilder.py           # Shared skills
+user_data/skills/             # Runtime (auto-created at startup)
+├── SkillBuilder.py           # Copied from standard_skills/
 ├── TextPrinter.py
-└── main_agent/               # New: Agent-specific skills
-    ├── README.md             # New: Documentation
-    └── TaskManagement.md     # New: LLM skill example
+└── main_agent/               # Copied from standard_skills/main_agent/
+    ├── README.md
+    └── TaskManagement.md
 
 tests/
 └── test_agent_system.py      # New: Agent system tests

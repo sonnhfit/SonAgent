@@ -149,18 +149,34 @@ Guide the agent on how to perform a specific task
 
 ### Skill Organization
 
+Agent-specific skills are automatically copied from `sonagent/standard_skills/{agent_id}/` to `user_data/skills/{agent_id}/` at startup.
+
+**Standard Skills Structure:**
+```
+sonagent/standard_skills/
+├── SkillBuilder.py          # Shared skills (copied to user_data/skills/)
+├── TextPrinter.py
+├── main_agent/              # Main agent starter skills
+│   ├── TaskManagement.md   # LLM skill
+│   └── README.md
+└── {agent_id}/              # Agent-specific starter skills
+```
+
+**User Skills Directory (Runtime):**
 ```
 user_data/skills/
 ├── .gitkeep                 # Shared skills (all agents)
-├── SkillBuilder.py
+├── SkillBuilder.py          # Copied from standard_skills/
 ├── TextPrinter.py
-├── main_agent/              # Main agent skills only
+├── main_agent/              # Main agent skills (copied at startup)
 │   ├── TaskManagement.md   # LLM skill
 │   └── README.md
-└── data_agent/              # Data agent skills only
+└── data_agent/              # Data agent skills (copied at startup)
     ├── DataAnalysis.py     # Python skill
     └── DataProcessing.md   # LLM skill
 ```
+
+**Note:** Skills in `user_data/skills/` are automatically created at startup from the standard skills template. You can add custom skills directly to `user_data/skills/{agent_id}/` or place them in `sonagent/standard_skills/{agent_id}/` to have them copied automatically.
 
 ## Usage Examples
 
