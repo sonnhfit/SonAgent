@@ -6,6 +6,7 @@ from pathlib import Path
 
 import yaml
 from croniter import croniter
+from tabulate import tabulate
 
 from sonagent.persistence import Belief, Environment, ScheduleJob, Task
 from sonagent.tools import GitManager, LocalCodeManager
@@ -298,46 +299,36 @@ class Agent:
         all_tasks = Task.get_all_tasks()
         
         if not all_tasks:
-            return "No tasks found."
+            return "📭 *No tasks found.*"
         
-        # Group tasks by status
-        tasks_by_status = {}
+        # Define status emojis
+        status_emojis = {
+            'pending': '⏳',
+            'in_progress': '⚙️',
+            'done': '✅',
+            'failed': '❌',
+            'cancelled': '🚫'
+        }
+        
+        # Prepare table data with only ID, Content, Status
+        table_data = []
         for task in all_tasks:
-            status = task.status
-            if status not in tasks_by_status:
-                tasks_by_status[status] = []
-            tasks_by_status[status].append(task)
-        
-        task_text = "All Tasks:\n"
-        task_text += "=" * 50 + "\n"
-        
-        # Show tasks by status
-        for status in sorted(tasks_by_status.keys()):
-            task_text += f"\n{status.upper()} Tasks ({len(tasks_by_status[status])}):\n"
-            task_text += "-" * 30 + "\n"
+            # Get status emoji
+            emoji = status_emojis.get(task.status, '📝')
             
-            for task in tasks_by_status[status]:
-                # Format dates
-                created_str = task.created_at.strftime("%Y-%m-%d %H:%M") if task.created_at else "N/A"
-                started_str = task.started_at.strftime("%Y-%m-%d %H:%M") if task.started_at else "Not started"
-                completed_str = task.completed_at.strftime("%Y-%m-%d %H:%M") if task.completed_at else "Not completed"
-                
-                task_text += f"ID: {task.id}\n"
-                task_text += f"Content: {task.content[:100]}{'...' if len(task.content) > 100 else ''}\n"
-                task_text += f"Priority: {task.priority} | Retry: {task.retry_count}/{task.max_retries}\n"
-                task_text += f"Created: {created_str} | Started: {started_str} | Completed: {completed_str}\n"
-                
-                if task.agent_id:
-                    task_text += f"Agent: {task.agent_id}\n"
-                
-                if task.scheduled_at:
-                    scheduled_str = task.scheduled_at.strftime("%Y-%m-%d %H:%M") if task.scheduled_at else "N/A"
-                    task_text += f"Scheduled: {scheduled_str}\n"
-                
-                if task.cron_expression:
-                    task_text += f"Cron: {task.cron_expression}\n"
-                
-                task_text += "\n"
+            # Format content (truncate)
+            content = task.content[:50] + ('...' if len(task.content) > 50 else '')
+            
+            # Add to table
+            table_data.append([
+                f"{emoji} #{task.id}",
+                content,
+                task.status.replace('_', ' ').title()
+            ])
+        
+        # Create table
+        headers = ["ID", "Content", "Status"]
+        table = tabulate(table_data, headers=headers, tablefmt="simple")
         
         # Add summary
         total_tasks = len(all_tasks)
@@ -347,11 +338,34 @@ class Agent:
         failed = len([t for t in all_tasks if t.status == 'failed'])
         cancelled = len([t for t in all_tasks if t.status == 'cancelled'])
         
-        task_text += "=" * 50 + "\n"
-        task_text += f"Summary: Total: {total_tasks} | Pending: {pending} | In Progress: {in_progress} | "
-        task_text += f"Done: {done} | Failed: {failed} | Cancelled: {cancelled}\n"
+        summary_table = [
+            ["Total", total_tasks],
+            ["In Progress", in_progress],
+            ["Pending", pending],
+            ["Completed", done],
+            ["Failed", failed],
+            ["Cancelled", cancelled]
+        ]
         
-        return task_text
+        summary = tabulate(summary_table, headers=["Status", "Count"], tablefmt="simple")
+        
+        # Calculate completion rate
+        completion_rate = (done / total_tasks * 100) if total_tasks > 0 else 0
+        
+        # Build final message
+        from datetime import datetime
+        message = (
+            f"📋 *Task Overview*\n"
+            f"═══════════════════════\n\n"
+            f"```\n{table}\n```\n\n"
+            f"📊 *Task Summary*\n"
+            f"═══════════════════════\n\n"
+            f"```\n{summary}\n```\n\n"
+            f"📈 *Completion Rate:* `{completion_rate:.1f}%`\n"
+            f"🕒 *Last Updated:* `{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}`"
+        )
+        
+        return message
 
     async def show_schedule(self) -> str:
         schedule_jobs = ScheduleJob.get_all_schedule_not_completed_jobs()

@@ -364,37 +364,91 @@ class SonBot(LoggingMixin):
             )
             
             if not tasks:
-                return "No tasks found."
+                return "📭 *No tasks found.*"
             
             if isinstance(tasks, list) and len(tasks) > 0 and "error" in tasks[0]:
-                return f"Error retrieving tasks: {tasks[0].get('error')}"
+                return f"❌ *Error retrieving tasks:* `{tasks[0].get('error')}`"
             
-            # Format tasks for Telegram display - escape Markdown characters
-            task_list = []
-            for i, task in enumerate(tasks, 1):
-                # Escape Markdown characters in task content
-                content = task.get('content', '')
-                # Escape special Markdown characters: * _ ` [ ] ( )
-                escaped_content = content.replace('*', '\\*').replace('_', '\\_').replace('`', '\\`')
-                escaped_content = escaped_content.replace('[', '\\[').replace(']', '\\]')
-                escaped_content = escaped_content.replace('(', '\\(').replace(')', '\\)')
-                
-                # Truncate for display
-                display_content = escaped_content[:50] + ('...' if len(escaped_content) > 50 else '')
-                
-                task_list.append(
-                    f"{i}. *ID:* `{task.get('id')}`\n"
-                    f"   *Content:* {display_content}\n"
-                    f"   *Status:* `{task.get('status')}`\n"
-                    f"   *Priority:* `{task.get('priority')}`"
-                )
+            # Define status emojis
+            status_emojis = {
+                'pending': '⏳',
+                'in_progress': '⚙️',
+                'done': '✅',
+                'failed': '❌',
+                'cancelled': '🚫'
+            }
             
-            header = "📋 *Your Tasks:*\n\n"
-            return header + "\n\n".join(task_list)
+            # Filter tasks by status if specified
+            if status:
+                filtered_tasks = [t for t in tasks if t.get('status') == status]
+                if not filtered_tasks:
+                    return f"📭 *No tasks found with status:* `{status}`"
+                tasks_to_display = filtered_tasks
+            else:
+                tasks_to_display = tasks
+            
+            # Prepare table data with only ID, Content, Status
+            table_data = []
+            for task in tasks_to_display:
+                # Get status emoji
+                emoji = status_emojis.get(task.get('status', 'pending'), '📝')
+                
+                # Format content (truncate)
+                content = task.get('content', 'No content')
+                content = content[:50] + ('...' if len(content) > 50 else '')
+                
+                # Add to table
+                table_data.append([
+                    f"{emoji} #{task.get('id', 'N/A')}",
+                    content,
+                    task.get('status', 'pending').replace('_', ' ').title()
+                ])
+            
+            # Create table
+            from tabulate import tabulate
+            headers = ["ID", "Content", "Status"]
+            table = tabulate(table_data, headers=headers, tablefmt="simple")
+            
+            # Add summary
+            total_tasks = len(tasks)
+            pending = len([t for t in tasks if t.get('status') == 'pending'])
+            in_progress = len([t for t in tasks if t.get('status') == 'in_progress'])
+            done = len([t for t in tasks if t.get('status') == 'done'])
+            failed = len([t for t in tasks if t.get('status') == 'failed'])
+            cancelled = len([t for t in tasks if t.get('status') == 'cancelled'])
+            
+            summary_table = [
+                ["Total", total_tasks],
+                ["In Progress", in_progress],
+                ["Pending", pending],
+                ["Completed", done],
+                ["Failed", failed],
+                ["Cancelled", cancelled]
+            ]
+            
+            summary = tabulate(summary_table, headers=["Status", "Count"], tablefmt="simple")
+            
+            # Calculate completion rate
+            completion_rate = (done / total_tasks * 100) if total_tasks > 0 else 0
+            
+            # Build final message
+            from datetime import datetime
+            message = (
+                f"📋 *Task Overview*\n"
+                f"═══════════════════════\n\n"
+                f"```\n{table}\n```\n\n"
+                f"📊 *Task Summary*\n"
+                f"═══════════════════════\n\n"
+                f"```\n{summary}\n```\n\n"
+                f"📈 *Completion Rate:* `{completion_rate:.1f}%`\n"
+                f"🕒 *Last Updated:* `{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}`"
+            )
+            
+            return message
                 
         except Exception as e:
             logger.error(f"Error getting tasks via team: {e}")
-            return f"Error retrieving tasks: {str(e)}"
+            return f"❌ *Error retrieving tasks:* `{str(e)[:100]}`"
     
     async def update_task_via_team(self, task_id: int, status: str, 
                                   result_data: Optional[Dict[str, Any]] = None) -> str:
