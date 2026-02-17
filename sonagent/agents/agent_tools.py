@@ -149,14 +149,23 @@ def get_tasks_tool(status: Optional[str] = None,
         return [{"error": str(e), "message": "Failed to retrieve tasks"}]
 
 
-def update_task_tool(task_id: int, status: Optional[str] = None,
+def update_task_tool(task_id: int, 
+                    content: Optional[str] = None,
+                    status: Optional[str] = None,
+                    priority: Optional[int] = None,
+                    cron_expression: Optional[str] = None,
+                    started_at: Optional[datetime] = None,
                     result: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
     """
-    Update a task's status or result.
+    Update a task's fields.
     
     Args:
         task_id: ID of the task to update
-        status: New status (in_progress, done, failed, cancelled)
+        content: New task content/description
+        status: New status (pending, in_progress, done, failed, cancelled)
+        priority: New priority (0=low, 1=medium, 2=high)
+        cron_expression: New cron expression for scheduled tasks
+        started_at: New start time (datetime object)
         result: Task result data
         
     Returns:
@@ -165,6 +174,23 @@ def update_task_tool(task_id: int, status: Optional[str] = None,
     try:
         task = Task.get_task_by_id(task_id)
         
+        # Update content if provided
+        if content is not None:
+            task.content = content
+        
+        # Update priority if provided
+        if priority is not None:
+            task.priority = priority
+        
+        # Update cron expression if provided
+        if cron_expression is not None:
+            task.cron_expression = cron_expression
+        
+        # Update started_at if provided
+        if started_at is not None:
+            task.started_at = started_at
+        
+        # Update status if provided (with special handling for status transitions)
         if status:
             if status == "in_progress":
                 task.start()
@@ -176,22 +202,104 @@ def update_task_tool(task_id: int, status: Optional[str] = None,
                 task.cancel()
             else:
                 task.status = status
-                Task.session.commit()
         
-        logger.info(f"Task updated: ID={task_id}, Status={status}")
+        # Update result if provided (and not already set by status methods)
+        if result is not None and task.result != result:
+            task.result = result
+        
+        # Commit all changes
+        Task.session.commit()
+        
+        logger.info(f"Task updated: ID={task_id}, Content updated={content is not None}, "
+                   f"Status={status}, Priority={priority}, Cron={cron_expression is not None}")
+        
+        # Build response message
+        updates = []
+        if content is not None:
+            updates.append("content")
+        if status is not None:
+            updates.append("status")
+        if priority is not None:
+            updates.append("priority")
+        if cron_expression is not None:
+            updates.append("cron_expression")
+        if started_at is not None:
+            updates.append("started_at")
+        if result is not None:
+            updates.append("result")
+        
+        update_message = f"Updated fields: {', '.join(updates)}" if updates else "No fields updated"
         
         return {
             "success": True,
             "task_id": task.id,
+            "content": task.content,
             "status": task.status,
-            "message": f"Task {task_id} updated successfully"
+            "priority": task.priority,
+            "cron_expression": task.cron_expression,
+            "started_at": task.started_at.isoformat() if task.started_at else None,
+            "result": task.result,
+            "message": f"Task {task_id} updated successfully. {update_message}"
         }
     except Exception as e:
-        logger.error(f"Error updating task: {e}")
+        logger.error(f"Error updating task: {e}", exc_info=True)
+        # Try to rollback the session to clean up
+        try:
+            Task.session.rollback()
+        except:
+            pass
+        
         return {
             "success": False,
             "error": str(e),
             "message": f"Failed to update task {task_id}"
+        }
+
+
+def delete_task_tool(task_id: int) -> Dict[str, Any]:
+    """
+    Delete a task from the system.
+    
+    Args:
+        task_id: ID of the task to delete
+        
+    Returns:
+        Dictionary with deletion information
+    """
+    try:
+        task = Task.get_task_by_id(task_id)
+        
+        # Store task info before deletion for response
+        task_info = {
+            "id": task.id,
+            "content": task.content,
+            "status": task.status,
+            "priority": task.priority
+        }
+        
+        # Delete the task
+        Task.session.delete(task)
+        Task.session.commit()
+        
+        logger.info(f"Task deleted: ID={task_id}, Content={task_info['content'][:50]}...")
+        
+        return {
+            "success": True,
+            "deleted_task": task_info,
+            "message": f"Task {task_id} deleted successfully"
+        }
+    except Exception as e:
+        logger.error(f"Error deleting task: {e}", exc_info=True)
+        # Try to rollback the session to clean up
+        try:
+            Task.session.rollback()
+        except:
+            pass
+        
+        return {
+            "success": False,
+            "error": str(e),
+            "message": f"Failed to delete task {task_id}"
         }
 
 

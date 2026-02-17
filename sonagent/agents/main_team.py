@@ -21,6 +21,7 @@ from sonagent.agents.agent_tools import (
     create_task_tool,
     get_tasks_tool,
     update_task_tool,
+    delete_task_tool,
     save_chat_message_tool,
     get_chat_history_tool,
     extract_tom_tool,
@@ -83,7 +84,8 @@ class MainTeamAgent:
             tools=[
                 create_task_tool,
                 get_tasks_tool,
-                update_task_tool
+                update_task_tool,
+                delete_task_tool
             ],
             instructions="""
             You are responsible for task management. When users request tasks:
@@ -217,154 +219,6 @@ class MainTeamAgent:
             show_members_responses=True
         )
     
-    # Tool definitions for agents
-    
-    @tool()
-    def create_task_tool(self, content: str, priority: int = 0, 
-                        agent_id: str = "main_team") -> Dict[str, Any]:
-        """
-        Create a new task in the system.
-        
-        Args:
-            content: Task description/content
-            priority: Task priority (0=low, 1=medium, 2=high)
-            agent_id: ID of the agent creating the task
-            
-        Returns:
-            Dictionary with task information
-        """
-        try:
-            task = Task.create_task(
-                agent_id=agent_id,
-                content=content,
-                priority=priority
-            )
-            
-            logger.info(f"Task created: ID={task.id}, Content={content[:50]}...")
-            
-            # Create a detailed confirmation message
-            created_time = task.created_at.strftime('%Y-%m-%d %H:%M:%S') if task.created_at else 'N/A'
-            confirmation_msg = (
-                f"✅ Task đã được tạo thành công!\n\n"
-                f"📋 Chi tiết task:\n"
-                f"- ID: {task.id}\n"
-                f"- Nội dung: {task.content}\n"
-                f"- Trạng thái: {task.status}\n"
-                f"- Độ ưu tiên: {task.priority}\n"
-                f"- Thời gian tạo: {created_time}\n\n"
-                f"Task đã được lưu vào database và sẽ được xử lý theo lịch trình."
-            )
-            
-            return {
-                "success": True,
-                "task_id": task.id,
-                "content": task.content,
-                "status": task.status,
-                "priority": task.priority,
-                "created_at": task.created_at.isoformat() if task.created_at else None,
-                "message": confirmation_msg
-            }
-        except Exception as e:
-            logger.error(f"Error creating task: {e}")
-            return {
-                "success": False,
-                "error": str(e),
-                "message": "Failed to create task"
-            }
-    
-    @tool()
-    def get_tasks_tool(self, status: Optional[str] = None, 
-                      agent_id: Optional[str] = None,
-                      limit: int = 10) -> List[Dict[str, Any]]:
-        """
-        Get tasks from the system with optional filters.
-        
-        Args:
-            status: Filter by task status (pending, in_progress, done, failed, cancelled)
-            agent_id: Filter by agent ID
-            limit: Maximum number of tasks to return
-            
-        Returns:
-            List of task dictionaries
-        """
-        try:
-            tasks = []
-            
-            if status:
-                tasks = Task.get_tasks_by_status(status)
-            elif agent_id:
-                tasks = Task.get_tasks_by_agent_id(agent_id)
-            else:
-                tasks = Task.get_all_tasks()
-            
-            # Apply limit
-            tasks = tasks[:limit]
-            
-            result = []
-            for task in tasks:
-                result.append({
-                    "id": task.id,
-                    "agent_id": task.agent_id,
-                    "content": task.content,
-                    "status": task.status,
-                    "priority": task.priority,
-                    "created_at": task.created_at.isoformat() if task.created_at else None,
-                    "started_at": task.started_at.isoformat() if task.started_at else None,
-                    "completed_at": task.completed_at.isoformat() if task.completed_at else None
-                })
-            
-            logger.info(f"Retrieved {len(result)} tasks")
-            return result
-            
-        except Exception as e:
-            logger.error(f"Error getting tasks: {e}")
-            return [{"error": str(e), "message": "Failed to retrieve tasks"}]
-    
-    @tool(requires_confirmation=True)
-    def update_task_tool(self, task_id: int, status: Optional[str] = None,
-                        result: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
-        """
-        Update a task's status or result.
-        
-        Args:
-            task_id: ID of the task to update
-            status: New status (in_progress, done, failed, cancelled)
-            result: Task result data
-            
-        Returns:
-            Dictionary with update information
-        """
-        try:
-            task = Task.get_task_by_id(task_id)
-            
-            if status:
-                if status == "in_progress":
-                    task.start()
-                elif status == "done":
-                    task.complete(result)
-                elif status == "failed":
-                    task.fail(result.get("error") if result else None)
-                elif status == "cancelled":
-                    task.cancel()
-                else:
-                    task.status = status
-                    Task.session.commit()
-            
-            logger.info(f"Task updated: ID={task_id}, Status={status}")
-            
-            return {
-                "success": True,
-                "task_id": task.id,
-                "status": task.status,
-                "message": f"Task {task_id} updated successfully"
-            }
-        except Exception as e:
-            logger.error(f"Error updating task: {e}")
-            return {
-                "success": False,
-                "error": str(e),
-                "message": f"Failed to update task {task_id}"
-            }
     
     def _save_chat_message(self, conversation_id: str, role: str, 
                           content: str, metadata: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
