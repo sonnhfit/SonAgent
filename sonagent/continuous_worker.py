@@ -30,17 +30,20 @@ class ContinuousTaskWorker:
     - Periodic skill reloading
     """
     
-    def __init__(self, agent_registry: AgentRegistry):
+    def __init__(self, agent_registry: AgentRegistry, check_interval: int = 5):
         """
         Initialize the continuous task worker.
         
         Args:
             agent_registry: Agent registry instance
+            check_interval: Interval in seconds between worker loop iterations (default: 5)
         """
         self.agent_registry = agent_registry
         self.running = False
         self.worker_thread = None
         self.tasks = {}  # task_id -> asyncio.Task
+        self.check_interval = check_interval
+        self._last_cleanup = dt_now()  # Initialize cleanup timestamp
         
         logger.info("Continuous Task Worker initialized")
     
@@ -94,7 +97,7 @@ class ContinuousTaskWorker:
                 await self._periodic_maintenance()
                 
                 # Sleep before next iteration
-                await asyncio.sleep(5)  # Check every 5 seconds
+                await asyncio.sleep(self.check_interval)
                 
             except Exception as e:
                 logger.error(f"Error in worker loop: {e}", exc_info=True)
@@ -188,13 +191,10 @@ class ContinuousTaskWorker:
     async def _periodic_maintenance(self) -> None:
         """Perform periodic maintenance tasks."""
         try:
-            # Clear old messages from registry
-            if hasattr(self, '_last_cleanup'):
-                time_since_cleanup = (dt_now() - self._last_cleanup).total_seconds()
-                if time_since_cleanup > 3600:  # Cleanup every hour
-                    self.agent_registry.clear_old_messages(days=7)
-                    self._last_cleanup = dt_now()
-            else:
+            # Clear old messages from registry every hour
+            time_since_cleanup = (dt_now() - self._last_cleanup).total_seconds()
+            if time_since_cleanup > 3600:  # Cleanup every hour
+                self.agent_registry.clear_old_messages(days=7)
                 self._last_cleanup = dt_now()
             
             # Reload skills periodically for all agents
@@ -218,12 +218,13 @@ class ContinuousTaskWorker:
 _worker_instance: Optional[ContinuousTaskWorker] = None
 
 
-def start_continuous_worker(agent_registry: AgentRegistry) -> ContinuousTaskWorker:
+def start_continuous_worker(agent_registry: AgentRegistry, check_interval: int = 5) -> ContinuousTaskWorker:
     """
     Start the global continuous task worker.
     
     Args:
         agent_registry: Agent registry instance
+        check_interval: Interval in seconds between worker loop iterations (default: 5)
         
     Returns:
         Worker instance
@@ -231,7 +232,7 @@ def start_continuous_worker(agent_registry: AgentRegistry) -> ContinuousTaskWork
     global _worker_instance
     
     if _worker_instance is None:
-        _worker_instance = ContinuousTaskWorker(agent_registry)
+        _worker_instance = ContinuousTaskWorker(agent_registry, check_interval)
     
     _worker_instance.start()
     return _worker_instance

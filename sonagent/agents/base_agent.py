@@ -114,23 +114,23 @@ class BaseAgent(ABC):
             )
         logger.debug(f"Agent {self.agent_id} status updated to: {status}")
     
-    async def chat(self, input: str) -> str:
+    async def chat(self, user_input: str) -> str:
         """
         Process chat input using agent's brain.
         
         Args:
-            input: User input message
+            user_input: User input message
             
         Returns:
             Response string
         """
         try:
-            result = self.brain.process_query_with_react(input)
+            result = self.brain.process_query_with_react(user_input)
             response = result.get('response', '')
             
             if 'error' in result and 'LangChain not available' in result['error']:
                 logger.info("ReAct agent not available, falling back to basic processing")
-                result = self.brain.process_query(input)
+                result = self.brain.process_query(user_input)
                 response = result.get('response', '')
             elif 'error' in result:
                 response += f"\n\nNote: {result['error']}"
