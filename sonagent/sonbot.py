@@ -110,7 +110,10 @@ class SonBot(LoggingMixin):
         try:
             # Use the same database as the main agent (agentdb.sqlite)
             # Get the database URL from args or use default
-            agentdb = self.args.get('agentdb', "sqlite:///user_data/agentdb.db")
+            agentdb = self.args.get('agentdb') if self.args else None
+            if not agentdb:
+                agentdb = "sqlite:///user_data/agentdb.db"
+                logger.info(f"Using default agentdb: {agentdb}")
             
             # Extract the file path from the URL for MainTeamAgent
             # sqlite:///user_data/agentdb.sqlite -> user_data/agentdb.sqlite
@@ -120,12 +123,49 @@ class SonBot(LoggingMixin):
                 # Fallback to default path
             user_data_dir = self.config.get('user_data_dir', 'user_data')
             db_path = f"{user_data_dir}/agentdb.db"
+            
+            # Clear team registry on startup using utility function
+            try:
+                from sonagent.utils.utils import init_team_registry
+                init_team_registry(agentdb)
+            except Exception as reg_error:
+                logger.warning(f"Could not clear team registry on startup: {reg_error}")
                 
             self.team_agent = MainTeamAgent(
                 config=self.config,
                 db_path=db_path
             )
             logger.info(f"MainTeamAgent initialized successfully with db_path: {db_path}")
+            
+            # Register the team in the registry using utility function
+            try:
+                from sonagent.utils.utils import register_team_in_registry
+                from sonagent.utils.datetime_helpers import dt_now
+                
+                # Register the main team
+                result = register_team_in_registry(
+                    team_name="Main Team",
+                    description="Main team agent coordinating multiple specialized agents for handling user requests via RPC with human feedback integration and persistent chat history.",
+                    db_url=agentdb,
+                    config={
+                        "team_type": "main",
+                        "agent_count": 4,  # assistant, task, tom, feedback agents
+                        "mode": "coordinate"
+                    },
+                    team_metadata={
+                        "initialized_at": dt_now().isoformat(),
+                        "conversation_id": self.conversation_id
+                    }
+                )
+                
+                if result.get("success"):
+                    logger.info(f"Registered team in registry: {result.get('team_name')}")
+                else:
+                    logger.warning(f"Could not register team in registry: {result.get('error')}")
+                    
+            except Exception as reg_error:
+                logger.warning(f"Could not register team in registry: {reg_error}")
+                
         except Exception as e:
             logger.error(f"Failed to initialize MainTeamAgent: {e}")
             self.team_agent = None

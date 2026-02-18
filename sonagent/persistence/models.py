@@ -12,6 +12,7 @@ from sonagent.persistence.chat_models import ChatMessage, Conversation
 from sonagent.persistence.environment_models import Environment
 from sonagent.persistence.migrations import check_migrate
 from sonagent.persistence.tasks_models import Task
+from sonagent.persistence.team_registry_models import TeamRegistry
 
 logger = logging.getLogger(__name__)
 
@@ -59,6 +60,9 @@ def init_db(db_url: str) -> None:
 
     Conversation.session = scoped_session(sessionmaker(bind=engine, autoflush=False))
     Conversation.query = Conversation.session.query_property()
+
+    TeamRegistry.session = scoped_session(sessionmaker(bind=engine, autoflush=False))
+    TeamRegistry.query = TeamRegistry.session.query_property()
 
     
     try:
