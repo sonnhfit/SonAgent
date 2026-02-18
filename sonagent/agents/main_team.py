@@ -45,6 +45,8 @@ from sonagent.agents.worker_agent_tools import (
     update_target_tool
 )
 
+from sonagent.agents.dev_team import dev_team
+
 
 logger = logging.getLogger(__name__)
 
@@ -362,7 +364,8 @@ class MainTeamAgent:
                 self.assistant_agent,
                 self.task_agent,
                 self.tom_agent,
-                self.feedback_agent
+                self.feedback_agent,
+                dev_team
             ],
             mode=TeamMode.coordinate,
             instructions=f"""
@@ -376,6 +379,7 @@ class MainTeamAgent:
             2. For understanding user's mental state, beliefs, want, objective, target intentions: delegate to TOM Agent for better understand 
             3. When user feedback or approval is needed: delegate to Feedback Agent
             4. For general queries and coordination: handle with Assistant Agent or delegate appropriately
+            5. For development-related requests (code, features, bugs, GitHub issues, deployment): delegate to Dev Team
 
             IMPORTANT: When user asks for a reminder or to do something at a specific time:
             - ALWAYS delegate to Task Agent to create a task

@@ -115,7 +115,7 @@ class WorkerTeamAgent:
             7. If a task is too big, break it down and add the subtasks to the task list.
             8. Delegate development tasks to the Development Team
             9. Use update_task_execution_data_tool to update task status when work is completed
-            10. if something relevent with github -> dev tean 
+            10. if something relevent with github ->Delegate to dev tean 
             
             Key concepts:
             - Short-term goals: Immediate tasks with quick returns
