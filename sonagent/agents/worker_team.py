@@ -93,9 +93,6 @@ class WorkerTeamAgent:
                 get_task_list_tool,
                 get_targets_tool,
                 update_task_execution_data_tool,
-                add_target_tool,
-                delete_target_tool,
-                update_target_tool,
                 send_rpc_message_tool,
             ],
             instructions="""
@@ -108,6 +105,7 @@ class WorkerTeamAgent:
             4. Execute tasks and track token usage
             5. Make trade-off decisions between short-term and long-term objectives
             6. Send notifications to users via RPC when tasks are completed or need attention
+            7. If a task is too big, break it down and add the subtasks to the task list.
             
             Key concepts:
             - Short-term goals: Immediate tasks with quick returns
