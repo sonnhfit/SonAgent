@@ -56,7 +56,14 @@ required = [
     'python-multipart==0.0.9',
     'agno==2.5.2',
     'groq==1.0.0',
-    'openai==2.21.0'
+    'openai==2.21.0',
+    # Research Team dependencies
+    'arxiv==2.4.0',
+    'pypdf==6.7.1',
+    'wikipedia==1.4.0',
+    'beautifulsoup4==4.14.3',
+    'youtube_transcript_api==1.2.4',
+    'yfinance==1.2.0',
 ]
 
 # print(f"Required: {required}")

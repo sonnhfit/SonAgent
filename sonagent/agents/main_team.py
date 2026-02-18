@@ -46,6 +46,7 @@ from sonagent.agents.worker_agent_tools import (
 )
 
 from sonagent.agents.dev_team import dev_team
+from sonagent.agents.research_team import research_team
 
 
 logger = logging.getLogger(__name__)
@@ -365,7 +366,8 @@ class MainTeamAgent:
                 self.task_agent,
                 self.tom_agent,
                 self.feedback_agent,
-                dev_team
+                dev_team,
+                research_team
             ],
             mode=TeamMode.coordinate,
             instructions=f"""
@@ -380,13 +382,22 @@ class MainTeamAgent:
             3. When user feedback or approval is needed: delegate to Feedback Agent
             4. For general queries and coordination: handle with Assistant Agent or delegate appropriately
             5. For development-related requests (code, features, bugs, GitHub issues, deployment): delegate to Dev Team
+            6. For research-related requests: delegate to Research Team
+               - Academic papers, scientific research, literature review → Research Team (uses ArXiv)
+               - General knowledge, facts, definitions, history, background → Research Team (uses Wikipedia)
+               - Tech news, startup trends, Hacker News stories, community discussions → Research Team (uses HackerNews)
+               - Reading/parsing a specific website or URL → Research Team (uses WebsiteTools)
+               - YouTube video summary, captions, or analysis → Research Team (uses YouTubeTools)
+               - Stock prices, financial data, company fundamentals, analyst recommendations → Research Team (uses YFinance)
+               - Market research, technology landscape, competitive analysis → Research Team
+               - Examples: "research...", "find papers about...", "what is...", "summarize this video...", "stock price of...", "read this page..."
 
             IMPORTANT: When user asks for a reminder or to do something at a specific time:
             - ALWAYS delegate to Task Agent to create a task
             - DO NOT use update_user_memory for reminder requests
             - Task Agent will create a proper task with schedule information
             - Your target is same user target we work for that 
-            - It’s necessary to clearly distinguish between goals and tasks in order to route them to the Tom agent or the Task agent.
+            - It's necessary to clearly distinguish between goals and tasks in order to route them to the Tom agent or the Task agent.
 
             Always:
             - Save important conversations to chat history
