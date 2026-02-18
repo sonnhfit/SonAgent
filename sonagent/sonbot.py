@@ -57,6 +57,12 @@ class SonBot(LoggingMixin):
         if memory_url is None:
             memory_url = "./user_data/memory"
 
+        try:
+            init_db(agentdb)
+        except Exception as e:
+            logger.error(f"Error initializing database: {e}")
+            raise e
+
         # Initialize MainTeamAgent for team-based processing
         self.team_agent = None
         self._init_team_agent()
@@ -64,12 +70,6 @@ class SonBot(LoggingMixin):
         # Initialize WorkerTeamAgent for task prioritization and execution
         self.worker_team_agent = None
         self._init_worker_team_agent()
-
-        try:
-            init_db(agentdb)
-        except Exception as e:
-            logger.error(f"Error initializing database: {e}")
-            raise e
 
         # init env 
         init_evironment()

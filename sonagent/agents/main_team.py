@@ -34,8 +34,6 @@ from sonagent.agents.agent_tools import (
     get_tasks_tool,
     update_task_tool,
     delete_task_tool,
-    extract_tom_tool,
-    analyze_intent_tool,
     request_feedback_tool,
     process_feedback_tool
 )

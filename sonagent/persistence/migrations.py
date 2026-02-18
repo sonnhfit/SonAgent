@@ -26,7 +26,7 @@ def check_migrate(engine: Engine, decl_base: DeclarativeBase, previous_tables: L
                 if column_name not in existing_columns:
                     # Column is missing, add it
                     logger.info(f"Adding missing column '{column_name}' to table '{table_name}'")
-                    add_column_sql = get_add_column_sql(table_name, column)
+                    add_column_sql = get_add_column_sql(engine, table_name, column)
                     try:
                         with engine.begin() as conn:
                             conn.execute(text(add_column_sql))
@@ -39,11 +39,15 @@ def check_migrate(engine: Engine, decl_base: DeclarativeBase, previous_tables: L
         logger.info("Database migration finished.")
 
 
-def get_add_column_sql(table_name: str, column: Column) -> str:
+def get_add_column_sql(engine: Engine, table_name: str, column: Column) -> str:
     """
     Generate SQL to add a column to a table
     """
-    column_type = column.type.compile(column.type.dialect)
+    # Get the dialect from the engine
+    dialect = engine.dialect
+    
+    # Compile the column type using the dialect
+    column_type = column.type.compile(dialect=dialect)
     
     # Build column definition
     column_def = f"{column.name} {column_type}"
