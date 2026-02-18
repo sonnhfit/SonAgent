@@ -39,7 +39,7 @@ pip install sonagent
 ```
 sonagent init
 ```
-- 2.2 Please fill in the API key of openai, telegram, and github if you want the agent to create a pull request in the `user_data/config.json` file
+- 2.2 Please fill in the API key of openai, telegram, and github if you want the agent to create a pull request in the `user_data/config.json` file. You can also configure the timezone for the agent (default is UTC).
 - 2.3 run agent with file path param from step 2.1
 
 **Note:** On first run, standard skills (TextPrinter, WeatherAPISkill, HanoiWeatherChecker, SkillBuilder) are automatically copied to `user_data/skills/`. You can customize or remove these as needed. See [Standard Skills Documentation](docs/STANDARD_SKILLS.md) for more details.
@@ -56,7 +56,32 @@ for example:
 ```
 sonagent run --config user_data/config.json --agentdb sqlite:///user_data/agentdb.db --memory-url user_data/memory --datadir user_data --user-data-dir user_data --log-level info
 ```
-#### 3. check rpc channal  
+#### 3. Configuration
+
+The agent supports timezone configuration for datetime operations. You can configure timezone in two ways:
+
+1. **Via config.json file**: Add a `timezone` field to your `user_data/config.json`:
+```json
+{
+    "timezone": "Asia/Saigon",
+    "api_server": {
+        // ... other settings
+    }
+}
+```
+
+2. **Via environment variable**: Set `SONAGENT_TIMEZONE` environment variable (overrides config file):
+```bash
+export SONAGENT_TIMEZONE="America/New_York"
+# or when running:
+SONAGENT_TIMEZONE="Europe/London" sonagent run --config user_data/config.json ...
+```
+
+**Priority**: Environment variable > Config file > Default (UTC)
+
+**Supported timezones**: Any valid timezone string supported by pytz (e.g., "UTC", "Asia/Saigon", "America/New_York", "Europe/London").
+
+#### 4. check rpc channal  
 
 ```
 ```

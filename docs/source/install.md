@@ -110,6 +110,7 @@ To get the agent up and run, you need to insert OpenAi key and the chatbot key i
 
 ```{
     "initial_state": "running",
+    "timezone": "UTC",
     "api_server": {
         "enabled": true,
         "listen_ip_address": "0.0.0.0",
@@ -145,6 +146,22 @@ To get the agent up and run, you need to insert OpenAi key and the chatbot key i
     }
 }
 ```
+
+**Timezone Configuration:**
+You can configure the agent's timezone by adding a `timezone` field to your config.json (default is "UTC"). For example:
+```json
+{
+    "timezone": "Asia/Saigon",
+    // ... other settings
+}
+```
+
+Alternatively, you can set the `SONAGENT_TIMEZONE` environment variable (overrides config file):
+```bash
+export SONAGENT_TIMEZONE="America/New_York"
+```
+
+Supported timezones: Any valid timezone string (e.g., "UTC", "Asia/Saigon", "America/New_York", "Europe/London").
 
 By following these steps, your config.json file should be properly set up with your OpenAI API key and Telegram bot information. Remember to replace placeholder text such as **your_openai_api_key_here**, **your_telegram_bot_token_here**, and **your_telegram_user_id_here** with your actual credentials.
 
