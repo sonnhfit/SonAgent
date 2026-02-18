@@ -84,7 +84,7 @@ AVAILABLE_CLI_OPTIONS = {
         action='store_true',
     ),
     "agentdb": Arg(
-        '--agentdb-url',
+        '--agentdb',
         help='Agent database url.',
         metavar='PATH',
     ),

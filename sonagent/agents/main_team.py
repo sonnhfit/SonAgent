@@ -14,6 +14,19 @@ from agno.db.sqlite import SqliteDb
 from agno.models.openai import OpenAIResponses
 from agno.tools import tool
 from agno.tools.function import UserInputField
+from agno.knowledge import Knowledge
+from agno.vectordb.chroma import ChromaDb
+from agno.knowledge.embedder.openai import OpenAIEmbedder
+
+
+
+from agno.learn import (
+    LearningMachine,
+    LearningMode,
+    UserProfileConfig,
+    UserMemoryConfig,
+    LearnedKnowledgeConfig,
+)
 
 from sonagent.persistence import Task, ChatMessage, Conversation, Belief
 from sonagent.utils.datetime_helpers import dt_now
@@ -42,13 +55,14 @@ class MainTeamAgent:
     Integrates with RPC, handles human feedback, and maintains persistent chat history.
     """
     
-    def __init__(self, config: Dict[str, Any], db_path: str = "user_data/agno.db"):
+    def __init__(self, config: Dict[str, Any], db_path: str = "user_data/agno.db", memory_db_path: Optional[str] = None):
         """
         Initialize the main team agent.
         
         Args:
             config: Configuration dictionary
             db_path: Path to SQLite database file
+            memory_db_path: Path for memory database (ChromaDB). If None, uses default "tmp/chromadb"
         """
         self.config = config
         self.db_path = db_path
@@ -58,6 +72,18 @@ class MainTeamAgent:
         
         # Store for paused runs
         self.paused_runs: Dict[str, Any] = {}
+        chroma_path = memory_db_path if memory_db_path else "tmp/chromadb"
+        # Use provided memory_db_path or default
+
+
+        self.knowledge = Knowledge(
+            name="Knowledge Base",
+            description="user knowledge",
+            vector_db=ChromaDb(
+                collection="vectors", path=chroma_path, persistent_client=True,
+                embedder=OpenAIEmbedder(id="text-embedding-3-small")
+            ),
+        )
         
         # Initialize specialized agents
         self._init_agents()
@@ -88,13 +114,14 @@ class MainTeamAgent:
                 delete_task_tool
             ],
             instructions="""
-            You are responsible for task management. When users request tasks:
+            You are responsible for task management. When users request tasks. When a user asks you to do something, you only need to create a task:
             1. Create tasks with clear descriptions and priorities
             2. Retrieve task status and information
             3. Update task progress and completion
             4. Always provide task IDs for reference
             5. After creating a task, ALWAYS inform the user that the task has been saved to the database
             6. Provide clear confirmation messages in Vietnamese when appropriate
+        
             
             When a task is created successfully, make sure to tell the user:
             - The task has been created and saved to the database
@@ -133,7 +160,15 @@ class MainTeamAgent:
             """,
             db=self.db,
             add_history_to_context=True,
-            num_history_runs=3
+            num_history_runs=3,
+            knowledge=self.knowledge,
+            search_knowledge=True,
+            learning=LearningMachine(
+                knowledge=self.knowledge,
+                user_profile=UserProfileConfig(mode=LearningMode.ALWAYS),     # Automatic
+                user_memory=UserMemoryConfig(mode=LearningMode.ALWAYS),       # Automatic
+                learned_knowledge=LearnedKnowledgeConfig(mode=LearningMode.AGENTIC),  # Agent-driven
+            ),
         )
         
         # Human Feedback Agent - handles user feedback and approvals
@@ -181,7 +216,16 @@ class MainTeamAgent:
             """,
             db=self.db,
             add_history_to_context=True,
-            num_history_runs=3
+            num_history_runs=3,
+            
+            search_knowledge=True,
+            learning=LearningMachine(
+                knowledge=self.knowledge,
+                user_profile=UserProfileConfig(mode=LearningMode.ALWAYS),     # Automatic
+                user_memory=UserMemoryConfig(mode=LearningMode.ALWAYS),       # Automatic
+                learned_knowledge=LearnedKnowledgeConfig(mode=LearningMode.AGENTIC),  # Agent-driven
+            ),
+
         )
         
         logger.debug(f"Agents initialized successfully")
@@ -216,10 +260,17 @@ class MainTeamAgent:
             db=self.db,
             add_history_to_context=True,
             num_history_runs=5,
-            show_members_responses=True
+            show_members_responses=True,
+            search_knowledge=True,
+            learning=LearningMachine(
+                knowledge=self.knowledge,
+                user_profile=UserProfileConfig(mode=LearningMode.ALWAYS),     # Automatic
+                user_memory=UserMemoryConfig(mode=LearningMode.ALWAYS),       # Automatic
+                learned_knowledge=LearnedKnowledgeConfig(mode=LearningMode.AGENTIC),  # Agent-driven
+            ),
         )
     
-    
+
     def _save_chat_message(self, conversation_id: str, role: str, 
                           content: str, metadata: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
         """
@@ -267,52 +318,7 @@ class MainTeamAgent:
                 "message": "Failed to save chat message"
             }
     
-    @tool()
-    def save_chat_message_tool(self, conversation_id: str, role: str, 
-                              content: str, metadata: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
-        """
-        Save a chat message to persistent storage.
-        
-        Args:
-            conversation_id: Unique conversation identifier
-            role: Message role (user, assistant, system)
-            content: Message content
-            metadata: Additional metadata
-            
-        Returns:
-            Dictionary with save information
-        """
-        return self._save_chat_message(conversation_id, role, content, metadata)
-    
-    @tool()
-    def get_chat_history_tool(self, conversation_id: str, limit: int = 20) -> List[Dict[str, Any]]:
-        """
-        Get chat history for a conversation.
-        
-        Args:
-            conversation_id: Conversation identifier
-            limit: Maximum number of messages to return
-            
-        Returns:
-            List of chat message dictionaries
-        """
-        try:
-            messages = ChatMessage.get_conversation_messages(
-                conversation_id=conversation_id,
-                limit=limit
-            )
-            
-            result = []
-            for message in messages:
-                result.append(message.to_dict())
-            
-            logger.debug(f"Retrieved {len(result)} messages for conversation {conversation_id}")
-            return result
-            
-        except Exception as e:
-            logger.error(f"Error getting chat history: {e}")
-            return [{"error": str(e), "message": "Failed to retrieve chat history"}]
-    
+
     def _extract_tom(self, conversation_text: str, user_id: str = "default") -> Dict[str, Any]:
         """
         Internal method to extract Theory of Mind (TOM) from conversation text.
@@ -387,304 +393,7 @@ class MainTeamAgent:
                 "message": "Failed to extract TOM"
             }
     
-    @tool()
-    def extract_tom_tool(self, conversation_text: str, user_id: str = "default") -> Dict[str, Any]:
-        """
-        Extract Theory of Mind (TOM) from conversation text.
-        
-        Args:
-            conversation_text: The conversation text to analyze
-            user_id: ID of the user
-            
-        Returns:
-            Dictionary with TOM analysis
-        """
-        return self._extract_tom(conversation_text, user_id)
-    
-    @tool()
-    def update_beliefs_tool(self, user_id: str, new_beliefs: List[Dict[str, Any]], 
-                           source: str = "tom_analysis") -> Dict[str, Any]:
-        """
-        Update user's belief system with new beliefs.
-        
-        Args:
-            user_id: ID of the user
-            new_beliefs: List of new beliefs to add
-            source: Source of the beliefs (tom_analysis, direct_input, etc.)
-            
-        Returns:
-            Dictionary with update information
-        """
-        try:
-            added_count = 0
-            
-            for belief_data in new_beliefs:
-                # Extract belief text and description
-                belief_text = belief_data.get("text", "")
-                description = belief_data.get("description", belief_text)
-                
-                if belief_text:
-                    # Create new belief in database
-                    belief = Belief(
-                        text=belief_text,
-                        description=description,
-                        source=source,
-                        user_id=user_id
-                    )
-                    Belief.session.add(belief)
-                    added_count += 1
-            
-            if added_count > 0:
-                Belief.session.commit()
-            
-            logger.info(f"Updated beliefs for user {user_id}: added {added_count} new beliefs")
-            
-            return {
-                "success": True,
-                "user_id": user_id,
-                "beliefs_added": added_count,
-                "source": source,
-                "message": f"Successfully added {added_count} new beliefs to user's belief system"
-            }
-            
-        except Exception as e:
-            logger.error(f"Error updating beliefs: {e}")
-            return {
-                "success": False,
-                "error": str(e),
-                "message": "Failed to update beliefs"
-            }
-    
-    @tool()
-    def analyze_intent_tool(self, user_query: str, context: Optional[str] = None) -> Dict[str, Any]:
-        """
-        Analyze user's intent from a query.
-        
-        Args:
-            user_query: The user's query
-            context: Optional context about the conversation
-            
-        Returns:
-            Dictionary with intent analysis
-        """
-        try:
-            # Simple intent classification (in production, use more sophisticated NLP)
-            query_lower = user_query.lower()
-            
-            intent_categories = {
-                "task_management": ["task", "todo", "create", "update", "delete", "check", "status"],
-                "information_request": ["what", "how", "when", "where", "why", "explain", "tell me"],
-                "feedback": ["feedback", "approve", "confirm", "reject", "like", "dislike"],
-                "conversation": ["hello", "hi", "hey", "thanks", "thank you", "bye"],
-                "tom_analysis": ["think", "believe", "feel", "want", "need", "intend"]
-            }
-            
-            detected_intents = []
-            confidence_scores = {}
-            
-            # Check for intent matches
-            for intent_type, keywords in intent_categories.items():
-                matches = sum(1 for keyword in keywords if keyword in query_lower)
-                if matches > 0:
-                    detected_intents.append(intent_type)
-                    confidence_scores[intent_type] = min(matches / len(keywords) * 100, 100)
-            
-            # Determine primary intent
-            primary_intent = detected_intents[0] if detected_intents else "unknown"
-            
-            intent_analysis = {
-                "user_query": user_query,
-                "detected_intents": detected_intents,
-                "primary_intent": primary_intent,
-                "confidence_scores": confidence_scores,
-                "context_provided": context is not None,
-                "analysis_timestamp": dt_now().isoformat()
-            }
-            
-            logger.info(f"Intent analysis: primary={primary_intent}, intents={detected_intents}")
-            
-            return {
-                "success": True,
-                "intent_analysis": intent_analysis,
-                "message": "Intent analysis completed successfully"
-            }
-            
-        except Exception as e:
-            logger.error(f"Error analyzing intent: {e}")
-            return {
-                "success": False,
-                "error": str(e),
-                "message": "Failed to analyze intent"
-            }
-    
-    @tool(requires_user_input=True, user_input_fields=["feedback"])
-    def request_feedback_tool(self, action: str, context: str, 
-                             feedback: Optional[str] = None) -> Dict[str, Any]:
-        """
-        Request human feedback for an agent action.
-        
-        Args:
-            action: The action requiring feedback
-            context: Context about why feedback is needed
-            feedback: User feedback (collected via user input)
-            
-        Returns:
-            Dictionary with feedback information
-        """
-        try:
-            # If feedback is provided, process it
-            if feedback:
-                # Save feedback to database or process it
-                logger.info(f"Feedback received for action '{action}': {feedback}")
-                
-                return {
-                    "success": True,
-                    "action": action,
-                    "feedback": feedback,
-                    "processed": True,
-                    "message": "Feedback processed successfully"
-                }
-            else:
-                # Request feedback (tool will pause for user input)
-                return {
-                    "success": True,
-                    "action": action,
-                    "context": context,
-                    "needs_feedback": True,
-                    "message": "Feedback requested for action"
-                }
-        except Exception as e:
-            logger.error(f"Error processing feedback: {e}")
-            return {
-                "success": False,
-                "error": str(e),
-                "message": "Failed to process feedback"
-            }
-    
-    @tool()
-    def process_feedback_tool(self, action: str, feedback: str, 
-                             learning_note: Optional[str] = None) -> Dict[str, Any]:
-        """
-        Process and incorporate user feedback into agent learning.
-        
-        Args:
-            action: The action that received feedback
-            feedback: User feedback text
-            learning_note: Optional note about what was learned
-            
-        Returns:
-            Dictionary with processing information
-        """
-        try:
-            # Here you would implement feedback processing logic
-            # For now, we'll just log it
-            logger.info(f"Processing feedback for action '{action}': {feedback}")
-            
-            if learning_note:
-                logger.info(f"Learning note: {learning_note}")
-            
-            # In a real implementation, you might:
-            # 1. Store feedback in a database
-            # 2. Update agent behavior based on feedback
-            # 3. Trigger retraining or adjustment
-            
-            return {
-                "success": True,
-                "action": action,
-                "feedback_processed": True,
-                "learning_note": learning_note or "Feedback recorded for future improvement",
-                "message": "Feedback processed and incorporated into learning"
-            }
-        except Exception as e:
-            logger.error(f"Error processing feedback: {e}")
-            return {
-                "success": False,
-                "error": str(e),
-                "message": "Failed to process feedback"
-            }
-    
-    @tool()
-    def coordinate_agents_tool(self, request: str, 
-                              agent_types: List[str] = None) -> Dict[str, Any]:
-        """
-        Coordinate multiple agents to handle a complex request.
-        
-        Args:
-            request: The user request to handle
-            agent_types: Types of agents to involve (task, tom, feedback, assistant)
-            
-        Returns:
-            Dictionary with coordination results
-        """
-        try:
-            # Determine which agents to involve based on request
-            if not agent_types:
-                agent_types = self._determine_agent_types(request)
-            
-            coordination_result = {
-                "request": request,
-                "agents_involved": agent_types,
-                "results": {},
-                "summary": ""
-            }
-            
-            # Simulate coordination (in real implementation, this would actually coordinate)
-            coordination_result["summary"] = f"Request '{request[:50]}...' will be handled by: {', '.join(agent_types)}"
-            
-            logger.info(f"Coordinating agents for request: {agent_types}")
-            
-            return coordination_result
-            
-        except Exception as e:
-            logger.error(f"Error coordinating agents: {e}")
-            return {
-                "success": False,
-                "error": str(e),
-                "message": "Failed to coordinate agents"
-            }
-    
-    @tool()
-    def respond_to_user_tool(self, response: str, 
-                            conversation_id: str,
-                            save_to_history: bool = True) -> Dict[str, Any]:
-        """
-        Send a response to the user and optionally save to chat history.
-        
-        Args:
-            response: The response to send to user
-            conversation_id: Conversation identifier
-            save_to_history: Whether to save the response to chat history
-            
-        Returns:
-            Dictionary with response information
-        """
-        try:
-            # Save assistant response to chat history if requested
-            if save_to_history:
-                self._save_chat_message(
-                    conversation_id=conversation_id,
-                    role="assistant",
-                    content=response,
-                    metadata={"tool": "respond_to_user_tool"}
-                )
-            
-            logger.debug(f"Response prepared for conversation {conversation_id}")
-            
-            return {
-                "success": True,
-                "response": response,
-                "conversation_id": conversation_id,
-                "saved_to_history": save_to_history,
-                "message": "Response prepared successfully"
-            }
-        except Exception as e:
-            logger.error(f"Error preparing response: {e}")
-            return {
-                "success": False,
-                "error": str(e),
-                "message": "Failed to prepare response"
-            }
-    
+
     def _determine_agent_types(self, request: str) -> List[str]:
         """
         Determine which agent types should handle a request.
@@ -793,7 +502,7 @@ class MainTeamAgent:
             tom_result = self._extract_tom(user_input, user_id)
             
             # Process request through team
-            team_response = self.team.run(user_input)
+            team_response = self.team.run(user_input, user_id=user_id, session_id=conversation_id)
             
             # Save assistant response to chat history
             if team_response.content:
@@ -860,7 +569,7 @@ class MainTeamAgent:
             logger.debug(f"Calling team.arun with input: {user_input}")
             
             # Process request through team asynchronously
-            team_response = await self.team.arun(user_input)
+            team_response = await self.team.arun(user_input, user_id=user_id, session_id=conversation_id)
             
             # Check if the run is paused and needs confirmation
             if hasattr(team_response, 'is_paused') and team_response.is_paused:

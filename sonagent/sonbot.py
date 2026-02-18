@@ -124,6 +124,12 @@ class SonBot(LoggingMixin):
             user_data_dir = self.config.get('user_data_dir', 'user_data')
             db_path = f"{user_data_dir}/agentdb.db"
             
+            # Get memory URL for ChromaDB path
+            memory_url = self.args.get('memory-url', "user_data/memory")
+            print("*******************************")
+            print(self.args)
+            print("*******************************")
+
             # Clear team registry on startup using utility function
             try:
                 from sonagent.utils.utils import init_team_registry
@@ -133,9 +139,10 @@ class SonBot(LoggingMixin):
                 
             self.team_agent = MainTeamAgent(
                 config=self.config,
-                db_path=db_path
+                db_path=db_path,
+                memory_db_path=memory_url
             )
-            logger.info(f"MainTeamAgent initialized successfully with db_path: {db_path}")
+            logger.info(f"MainTeamAgent initialized successfully with db_path: {db_path}, memory_db_path: {memory_url}")
             
             # Register the team in the registry using utility function
             try:
