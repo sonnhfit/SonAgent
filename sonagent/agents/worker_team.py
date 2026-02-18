@@ -34,7 +34,8 @@ from sonagent.agents.worker_agent_tools import (
     update_task_execution_data_tool,
     add_target_tool,
     delete_target_tool,
-    update_target_tool
+    update_target_tool,
+    send_rpc_message_tool
 )
 
 from sonagent.agents.agent_tools import (
@@ -96,6 +97,7 @@ class WorkerTeamAgent:
                 add_target_tool,
                 delete_target_tool,
                 update_target_tool,
+                send_rpc_message_tool,
             ],
             instructions="""
             You are a Worker Agent responsible for task prioritization and execution.
@@ -106,18 +108,27 @@ class WorkerTeamAgent:
             3. Prioritize tasks based on value scores (considering execution time, tokens, and goals)
             4. Execute tasks and track token usage
             5. Make trade-off decisions between short-term and long-term objectives
+            6. Send notifications to users via RPC when tasks are completed or need attention
             
             Key concepts:
             - Short-term goals: Immediate tasks with quick returns
             - Long-term goals: Strategic objectives with future benefits
             - Token usage: Measure of computational cost for each task
             - Value score: Combined metric of priority, estimated tokens, and alignment with goals
+            - RPC notifications: Send status updates to users via Telegram, API, etc.
             
             Always consider:
             - Task execution history (tokens used, success rate)
             - Target urgency and progress
             - Resource constraints (token budgets)
             - Time-value tradeoffs
+            - Notify users when tasks are completed or need human intervention
+            
+            Use send_rpc_message_tool to:
+            - Notify users when tasks are completed
+            - Alert users when tasks need attention or approval
+            - Send status updates on long-running tasks
+            - Report errors or issues that require human intervention
             """,
             db=self.db,
             add_history_to_context=True,

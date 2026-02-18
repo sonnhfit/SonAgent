@@ -300,3 +300,76 @@ def update_target_tool(target_id: int, target: Optional[str] = None,
             "message": f"Failed to update target {target_id}"
         }
 
+
+def send_rpc_message_tool(
+    message: str,
+) -> Dict[str, Any]:
+    """
+    Send a message via RPC to notify users (e.g., through Telegram, API, etc.).
+    
+    Args:
+        message: The message content to send
+        
+    Returns:
+        Dictionary with success status and message info
+    """
+    try:
+        # Import here to avoid circular imports
+        from sonagent.enums.rpcmessagetype import RPCMessageType
+        from sonagent.rpc.io import IOMsg
+        message_type = "chat"
+        # Validate message type
+        valid_types = {
+            "status": RPCMessageType.STATUS,
+            "chat": RPCMessageType.CHAT,
+            "warning": RPCMessageType.WARNING,
+            "startup": RPCMessageType.STARTUP,
+            "exception": RPCMessageType.EXCEPTION
+        }
+        
+        if message_type.lower() not in valid_types:
+            return {
+                "success": False,
+                "error": f"Invalid message type. Must be one of: {', '.join(valid_types.keys())}",
+                "message": f"Failed to send RPC message: invalid type '{message_type}'"
+            }
+        
+        # Get the RPC type
+        rpc_type = valid_types[message_type.lower()]
+        
+        # Check if RPC is available
+        if not IOMsg.rpc:
+            logger.warning("RPC not initialized, message will be printed locally")
+            print(f"[RPC {message_type.upper()}] {message}")
+            return {
+                "success": True,
+                "message_sent": False,
+                "rpc_available": False,
+                "local_print": True,
+                "message": f"RPC not initialized, message printed locally: {message[:50]}..."
+            }
+        
+        # Send the message via RPC
+        IOMsg.rpc.send_msg({
+            'type': rpc_type,
+            'status': message if message_type.lower() == "status" else None,
+            'message': message if message_type.lower() == "chat" else None
+        })
+        
+        logger.info(f"Sent RPC message via {message_type}: {message[:100]}...")
+        
+        return {
+            "success": True,
+            "message_sent": True,
+            "message_type": message_type,
+            "message_preview": message[:100] + ("..." if len(message) > 100 else ""),
+            "message": f"RPC message sent successfully via {message_type}"
+        }
+        
+    except Exception as e:
+        logger.error(f"Error sending RPC message: {e}")
+        return {
+            "success": False,
+            "error": str(e),
+            "message": f"Failed to send RPC message: {str(e)}"
+        }
