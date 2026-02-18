@@ -131,7 +131,7 @@ class WorkerTeamAgent:
             """,
             db=self.db,
             add_history_to_context=True,
-            num_history_runs=3,
+            num_history_runs=5,
             knowledge=self.knowledge,
             search_knowledge=True,
             learning=LearningMachine(
