@@ -339,15 +339,24 @@ class SonBot(LoggingMixin):
                 if not task_added and task.scheduled_at:
                     try:
                         # Compare at minute level (ignore seconds and microseconds)
-                        # Example: scheduled_at = 2026-02-18 16:38:51.205847 -> compare year, month, day, hour, minute
-                        # Keep all date components (year, month, day, hour, minute) but ignore seconds and microseconds
-                        scheduled_minute = task.scheduled_at.replace(second=0, microsecond=0)
-                        current_minute = current_time.replace(second=0, microsecond=0)
+                        # Convert to string format "YYYY-MM-DD HH:MM" for comparison
+                        # First convert scheduled_at to UTC to match current_time (which is UTC)
+                        scheduled_at_utc = task.scheduled_at
+                        if scheduled_at_utc.tzinfo is None:
+                            # If scheduled_at is naive datetime, assume it's in UTC
+                            scheduled_at_utc = scheduled_at_utc.replace(tzinfo=timezone.utc)
+                        else:
+                            # If scheduled_at has timezone info, convert to UTC
+                            scheduled_at_utc = scheduled_at_utc.astimezone(timezone.utc)
+                        
+                        scheduled_minute_str = scheduled_at_utc.strftime("%Y-%m-%d %H:%M")
+                        current_minute_str = current_time.strftime("%Y-%m-%d %H:%M")
                         
                         # Check if current datetime (at minute precision) matches scheduled datetime
                         # We only execute if current minute exactly matches scheduled minute
                         # This ensures task runs only once at the scheduled time
-                        if current_minute == scheduled_minute:
+                        logger.debug(f"current_minute: {current_minute_str} scheduled_minute: {scheduled_minute_str}")
+                        if current_minute_str == scheduled_minute_str:
                             # Check task status again to avoid race condition
                             try:
                                 current_task = Task.get_task_by_id(task.id)
