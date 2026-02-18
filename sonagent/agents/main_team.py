@@ -239,7 +239,7 @@ class MainTeamAgent:
                 self.feedback_agent
             ],
             mode=TeamMode.coordinate,
-            instructions="""
+            instructions=f"""
             You are the main team coordinating multiple specialized agents.
             
             Coordination Rules:
@@ -253,6 +253,8 @@ class MainTeamAgent:
             - Extract and update user's Theory of Mind when relevant
             - Use human feedback to improve future interactions
             - Maintain conversation context across sessions
+
+            Timenow: {datetime.now()}
             """,
             db=self.db,
             enable_agentic_memory=True,

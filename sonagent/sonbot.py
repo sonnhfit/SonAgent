@@ -4,6 +4,7 @@ import os
 import time
 from datetime import datetime
 from pathlib import Path
+from queue import Queue
 from typing import Any, Dict, Optional
 
 from croniter import croniter
@@ -79,6 +80,9 @@ class SonBot(LoggingMixin):
         logger.info(f"SKILLLS NAME: {names}")
         self._schedule = Scheduler()
 
+        # Initialize task queue for agent worker
+        self.task_queue = Queue()
+
         # Pass conversation_id to Agent
         self.agent = Agent(
             memory_path=memory_url, 
@@ -94,11 +98,15 @@ class SonBot(LoggingMixin):
         def scan_skills():
             self.scan_and_reload_skills()
 
-        def agent_worker():
-            print("TODO: implement agent worker here")
+        def agent_worker_cronjob_schedule():
+            self.scan_task_for_agent_worker()
+
+        def agent_worker_task_execute():
+            self.execute_task_from_queue()
         
         self._schedule.every(10).seconds.do(scan_skills)
-        self._schedule.every(600).seconds.do(agent_worker)
+        self._schedule.every(11).seconds.do(agent_worker_cronjob_schedule)
+        self._schedule.every(60).seconds.do(agent_worker_task_execute)
 
         # Set initial bot state from config
         initial_state = self.config.get('initial_state')
@@ -243,6 +251,176 @@ class SonBot(LoggingMixin):
         except Exception as e:
             logger.error(f"Failed to initialize WorkerTeamAgent: {e}")
             self.worker_team_agent = None
+
+
+    def scan_task_for_agent_worker(self) -> None:
+        """
+        Scan tasks from database and push eligible tasks to the queue.
+        This function is called every 11 seconds by the scheduler.
+        
+        It will:
+        1. Get all tasks with status 'pending' and cron_expression
+        2. Check if the cron expression matches current time (within 10-60s window)
+        3. If task is not already in queue, push it to queue
+        4. Update task status to 'in_progress' atomically
+        """
+        try:
+            from sonagent.persistence import Task
+            
+            # Get current time
+            current_time = dt_now()
+            
+            # Get all pending tasks with cron expressions
+            pending_tasks = Task.get_tasks_by_status('pending')
+            
+            tasks_added = 0
+            for task in pending_tasks:
+                # Skip tasks without cron expression
+                if not task.cron_expression:
+                    continue
+                
+                # Check if cron expression matches current time
+                try:
+                    # Create cron iterator based on task's scheduled_at or created_at
+                    base_time = task.scheduled_at or task.created_at
+                    if croniter.is_valid(task.cron_expression):
+                        cron = croniter(task.cron_expression, base_time)
+                        next_time = cron.get_next(datetime)
+                        
+                        # Check if current time is within 10-60 seconds of next execution time
+                        # This matches the requirement "có thể lệnh khoảng 10-60s"
+                        time_diff = (current_time - next_time).total_seconds()
+                        if -60 <= time_diff <= -10:  # Next time is 10-60 seconds in the future
+                            # Check task status again to avoid race condition
+                            # Reload task from database to get current status
+                            try:
+                                current_task = Task.get_task_by_id(task.id)
+                                if current_task.status != 'pending':
+                                    logger.debug(f"Task {task.id} is no longer pending, skipping")
+                                    continue
+                                
+                                # Prepare task data for queue
+                                task_data = {
+                                    'task_id': task.id,
+                                    'content': task.content,
+                                    'status': 'in_progress'
+                                }
+                                
+                                # Update task status to in_progress atomically
+                                # Using task.start() which updates status and sets started_at
+                                current_task.start()  # This updates status to 'in_progress' and sets started_at
+                                
+                                # Push to queue
+                                self.task_queue.put(task_data)
+                                tasks_added += 1
+                                logger.info(f"Added task {task.id} to queue: {task.content[:50]}...")
+                            except Exception as task_error:
+                                logger.error(f"Error processing task {task.id}: {task_error}")
+                    else:
+                        logger.warning(f"Invalid cron expression for task {task.id}: {task.cron_expression}")
+                except Exception as e:
+                    logger.error(f"Error checking cron for task {task.id}: {e}")
+            
+            if tasks_added > 0:
+                logger.info(f"Added {tasks_added} tasks to queue for agent worker")
+            else:
+                logger.debug("No tasks to add to queue")
+                
+        except Exception as e:
+            logger.error(f"Error in scan_task_for_agent_worker: {e}")
+
+    def execute_task_from_queue(self) -> None:
+        """
+        Execute tasks from the queue using WorkerTeamAgent.
+        This function is called every 60 seconds by the scheduler.
+        
+        It will:
+        1. Get task from queue (non-blocking)
+        2. Call WorkerTeamAgent to execute the task
+        3. Update task status based on execution result
+        """
+        try:
+            # Check if queue has tasks
+            if self.task_queue.empty():
+                logger.debug("Task queue is empty")
+                return
+            
+            # Get task from queue (non-blocking with timeout)
+            try:
+                task_data = self.task_queue.get(timeout=1)
+            except:
+                logger.debug("No task available in queue")
+                return
+            
+            task_id = task_data.get('task_id')
+            content = task_data.get('content')
+            
+            logger.info(f"Executing task {task_id}: {content[:50]}...")
+            
+            # Check if WorkerTeamAgent is available
+            if not self.worker_team_agent:
+                logger.error("WorkerTeamAgent not initialized, cannot execute task")
+                # Put task back in queue for retry
+                self.task_queue.put(task_data)
+                return
+            
+            try:
+                # Import Task model for updating status
+                from sonagent.persistence import Task
+                
+                # Get task from database
+                task = Task.get_task_by_id(task_id)
+                
+                # Prepare input for worker agent
+                user_input = f"Execute task with ID {task_id}: {content}"
+                
+                # Call worker team agent to process the task
+                result = self.worker_team_agent.process_worker_request(
+                    user_input=user_input,
+                    conversation_id=f"task_{task_id}_{int(time.time())}",
+                    user_id="system"
+                )
+                
+                if result.get("success"):
+                    # Task executed successfully
+                    worker_response = result.get("worker_response", "Task executed")
+                    
+                    # Update task status to done
+                    task.complete(result={"worker_response": worker_response})
+                    
+                    logger.info(f"Task {task_id} executed successfully")
+                    
+                    # Notify status
+                    self.notify_status(f"Task {task_id} completed: {content[:50]}...")
+                else:
+                    # Task execution failed
+                    error_msg = result.get("error", "Unknown error")
+                    task.fail(error_message=error_msg)
+                    
+                    logger.error(f"Task {task_id} failed: {error_msg}")
+                    
+                    # Notify status
+                    self.notify_status(f"Task {task_id} failed: {error_msg}")
+                    
+            except Exception as e:
+                logger.error(f"Error executing task {task_id}: {e}")
+                
+                # Update task status to failed
+                try:
+                    from sonagent.persistence import Task
+                    task = Task.get_task_by_id(task_id)
+                    task.fail(error_message=str(e))
+                except:
+                    pass
+                
+                # Notify status
+                self.notify_status(f"Task {task_id} execution error: {str(e)[:100]}")
+            
+            # Mark task as done in queue
+            self.task_queue.task_done()
+            
+        except Exception as e:
+            logger.error(f"Error in execute_task_from_queue: {e}")
 
 
     def scan_and_reload_skills(self) -> None:
