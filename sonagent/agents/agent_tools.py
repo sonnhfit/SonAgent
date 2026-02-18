@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 def create_task_tool(content: str, priority: int = 0, 
                     agent_id: str = "main_team",
                     cron_expression: Optional[str] = None,
-                    scheduled_at: Optional[Any] = None) -> Dict[str, Any]:
+                    scheduled_at: Optional[str] = None) -> Dict[str, Any]:
     """
     Create a new task in the system.
     
@@ -29,7 +29,7 @@ def create_task_tool(content: str, priority: int = 0,
             - "0 */2 * * *" (every 2 hours)
             - "0 0 * * 0" (every Sunday at midnight)
             - "30 18 * * 1-5" (every weekday at 6:30 PM)
-        scheduled_at: Optional scheduled datetime for the task (datetime object or string)
+        scheduled_at: Optional scheduled datetime for the task (string)
         
     Returns:
         Dictionary with task information
@@ -53,7 +53,8 @@ def create_task_tool(content: str, priority: int = 0,
                                 scheduled_at['day'],
                                 scheduled_at.get('hour', 0),
                                 scheduled_at.get('minute', 0),
-                                scheduled_at.get('second', 0)
+                                scheduled_at.get('second', 0),
+                                scheduled_at.get('microsecond', 0)
                             )
                     except:
                         pass  # If parsing fails, keep as None
@@ -64,13 +65,30 @@ def create_task_tool(content: str, priority: int = 0,
                 # Try to parse string to datetime
                 try:
                     from datetime import datetime as dt
-                    # Try common formats
-                    for fmt in ['%Y-%m-%d %H:%M:%S', '%Y-%m-%d', '%d/%m/%Y %H:%M', '%d/%m/%Y']:
-                        try:
-                            actual_scheduled_at = dt.strptime(scheduled_at, fmt)
-                            break
-                        except:
-                            continue
+                    # First try fromisoformat for ISO 8601 format (including with microseconds)
+                    try:
+                        actual_scheduled_at = dt.fromisoformat(scheduled_at)
+                    except ValueError:
+                        # If fromisoformat fails, try common formats
+                        formats = [
+                            '%Y-%m-%d %H:%M:%S.%f',  # With microseconds
+                            '%Y-%m-%d %H:%M:%S',     # Without microseconds
+                            '%Y-%m-%dT%H:%M:%S.%f',  # ISO with microseconds
+                            '%Y-%m-%dT%H:%M:%S',     # ISO without microseconds
+                            '%Y-%m-%d',              # Date only
+                            '%d/%m/%Y %H:%M',        # European format with time
+                            '%d/%m/%Y',              # European date only
+                            '%Y-%m-%d %H:%M:%S.%f%z', # With microseconds and timezone
+                            '%Y-%m-%dT%H:%M:%S.%f%z', # ISO with microseconds and timezone
+                            '%Y-%m-%d %H:%M:%S%z',   # Without microseconds with timezone
+                            '%Y-%m-%dT%H:%M:%S%z',   # ISO without microseconds with timezone
+                        ]
+                        for fmt in formats:
+                            try:
+                                actual_scheduled_at = dt.strptime(scheduled_at, fmt)
+                                break
+                            except:
+                                continue
                 except:
                     pass  # If parsing fails, keep as None
         
@@ -89,7 +107,7 @@ def create_task_tool(content: str, priority: int = 0,
         )
         Task.session.commit()
         
-        logger.info(f"Task created: ID={task.id}, Content={content[:50]}..., Cron={cron_expression}, Scheduled_at={actual_scheduled_at}")
+        logger.info(f"Task created: ID={task.id}, Content={content[:50]}..., Cron={cron_expression}, Scheduled_at={actual_scheduled_at}::{scheduled_at}")
         
         # Create a detailed confirmation message
         created_time = task.created_at.strftime('%Y-%m-%d %H:%M:%S') if task.created_at else 'N/A'

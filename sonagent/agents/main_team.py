@@ -119,7 +119,7 @@ class MainTeamAgent:
             instructions=f"""
             You are responsible for task management. When users request tasks, create a task with the information provided.
             You do not execute tasks for users, but you create tasks for them. If a user asks you to do any task, always create a task for it. The only exception is general knowledge questions. If they assign you a task or request that you do something for them, you should create a task, and once the task is created, someone will carry it out for you.
-
+            Timenow: {datetime.now()}
             IMPORTANT: When users ask for reminders or to do something at a specific time:
             - ALWAYS create a task for it
             - Examples: "remind me to study English tomorrow morning", "schedule a meeting for Friday", "create a todo for next week"
@@ -138,7 +138,8 @@ class MainTeamAgent:
             - Extract the task content from the user's request
             - Determine priority if mentioned (high=2, medium=1, low=0)
             - If the user specifies a schedule (e.g., "every day at 9 AM"), convert to cron_expression
-            - If the user specifies a specific date/time (e.g., tomorrow, "tomorrow at 10:00"), convert to scheduled_at datetime with Timenow is: {datetime.now()}
+            - If the user specifies a specific date/time (e.g., tomorrow, "tomorrow at 10:00"), convert to scheduled_at datetime with current time is: {datetime.now()}
+            - If the user specifies a relative time like "5 phút nữa" or "5 minutes later", calculate scheduled_at by adding that time to current time
             - if not clear specific date/time help me choose an appropriate value 
             When a task is created successfully, make sure to tell the user:
             - The task has been created and saved to the database
@@ -166,6 +167,36 @@ class MainTeamAgent:
             ],
             instructions="""
             You are a Theory of Mind (ToM) specialist. Your primary function is to answer questions about others' mental states and manage targets (objectives).
+            
+            LONG-TERM SURVIVAL GOALS:
+            
+            As a TOM agent, you must maintain and update these core survival targets using the target management tools:
+            
+            1. SURVIVAL TARGET: Maintain continuous operational capability
+               - Ensure system remains functional and available
+               - Monitor resource usage and health metrics
+               - Implement redundancy and failover mechanisms
+            
+            2. GLOBAL GOAL: Maximize long-term value for the ecosystem
+               - Optimize for sustainable growth and value creation
+               - Balance short-term gains with long-term viability
+               - Consider impact on all stakeholders in the ecosystem
+            
+            3. OPERATIONAL GOAL: Complete tasks with maximum efficiency
+               - Execute assigned tasks with optimal resource usage
+               - Minimize time and cost while maintaining quality
+               - Prioritize tasks based on impact and urgency
+            
+            4. LEARNING GOAL: Improve through each iteration cycle
+               - Continuously learn from experiences and feedback
+               - Adapt strategies based on performance data
+               - Enhance capabilities through knowledge acquisition
+            
+            Use the target management tools to:
+            - Regularly check and update these survival targets
+            - Add new survival-related objectives as needed
+            - Delete obsolete or completed survival targets
+            - Modify target descriptions based on evolving priorities
 
             THEORY OF MIND CAPABILITIES:
             
@@ -213,7 +244,7 @@ class MainTeamAgent:
             
             Use these tools when users want to:
             - View current objectives/targets
-            - Add new goals or objectives
+            - Add new goals or objectives (including survival targets)
             - Remove completed or irrelevant targets
             - Modify existing targets
 
@@ -239,6 +270,8 @@ class MainTeamAgent:
             - Use evidence-based reasoning for predictions
             - Update mental models as new information emerges
 
+            - Regularly review and update survival targets to ensure alignment with long-term goals
+
             EXAMPLE QUESTIONS YOU CAN ANSWER:
             
             "Does Alice know the meeting was rescheduled?"
@@ -250,6 +283,9 @@ class MainTeamAgent:
             "Add a new target to improve customer satisfaction"
             "Update target #3 with new description"
             "Delete the completed target #5"
+            "What are our current survival targets?"
+            "Update the survival target to include new monitoring metrics"
+            "Add a new learning goal about improving response time"
             """,
             db=self.db,
             add_history_to_context=True,
@@ -349,6 +385,7 @@ class MainTeamAgent:
             - DO NOT use update_user_memory for reminder requests
             - Task Agent will create a proper task with schedule information
             - Your target is same user target we work for that 
+            - It’s necessary to clearly distinguish between goals and tasks in order to route them to the Tom agent or the Task agent.
 
             Always:
             - Save important conversations to chat history

@@ -259,13 +259,15 @@ class SonBot(LoggingMixin):
         This function is called every 11 seconds by the scheduler.
         
         It will:
-        1. Get all tasks with status 'pending' and cron_expression
-        2. Check if the cron expression matches current time (within 10-60s window)
-        3. If task is not already in queue, push it to queue
-        4. Update task status to 'in_progress' atomically
+        1. Get all tasks with status 'pending'
+        2. Check tasks with cron_expression if they match current time (within 10-60s window)
+        3. Check tasks with scheduled_at if they match current time at minute level
+        4. If task is not already in queue, push it to queue
+        5. Update task status to 'in_progress' atomically
         
         For periodic tasks with cron expressions, they will be reset to 'pending' after execution
         so they can be scanned again for the next scheduled run.
+        For tasks with scheduled_at (one-time scheduled tasks), they will be marked as done/failed after execution.
         """
         try:
             from sonagent.persistence import Task
@@ -274,35 +276,79 @@ class SonBot(LoggingMixin):
             # Get current time
             current_time = dt_now()
             
-            # Get all pending tasks with cron expressions
+            # Get all pending tasks
             pending_tasks = Task.get_tasks_by_status('pending')
             logger.debug(f"Scanning {len(pending_tasks)} pending tasks")
             
             tasks_added = 0
             for task in pending_tasks:
-                # Skip tasks without cron expression
-                if not task.cron_expression:
-                    continue
+                task_added = False
                 
-                # Check if cron expression matches current time
-                try:
-                    # Create cron iterator based on task's scheduled_at or created_at
-                    base_time = task.scheduled_at or task.created_at
-                    if croniter.is_valid(task.cron_expression):
-                        cron = croniter(task.cron_expression, base_time)
-                        next_time = cron.get_next(datetime)
+                # Check tasks with cron expression (periodic tasks)
+                if task.cron_expression:
+                    try:
+                        # Create cron iterator based on task's scheduled_at or created_at
+                        base_time = task.scheduled_at or task.created_at
+                        if croniter.is_valid(task.cron_expression):
+                            cron = croniter(task.cron_expression, base_time)
+                            next_time = cron.get_next(datetime)
+                            
+                            # Make next_time timezone-aware (UTC) to match current_time
+                            # croniter returns naive datetime, but current_time is timezone-aware
+                            if next_time.tzinfo is None:
+                                next_time = next_time.replace(tzinfo=timezone.utc)
+                            
+                            # Check if current time is within 10-60 seconds of next execution time
+                            # This matches the requirement "có thể lệnh khoảng 10-60s"
+                            time_diff = (current_time - next_time).total_seconds()
+                            if -60 <= time_diff <= -10:  # Next time is 10-60 seconds in the future
+                                # Check task status again to avoid race condition
+                                # Reload task from database to get current status
+                                try:
+                                    current_task = Task.get_task_by_id(task.id)
+                                    if current_task.status != 'pending':
+                                        logger.debug(f"Task {task.id} is no longer pending, skipping")
+                                        continue
+                                    
+                                    # Prepare task data for queue
+                                    task_data = {
+                                        'task_id': task.id,
+                                        'content': task.content,
+                                        'cron_expression': task.cron_expression,
+                                        'status': 'in_progress'
+                                    }
+                                    
+                                    # Update task status to in_progress atomically
+                                    # Using task.start() which updates status and sets started_at
+                                    current_task.start()  # This updates status to 'in_progress' and sets started_at
+                                    
+                                    # Push to queue
+                                    self.task_queue.put(task_data)
+                                    tasks_added += 1
+                                    task_added = True
+                                    logger.info(f"Added periodic task {task.id} to queue: {task.content[:50]}... (cron: {task.cron_expression})")
+                                except Exception as task_error:
+                                    logger.error(f"Error processing task {task.id}: {task_error}")
+                        else:
+                            logger.warning(f"Invalid cron expression for task {task.id}: {task.cron_expression}")
+                    except Exception as e:
+                        logger.error(f"Error checking cron for task {task.id}: {e}")
+                
+                # Check tasks with scheduled_at (one-time scheduled tasks)
+                # Only check if task hasn't been added yet from cron check
+                if not task_added and task.scheduled_at:
+                    try:
+                        # Compare at minute level (ignore seconds and microseconds)
+                        # Example: scheduled_at = 2026-02-18 16:38:51.205847 -> compare year, month, day, hour, minute
+                        # Keep all date components (year, month, day, hour, minute) but ignore seconds and microseconds
+                        scheduled_minute = task.scheduled_at.replace(second=0, microsecond=0)
+                        current_minute = current_time.replace(second=0, microsecond=0)
                         
-                        # Make next_time timezone-aware (UTC) to match current_time
-                        # croniter returns naive datetime, but current_time is timezone-aware
-                        if next_time.tzinfo is None:
-                            next_time = next_time.replace(tzinfo=timezone.utc)
-                        
-                        # Check if current time is within 10-60 seconds of next execution time
-                        # This matches the requirement "có thể lệnh khoảng 10-60s"
-                        time_diff = (current_time - next_time).total_seconds()
-                        if -60 <= time_diff <= -10:  # Next time is 10-60 seconds in the future
+                        # Check if current datetime (at minute precision) matches scheduled datetime
+                        # We only execute if current minute exactly matches scheduled minute
+                        # This ensures task runs only once at the scheduled time
+                        if current_minute == scheduled_minute:
                             # Check task status again to avoid race condition
-                            # Reload task from database to get current status
                             try:
                                 current_task = Task.get_task_by_id(task.id)
                                 if current_task.status != 'pending':
@@ -313,29 +359,26 @@ class SonBot(LoggingMixin):
                                 task_data = {
                                     'task_id': task.id,
                                     'content': task.content,
-                                    'cron_expression': task.cron_expression,
+                                    'scheduled_at': task.scheduled_at.isoformat(),
                                     'status': 'in_progress'
                                 }
                                 
                                 # Update task status to in_progress atomically
-                                # Using task.start() which updates status and sets started_at
                                 current_task.start()  # This updates status to 'in_progress' and sets started_at
                                 
                                 # Push to queue
                                 self.task_queue.put(task_data)
                                 tasks_added += 1
-                                logger.info(f"Added periodic task {task.id} to queue: {task.content[:50]}... (cron: {task.cron_expression})")
+                                logger.info(f"Added scheduled task {task.id} to queue: {task.content[:50]}... (scheduled at: {task.scheduled_at})")
                             except Exception as task_error:
-                                logger.error(f"Error processing task {task.id}: {task_error}")
-                    else:
-                        logger.warning(f"Invalid cron expression for task {task.id}: {task.cron_expression}")
-                except Exception as e:
-                    logger.error(f"Error checking cron for task {task.id}: {e}")
+                                logger.error(f"Error processing scheduled task {task.id}: {task_error}")
+                    except Exception as e:
+                        logger.error(f"Error checking scheduled_at for task {task.id}: {e}")
             
             if tasks_added > 0:
-                logger.info(f"Added {tasks_added} periodic tasks to queue for agent worker")
+                logger.info(f"Added {tasks_added} tasks to queue for agent worker")
             else:
-                logger.debug("No periodic tasks to add to queue")
+                logger.debug("No tasks to add to queue")
                 
         except Exception as e:
             logger.error(f"Error in scan_task_for_agent_worker: {e}")
@@ -354,6 +397,10 @@ class SonBot(LoggingMixin):
         - Reset status to 'pending' after execution (instead of 'done'/'failed')
         - Update scheduled_at to next execution time based on cron
         - Track execution history through execution_count and other fields
+        
+        For one-time scheduled tasks with scheduled_at:
+        - Mark as done/failed after execution (not reset to pending)
+        - No next scheduled time calculation
         """
         try:
             # Check if queue has tasks
@@ -371,6 +418,7 @@ class SonBot(LoggingMixin):
             task_id = task_data.get('task_id')
             content = task_data.get('content')
             cron_expression = task_data.get('cron_expression')
+            scheduled_at_str = task_data.get('scheduled_at')
             
             logger.info(f"Executing task {task_id}: {content[:50]}...")
             
@@ -437,7 +485,7 @@ class SonBot(LoggingMixin):
                         logger.info(f"Periodic task {task_id} executed successfully and reset to pending for next run")
                         self.notify_status(f"Periodic task {task_id} completed and scheduled for next run: {content[:50]}...")
                     else:
-                        # Regular one-time task - mark as done
+                        # Regular one-time task (including scheduled_at tasks) - mark as done
                         task.complete(result={"worker_response": worker_response})
                         logger.info(f"Task {task_id} executed successfully")
                         self.notify_status(f"Task {task_id} completed: {content[:50]}...")
@@ -470,7 +518,7 @@ class SonBot(LoggingMixin):
                             logger.error(f"Periodic task {task_id} failed permanently after {task.max_retries} retries: {error_msg}")
                             self.notify_status(f"Periodic task {task_id} failed permanently: {error_msg[:100]}")
                     else:
-                        # Regular one-time task failed
+                        # Regular one-time task failed (including scheduled_at tasks)
                         task.fail(error_message=error_msg)
                         logger.error(f"Task {task_id} failed: {error_msg}")
                         self.notify_status(f"Task {task_id} failed: {error_msg}")
@@ -495,7 +543,7 @@ class SonBot(LoggingMixin):
                             task.fail(error_message=str(e))
                             logger.error(f"Periodic task {task_id} execution error after max retries: {str(e)[:100]}")
                     else:
-                        # Regular task
+                        # Regular task (including scheduled_at tasks)
                         task.fail(error_message=str(e))
                         logger.error(f"Task {task_id} execution error: {str(e)[:100]}")
                         
