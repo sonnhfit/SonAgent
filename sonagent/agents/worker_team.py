@@ -1,10 +1,12 @@
 """
-Worker Team Agent implementation.
-This agent is responsible for:
+Worker Team implementation.
+This team is responsible for:
 1. Getting task lists and prioritizing them
 2. Considering short-term and long-term goals (Targets)
 3. Making trade-off decisions based on execution time and token usage
 4. Tracking token usage per task execution
+5. Coordinating with development team for implementation tasks
+6. Updating task execution data when work is completed
 """
 import logging
 from typing import Any, Dict, List, Optional, Tuple
@@ -41,18 +43,22 @@ from sonagent.agents.agent_tools import (
     create_task_tool
 )
 
+# Import dev_team from the dev_team module
+from sonagent.agents.dev_team import dev_team
+
 logger = logging.getLogger(__name__)
 
 
 class WorkerTeamAgent:
     """
-    Worker team agent that prioritizes and executes tasks based on
+    Worker team that prioritizes and executes tasks based on
     short-term and long-term goals, with token usage tracking.
+    Includes development team as a member for implementation tasks.
     """
     
     def __init__(self, config: Dict[str, Any], db_path: str = "user_data/agno.db", memory_db_path: Optional[str] = None):
         """
-        Initialize the worker team agent.
+        Initialize the worker team.
         
         Args:
             config: Configuration dictionary
@@ -69,21 +75,22 @@ class WorkerTeamAgent:
         chroma_path = memory_db_path if memory_db_path else "tmp/chromadb"
         self.knowledge = Knowledge(
             name="Worker Knowledge Base",
-            description="Knowledge base for worker agent tasks and targets",
+            description="Knowledge base for worker team tasks and targets",
             vector_db=ChromaDb(
                 collection="worker_vectors", path=chroma_path, persistent_client=True,
                 embedder=OpenAIEmbedder(id="text-embedding-3-small")
             ),
         )
         
-        # Initialize the worker agent
-        self._init_worker_agent()
+        # Initialize the worker team
+        self._init_worker_team()
         
-        logger.info("WorkerTeamAgent initialized")
+        logger.info("WorkerTeam initialized")
     
-    def _init_worker_agent(self):
-        """Initialize the worker agent with tools."""
+    def _init_worker_team(self):
+        """Initialize the worker team with specialized agents."""
         
+        # Worker Agent - handles task prioritization and execution
         self.worker_agent = Agent(
             name="Worker Agent",
             role="Prioritize and execute tasks considering short-term and long-term goals",
@@ -106,6 +113,8 @@ class WorkerTeamAgent:
             5. Make trade-off decisions between short-term and long-term objectives
             6. Send notifications to users via RPC when tasks are completed or need attention
             7. If a task is too big, break it down and add the subtasks to the task list.
+            8. Delegate development tasks to the Development Team
+            9. Use update_task_execution_data_tool to update task status when work is completed
             
             Key concepts:
             - Short-term goals: Immediate tasks with quick returns
@@ -126,6 +135,18 @@ class WorkerTeamAgent:
             - Alert users when tasks need attention or approval
             - Send status updates on long-running tasks
             - Report errors or issues that require human intervention
+            
+            Use update_task_execution_data_tool to:
+            - Update task status when work is completed
+            - Record token usage and execution time
+            - Mark tasks as successful or failed
+            - Add notes or results to task execution
+            
+            When a task requires development work:
+            - Delegate to the Development Team
+            - Provide clear requirements and acceptance criteria
+            - Monitor progress and provide feedback
+            - Update task execution data when development is complete
             """,
             db=self.db,
             add_history_to_context=True,
@@ -139,11 +160,116 @@ class WorkerTeamAgent:
                 learned_knowledge=LearnedKnowledgeConfig(mode=LearningMode.AGENTIC),  # Agent-driven
             ),
         )
+        
+        # Target Management Agent - handles target CRUD operations
+        self.target_agent = Agent(
+            name="Target Management Agent",
+            role="Manage short-term and long-term goals (Targets)",
+            model=OpenAIResponses(id="gpt-4o-mini"),
+            tools=[
+                get_targets_tool,
+                add_target_tool,
+                delete_target_tool,
+                update_target_tool
+            ],
+            instructions="""
+            You are responsible for managing targets (goals) in the system.
+            
+            Your responsibilities:
+            1. Get current targets and their status
+            2. Add new targets based on user requests or strategic needs
+            3. Update existing targets with progress or changes
+            4. Delete completed or obsolete targets
+            5. Ensure targets align with overall strategy
+            
+            Target types:
+            - Short-term targets: Immediate objectives (days/weeks)
+            - Long-term targets: Strategic goals (months/years)
+            - Survival targets: Core operational objectives
+            
+            Always:
+            - Validate target descriptions are clear and measurable
+            - Check for duplicate or conflicting targets
+            - Provide target IDs for reference
+            - Confirm before deleting targets
+            """,
+            db=self.db,
+            add_history_to_context=True,
+            num_history_runs=5
+        )
+        
+        # Initialize the worker team with all agents including dev_team
+        self.worker_team = Team(
+            name="Worker Team",
+            model=OpenAIResponses(id="gpt-4o-mini"),
+            members=[
+                self.worker_agent,
+                self.target_agent,
+                dev_team  # Include the development team as a member
+            ],
+            mode=TeamMode.coordinate,
+            instructions="""
+            You are the Worker Team responsible for task execution and goal management.
+            
+            Coordination Rules:
+            1. For task execution, prioritization, and monitoring: delegate to Worker Agent
+               - This includes: executing tasks, tracking progress, sending notifications
+               - Examples: "execute task X", "prioritize tasks", "check task status", "send update"
+               - Worker Agent will use update_task_execution_data_tool to update task status when completed
+            
+            2. For target/goal management: delegate to Target Management Agent
+               - This includes: adding, updating, deleting targets
+               - Examples: "add new target", "update target progress", "show current targets"
+            
+            3. For development and implementation tasks: delegate to Development Team
+               - This includes: coding, system design, infrastructure, deployment
+               - Examples: "implement feature X", "fix bug Y", "deploy to production"
+               - Development Team will coordinate with Product Owner, Backend Dev, and DevOps
+            
+            4. For complex tasks that span multiple areas: coordinate between agents
+            
+            Key principles:
+            - Always track token usage for tasks
+            - Consider both short-term and long-term goals
+            - Make trade-off decisions based on value scores
+            - Break down large tasks into manageable subtasks
+            - Notify users when tasks are completed or need attention
+            - Delegate appropriately based on task type
+            - Update task execution data when work is completed
+            
+            Development workflow:
+            1. When a task requires development work, delegate to Development Team
+            2. Development Team will coordinate with Product Owner for requirements
+            3. Development Team will implement with Backend Dev and DevOps
+            4. Monitor progress and provide feedback as needed
+            5. Notify users when development tasks are completed
+            6. Update task execution data with results
+            
+            Always maintain:
+            - Task execution history (using update_task_execution_data_tool)
+            - Target alignment
+            - Resource optimization
+            - User communication
+            """,
+            db=self.db,
+            enable_agentic_memory=True,
+            add_history_to_context=True,
+            num_history_runs=10,
+            show_members_responses=True,
+            search_knowledge=True,
+            knowledge=self.knowledge,
+            learning=LearningMachine(
+                knowledge=self.knowledge,
+                user_profile=UserProfileConfig(mode=LearningMode.AGENTIC),     # Agent-driven, not automatic
+                user_memory=UserMemoryConfig(mode=LearningMode.AGENTIC),       # Agent-driven, not automatic
+                learned_knowledge=LearnedKnowledgeConfig(mode=LearningMode.AGENTIC),  # Agent-driven
+            ),
+        )
     
     def process_worker_request(self, user_input: str, conversation_id: str = None, 
                               user_id: str = "default") -> Dict[str, Any]:
         """
-        Process a worker request through the worker agent.
+        Process a worker request through the worker team.
         
         Args:
             user_input: User's message or task request
@@ -158,8 +284,8 @@ class WorkerTeamAgent:
             if not conversation_id:
                 conversation_id = f"worker_conv_{int(dt_now().timestamp())}_{user_id}"
             
-            # Process request through worker agent
-            worker_response = self.worker_agent.run(user_input, user_id=user_id, session_id=conversation_id)
+            # Process request through worker team
+            worker_response = self.worker_team.run(user_input, user_id=user_id, session_id=conversation_id)
             
             # Create result
             result = {
@@ -186,7 +312,7 @@ class WorkerTeamAgent:
     async def process_worker_request_async(self, user_input: str, conversation_id: str = None,
                                           user_id: str = "default") -> Dict[str, Any]:
         """
-        Process a worker request asynchronously through the worker agent.
+        Process a worker request asynchronously through the worker team.
         
         Args:
             user_input: User's message or task request
@@ -201,8 +327,8 @@ class WorkerTeamAgent:
             if not conversation_id:
                 conversation_id = f"worker_conv_{int(dt_now().timestamp())}_{user_id}"
             
-            # Process request through worker agent asynchronously
-            worker_response = await self.worker_agent.arun(user_input, user_id=user_id, session_id=conversation_id)
+            # Process request through worker team asynchronously
+            worker_response = await self.worker_team.arun(user_input, user_id=user_id, session_id=conversation_id)
             
             # Check if the run is paused and needs confirmation
             if hasattr(worker_response, 'is_paused') and worker_response.is_paused:
@@ -295,16 +421,19 @@ class WorkerTeamAgent:
     
     def get_worker_agent_info(self) -> Dict[str, Any]:
         """
-        Get information about the worker agent.
+        Get information about the worker team.
         
         Returns:
-            Worker agent information dictionary
+            Worker team information dictionary
         """
         return {
             "initialized": True,
             "agent_type": "WorkerTeamAgent",
             "db_path": self.db_path,
-            "agent_name": self.worker_agent.name if hasattr(self, 'worker_agent') else "unknown",
-            "tools_count": len(self.worker_agent.tools) if hasattr(self, 'worker_agent') and hasattr(self.worker_agent, 'tools') else 0,
+            "team_name": self.worker_team.name if hasattr(self, 'worker_team') else "unknown",
+            "team_members": len(self.worker_team.members) if hasattr(self, 'worker_team') and hasattr(self.worker_team, 'members') else 0,
+            "worker_agent_name": self.worker_agent.name if hasattr(self, 'worker_agent') else "unknown",
+            "target_agent_name": self.target_agent.name if hasattr(self, 'target_agent') else "unknown",
+            "dev_team_included": True,
             "knowledge_base": self.knowledge.name if hasattr(self, 'knowledge') else "unknown"
         }

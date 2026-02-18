@@ -49,7 +49,7 @@ required = [
     'python-rapidjson==1.14',
     'orjson==3.11.7',
     'sdnotify==0.3.2',
-    'GitPython==3.1.42',
+    'PyGithub==2.8.1',
     'schedule==1.2.1',
     'croniter==2.0.3',
     'tabulate==0.9.0',
