@@ -61,6 +61,9 @@ class SonBot(LoggingMixin):
         self.team_agent = None
         self._init_team_agent()
 
+        # Initialize WorkerTeamAgent for task prioritization and execution
+        self.worker_team_agent = None
+        self._init_worker_team_agent()
 
         try:
             init_db(agentdb)
@@ -126,9 +129,6 @@ class SonBot(LoggingMixin):
             
             # Get memory URL for ChromaDB path
             memory_url = self.args.get('memory-url', "user_data/memory")
-            print("*******************************")
-            print(self.args)
-            print("*******************************")
 
             # Clear team registry on startup using utility function
             try:
@@ -176,6 +176,70 @@ class SonBot(LoggingMixin):
         except Exception as e:
             logger.error(f"Failed to initialize MainTeamAgent: {e}")
             self.team_agent = None
+    
+    def _init_worker_team_agent(self) -> None:
+        """
+        Initialize the WorkerTeamAgent.
+        """
+        try:
+            # Use the same database as the main agent (agentdb.sqlite)
+            # Get the database URL from args or use default
+            agentdb = self.args.get('agentdb') if self.args else None
+            if not agentdb:
+                agentdb = "sqlite:///user_data/agentdb.db"
+                logger.info(f"Using default agentdb for worker team: {agentdb}")
+            
+            # Extract the file path from the URL for WorkerTeamAgent
+            user_data_dir = self.config.get('user_data_dir', 'user_data')
+            db_path = f"{user_data_dir}/agentdb.db"
+            
+            # Get memory URL for ChromaDB path
+            memory_url = self.args.get('memory-url', "user_data/memory")
+
+            # Import WorkerTeamAgent
+            from sonagent.agents.worker_team import WorkerTeamAgent
+                
+            self.worker_team_agent = WorkerTeamAgent(
+                config=self.config,
+                db_path=db_path,
+                memory_db_path=memory_url
+            )
+            logger.info(f"WorkerTeamAgent initialized successfully with db_path: {db_path}, memory_db_path: {memory_url}")
+            
+            # Register the worker team in the registry using utility function
+            try:
+                from sonagent.utils.utils import register_team_in_registry
+                from sonagent.utils.datetime_helpers import dt_now
+                
+                # Register the worker team
+                result = register_team_in_registry(
+                    team_name="Worker Team",
+                    description="Worker team agent for task prioritization and execution considering short-term and long-term goals with token usage tracking.",
+                    db_url=agentdb,
+                    config={
+                        "team_type": "worker",
+                        "agent_count": 1,  # worker agent
+                        "mode": "single_agent",
+                        "tools": ["get_task_list_tool", "get_targets_tool", "update_task_execution_data_tool"]
+                    },
+                    team_metadata={
+                        "initialized_at": dt_now().isoformat(),
+                        "conversation_id": self.conversation_id,
+                        "purpose": "task_prioritization_and_execution"
+                    }
+                )
+                
+                if result.get("success"):
+                    logger.info(f"Registered worker team in registry: {result.get('team_name')}")
+                else:
+                    logger.warning(f"Could not register worker team in registry: {result.get('error')}")
+                    
+            except Exception as reg_error:
+                logger.warning(f"Could not register worker team in registry: {reg_error}")
+                
+        except Exception as e:
+            logger.error(f"Failed to initialize WorkerTeamAgent: {e}")
+            self.worker_team_agent = None
 
 
     def scan_and_reload_skills(self) -> None:

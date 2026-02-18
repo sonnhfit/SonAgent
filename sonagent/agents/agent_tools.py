@@ -6,7 +6,7 @@ import logging
 from typing import Any, Dict, List, Optional
 from datetime import datetime
 
-from sonagent.persistence import Task, ChatMessage, Conversation, Belief
+from sonagent.persistence import Task, ChatMessage, Conversation
 from sonagent.utils.datetime_helpers import dt_now
 
 logger = logging.getLogger(__name__)
@@ -452,60 +452,6 @@ def extract_tom_tool(conversation_text: str, user_id: str = "default") -> Dict[s
             "success": False,
             "error": str(e),
             "message": "Failed to extract TOM"
-        }
-
-
-def update_beliefs_tool(user_id: str, new_beliefs: List[Dict[str, Any]], 
-                       source: str = "tom_analysis") -> Dict[str, Any]:
-    """
-    Update user's belief system with new beliefs.
-    
-    Args:
-        user_id: ID of the user
-        new_beliefs: List of new beliefs to add
-        source: Source of the beliefs (tom_analysis, direct_input, etc.)
-        
-    Returns:
-        Dictionary with update information
-    """
-    try:
-        added_count = 0
-        
-        for belief_data in new_beliefs:
-            # Extract belief text and description
-            belief_text = belief_data.get("text", "")
-            description = belief_data.get("description", belief_text)
-            
-            if belief_text:
-                # Create new belief in database
-                belief = Belief(
-                    text=belief_text,
-                    description=description,
-                    source=source,
-                    user_id=user_id
-                )
-                Belief.session.add(belief)
-                added_count += 1
-        
-        if added_count > 0:
-            Belief.session.commit()
-        
-        logger.info(f"Updated beliefs for user {user_id}: added {added_count} new beliefs")
-        
-        return {
-            "success": True,
-            "user_id": user_id,
-            "beliefs_added": added_count,
-            "source": source,
-            "message": f"Successfully added {added_count} new beliefs to user's belief system"
-        }
-        
-    except Exception as e:
-        logger.error(f"Error updating beliefs: {e}")
-        return {
-            "success": False,
-            "error": str(e),
-            "message": "Failed to update beliefs"
         }
 
 
