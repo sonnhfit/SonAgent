@@ -2,8 +2,6 @@ import hashlib
 import logging
 import os
 
-from sonagent.persistence.models import Environment
-
 logger = logging.getLogger(__name__)
 
 
@@ -36,6 +34,7 @@ def get_schema_from_dict(data: dict) -> dict:
 
 def init_evironment():
     try:
+        from sonagent.persistence.models import Environment
         logger.info("Initializing environment ...")
         envs = Environment.get_all_environment()
         for env in envs:

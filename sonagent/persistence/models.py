@@ -11,7 +11,6 @@ from sonagent.persistence.belief_models import Belief
 from sonagent.persistence.chat_models import ChatMessage, Conversation
 from sonagent.persistence.environment_models import Environment
 from sonagent.persistence.migrations import check_migrate
-from sonagent.persistence.schedule_models import ScheduleJob
 from sonagent.persistence.tasks_models import Task
 
 logger = logging.getLogger(__name__)
@@ -48,9 +47,6 @@ def init_db(db_url: str) -> None:
 
     Belief.session = scoped_session(sessionmaker(bind=engine, autoflush=False))
     Belief.query = Belief.session.query_property()
-
-    ScheduleJob.session = scoped_session(sessionmaker(bind=engine, autoflush=False))
-    ScheduleJob.query = ScheduleJob.session.query_property()
 
     Environment.session = scoped_session(sessionmaker(bind=engine, autoflush=False))
     Environment.query = Environment.session.query_property()

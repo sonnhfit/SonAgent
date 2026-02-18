@@ -15,7 +15,7 @@ from sonagent.enums.enums import State
 from sonagent.enums.rpcmessagetype import RPCMessageType
 from sonagent.loggers.logging_mixin import LoggingMixin
 from sonagent.persistence.belief_models import Belief
-from sonagent.persistence.models import ScheduleJob, init_db
+from sonagent.persistence.models import init_db
 from sonagent.rpc import IOMsg, RPCManager
 from sonagent.skills.skills_manager import SkillsManager
 from sonagent.utils.datetime_helpers import dt_now
@@ -87,11 +87,6 @@ class SonBot(LoggingMixin):
         
         
         self.rpc: RPCManager = RPCManager(self)
-
-        def update():
-            self.update_schedule_jobs()
-    
-        self._schedule.every(15).seconds.do(update)
 
         # Add skill scanning every 10 seconds
         def scan_skills():
@@ -179,35 +174,6 @@ class SonBot(LoggingMixin):
         except Exception as e:
             logger.error(f"Error scanning skills directory: {e}")
 
-    def update_schedule_jobs(self) -> None:
-        """
-        Update the schedule jobs for the bot
-        :param jobs: List of jobs to update
-        :return: None
-        """
-        # logger.info('Updating schedule jobs ...')
-        # get job for run now 
-        job_list = ScheduleJob.get_job_with_next_run_at_now()
-        if job_list and len(job_list) > 0:
-            logger.info(f"Found {len(job_list)} jobs to run now")
-            for job in job_list:
-                # job.run()
-                job_dict = ast.literal_eval(job.plan)
-                self.agent.execute_plan(job_dict)
-                if job.is_recurring:
-                    cron_expression = job.schedule_interval
-
-                    cron = croniter(cron_expression, dt_now())
-                    cron_time = cron.get_next(datetime)
-                    job.last_run_at = job.next_run_at
-                    job.next_run_at = cron_time
-                    job.status = "pending"
-                    ScheduleJob.session.commit()
-                else:
-                    job.status = "completed"
-                    job.last_run_at = job.next_run_at
-                    ScheduleJob.session.commit()
-    
     async def chat(self, input: str) -> str:
         """
         Process chat message using team agent.
@@ -272,9 +238,6 @@ class SonBot(LoggingMixin):
 
     async def show_task(self) -> str:
         return await self.agent.show_task()
-    
-    async def show_schedule(self) -> str:
-        return await self.agent.show_schedule()
     
     async def show_env(self) -> list:
         return await self.agent.show_env()

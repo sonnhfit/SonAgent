@@ -8,7 +8,7 @@ import yaml
 from croniter import croniter
 from tabulate import tabulate
 
-from sonagent.persistence import Belief, Environment, ScheduleJob, Task
+from sonagent.persistence import Belief, Environment, Task
 from sonagent.tools import GitManager, LocalCodeManager
 from sonagent.utils.datetime_helpers import dt_now
 
@@ -322,18 +322,6 @@ class Agent:
         
         return message
 
-    async def show_schedule(self) -> str:
-        schedule_jobs = ScheduleJob.get_all_schedule_not_completed_jobs()
-        schedule_text = ""
-        for job in schedule_jobs:
-            schedule_text += "-----------------\n"
-            schedule_text += f"**Task**: **{job.name}** \n"
-            schedule_text += f"Description: {job.description}\n"
-            schedule_text += f"Plan: {job.plan}\n"
-            schedule_text += f"Recurrence: {job.is_recurring}\n\n"
-
-        return schedule_text
-    
     def _generate_conversation_id(self) -> str:
         """
         Generate a unique conversation ID.
