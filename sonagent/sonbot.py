@@ -237,7 +237,7 @@ class SonBot(LoggingMixin):
             try:
                 result = await self.team_agent.process_user_request_async(
                     user_input=input,
-                    conversation_id=self.conversation_id,
+                    conversation_id="default",
                     user_id="default"
                 )
                 

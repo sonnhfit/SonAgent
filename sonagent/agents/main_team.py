@@ -258,10 +258,12 @@ class MainTeamAgent:
             - Maintain conversation context across sessions
             """,
             db=self.db,
+            enable_agentic_memory=True,
             add_history_to_context=True,
-            num_history_runs=5,
+            num_history_runs=10,
             show_members_responses=True,
             search_knowledge=True,
+            knowledge=self.knowledge,
             learning=LearningMachine(
                 knowledge=self.knowledge,
                 user_profile=UserProfileConfig(mode=LearningMode.ALWAYS),     # Automatic
