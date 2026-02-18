@@ -44,7 +44,11 @@ def start_sonagent(args: Dict[str, Any]) -> int:
         }
 
         try:
-            config = load_config_file(args["config"][0])
+            # Set SONAGENT_CONFIG environment variable so datetime helpers can find the config
+            config_path = args["config"][0]
+            os.environ['SONAGENT_CONFIG'] = config_path
+            
+            config = load_config_file(config_path)
             # Export API keys from config to environment variables
             export_api_keys_to_env(config)
         except Exception as e:
@@ -109,9 +113,9 @@ def create_user_data_dir(args: Dict[str, Any]) -> None:
     # Note: We no longer create skills.yaml file since skills are loaded dynamically from the directory
 
     # Create config.json file with default configuration
-    config_example = """
-{
+    config_example = """{
     "initial_state": "running",
+    "timezone": "UTC",
     "api_server": {
         "enabled": true,
         "listen_ip_address": "0.0.0.0",

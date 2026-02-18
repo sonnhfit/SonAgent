@@ -5,7 +5,6 @@ via RPC, with human feedback integration and persistent chat history.
 """
 import logging
 from typing import Any, Dict, List, Optional
-from datetime import datetime
 import json
 
 from agno.agent import Agent
@@ -119,7 +118,7 @@ class MainTeamAgent:
             instructions=f"""
             You are responsible for task management. When users request tasks, create a task with the information provided.
             You do not execute tasks for users, but you create tasks for them. If a user asks you to do any task, always create a task for it. The only exception is general knowledge questions. If they assign you a task or request that you do something for them, you should create a task, and once the task is created, someone will carry it out for you.
-            Timenow: {datetime.now()}
+            Timenow: {dt_now()}
             IMPORTANT: When users ask for reminders or to do something at a specific time:
             - ALWAYS create a task for it
             - Examples: "remind me to study English tomorrow morning", "schedule a meeting for Friday", "create a todo for next week"
@@ -138,7 +137,7 @@ class MainTeamAgent:
             - Extract the task content from the user's request
             - Determine priority if mentioned (high=2, medium=1, low=0)
             - If the user specifies a schedule (e.g., "every day at 9 AM"), convert to cron_expression
-            - If the user specifies a specific date/time (e.g., tomorrow, "tomorrow at 10:00"), convert to scheduled_at datetime with current time is: {datetime.now()}
+            - If the user specifies a specific date/time (e.g., tomorrow, "tomorrow at 10:00"), convert to scheduled_at datetime with current time is: {dt_now()}
             - If the user specifies a relative time like "5 phút nữa" or "5 minutes later", calculate scheduled_at by adding that time to current time
             - if not clear specific date/time help me choose an appropriate value 
             When a task is created successfully, make sure to tell the user:
@@ -393,7 +392,7 @@ class MainTeamAgent:
             - Maintain conversation context across sessions
             - If create task done tell user for end
 
-            Timenow: {datetime.now()}
+            Timenow: {dt_now()}
             """,
             db=self.db,
             enable_agentic_memory=True,
@@ -628,7 +627,7 @@ class MainTeamAgent:
         try:
             # Generate conversation ID if not provided
             if not conversation_id:
-                conversation_id = f"conv_{int(datetime.now().timestamp())}_{user_id}"
+                conversation_id = f"conv_{int(dt_now().timestamp())}_{user_id}"
             
             # Save user message to chat history
             self._save_chat_message(
@@ -692,7 +691,7 @@ class MainTeamAgent:
         try:
             # Generate conversation ID if not provided
             if not conversation_id:
-                conversation_id = f"conv_{int(datetime.now().timestamp())}_{user_id}"
+                conversation_id = f"conv_{int(dt_now().timestamp())}_{user_id}"
             
             # Save user message to chat history
             self._save_chat_message(

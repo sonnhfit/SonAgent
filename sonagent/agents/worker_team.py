@@ -8,7 +8,6 @@ This agent is responsible for:
 """
 import logging
 from typing import Any, Dict, List, Optional, Tuple
-from datetime import datetime
 import time
 
 from agno.agent import Agent
@@ -159,7 +158,7 @@ class WorkerTeamAgent:
         try:
             # Generate conversation ID if not provided
             if not conversation_id:
-                conversation_id = f"worker_conv_{int(datetime.now().timestamp())}_{user_id}"
+                conversation_id = f"worker_conv_{int(dt_now().timestamp())}_{user_id}"
             
             # Process request through worker agent
             worker_response = self.worker_agent.run(user_input, user_id=user_id, session_id=conversation_id)
@@ -202,7 +201,7 @@ class WorkerTeamAgent:
         try:
             # Generate conversation ID if not provided
             if not conversation_id:
-                conversation_id = f"worker_conv_{int(datetime.now().timestamp())}_{user_id}"
+                conversation_id = f"worker_conv_{int(dt_now().timestamp())}_{user_id}"
             
             # Process request through worker agent asynchronously
             worker_response = await self.worker_agent.arun(user_input, user_id=user_id, session_id=conversation_id)

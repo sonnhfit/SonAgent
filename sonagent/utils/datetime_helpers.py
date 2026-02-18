@@ -1,15 +1,60 @@
+import os
 import re
 from datetime import datetime, timezone
-from typing import Optional
+from typing import Optional, Union
 
 import arrow
 
 from sonagent.constants import DATETIME_PRINT_FORMAT
 
 
+def get_timezone() -> Union[timezone, arrow.Arrow]:
+    """
+    Get timezone from configuration or environment variable.
+    Priority: 1. Environment variable SONAGENT_TIMEZONE
+              2. Config file timezone setting
+              3. Default to UTC
+    
+    Returns:
+        timezone object or arrow timezone
+    """
+    # Check environment variable first
+    env_timezone = os.environ.get('SONAGENT_TIMEZONE')
+    if env_timezone:
+        try:
+            # Arrow can parse timezone strings
+            return arrow.now(env_timezone).tzinfo
+        except Exception:
+            print(f"Warning: Unknown timezone '{env_timezone}' from environment variable, falling back to UTC")
+    
+    # Try to load from config file
+    try:
+        from sonagent.configuration.load_config import load_config_file
+        config_path = os.environ.get('SONAGENT_CONFIG', 'user_data/config.json')
+        if os.path.exists(config_path):
+            config = load_config_file(config_path)
+            config_timezone = config.get('timezone')
+            if config_timezone:
+                try:
+                    return arrow.now(config_timezone).tzinfo
+                except Exception:
+                    print(f"Warning: Unknown timezone '{config_timezone}' in config file, falling back to UTC")
+    except Exception:
+        # Silently fail if config can't be loaded
+        pass
+    
+    # Default to UTC
+    return timezone.utc
+
+
 def dt_now() -> datetime:
-    """Return the current datetime in UTC."""
-    return datetime.now(timezone.utc)
+    """Return the current datetime in configured timezone (defaults to UTC)."""
+    tz = get_timezone()
+    if isinstance(tz, timezone):
+        return datetime.now(tz)
+    else:
+        # arrow timezone object
+        return datetime.now(tz)
 
 
 def dt_utc(year: int, month: int, day: int, hour: int = 0, minute: int = 0, second: int = 0,
