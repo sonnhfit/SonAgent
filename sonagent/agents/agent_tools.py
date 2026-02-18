@@ -14,12 +14,13 @@ logger = logging.getLogger(__name__)
 
 def create_task_tool(content: str, priority: int = 0, 
                     agent_id: str = "main_team",
-                    cron_expression: Optional[str] = None) -> Dict[str, Any]:
+                    cron_expression: Optional[str] = None,
+                    scheduled_at: Optional[Any] = None) -> Dict[str, Any]:
     """
     Create a new task in the system.
     
     Args:
-        content: Task description/content
+        content: Task description/content (required)
         priority: Task priority (0=low, 1=medium, 2=high)
         agent_id: ID of the agent creating the task
         cron_expression: Optional cron expression for scheduled/recurring tasks
@@ -28,11 +29,51 @@ def create_task_tool(content: str, priority: int = 0,
             - "0 */2 * * *" (every 2 hours)
             - "0 0 * * 0" (every Sunday at midnight)
             - "30 18 * * 1-5" (every weekday at 6:30 PM)
+        scheduled_at: Optional scheduled datetime for the task (datetime object or string)
         
     Returns:
         Dictionary with task information
     """
     try:
+        # Handle scheduled_at parameter - it might be an empty dict or invalid value
+        actual_scheduled_at = None
+        if scheduled_at is not None:
+            if isinstance(scheduled_at, dict):
+                # If it's an empty dict, treat it as None
+                if scheduled_at:
+                    # Try to parse dict to datetime if it has datetime fields
+                    # This is a fallback for when LLM passes a dict representation
+                    try:
+                        from datetime import datetime as dt
+                        # Check if it has common datetime fields
+                        if 'year' in scheduled_at and 'month' in scheduled_at and 'day' in scheduled_at:
+                            actual_scheduled_at = dt(
+                                scheduled_at['year'],
+                                scheduled_at['month'],
+                                scheduled_at['day'],
+                                scheduled_at.get('hour', 0),
+                                scheduled_at.get('minute', 0),
+                                scheduled_at.get('second', 0)
+                            )
+                    except:
+                        pass  # If parsing fails, keep as None
+                # If empty dict or parsing failed, treat as None
+            elif isinstance(scheduled_at, datetime):
+                actual_scheduled_at = scheduled_at
+            elif isinstance(scheduled_at, str):
+                # Try to parse string to datetime
+                try:
+                    from datetime import datetime as dt
+                    # Try common formats
+                    for fmt in ['%Y-%m-%d %H:%M:%S', '%Y-%m-%d', '%d/%m/%Y %H:%M', '%d/%m/%Y']:
+                        try:
+                            actual_scheduled_at = dt.strptime(scheduled_at, fmt)
+                            break
+                        except:
+                            continue
+                except:
+                    pass  # If parsing fails, keep as None
+        
         # First, check if session is in a bad state and rollback if needed
         try:
             Task.session.rollback()
@@ -43,13 +84,16 @@ def create_task_tool(content: str, priority: int = 0,
             agent_id=agent_id,
             content=content,
             priority=priority,
-            cron_expression=cron_expression
+            cron_expression=cron_expression,
+            scheduled_at=actual_scheduled_at
         )
+        Task.session.commit()
         
-        logger.info(f"Task created: ID={task.id}, Content={content[:50]}..., Cron={cron_expression}")
+        logger.info(f"Task created: ID={task.id}, Content={content[:50]}..., Cron={cron_expression}, Scheduled_at={actual_scheduled_at}")
         
         # Create a detailed confirmation message
         created_time = task.created_at.strftime('%Y-%m-%d %H:%M:%S') if task.created_at else 'N/A'
+        scheduled_time = actual_scheduled_at.strftime('%Y-%m-%d %H:%M:%S') if actual_scheduled_at else None
         
         if cron_expression:
             confirmation_msg = (
@@ -60,9 +104,11 @@ def create_task_tool(content: str, priority: int = 0,
                 f"- Trạng thái: {task.status}\n"
                 f"- Độ ưu tiên: {task.priority}\n"
                 f"- Cron expression: {cron_expression}\n"
-                f"- Thời gian tạo: {created_time}\n\n"
-                f"Task định kỳ đã được lưu vào database và sẽ được thực hiện theo lịch trình: {cron_expression}"
+                f"- Thời gian tạo: {created_time}\n"
             )
+            if scheduled_time:
+                confirmation_msg += f"- Thời gian lên lịch: {scheduled_time}\n"
+            confirmation_msg += f"\nTask định kỳ đã được lưu vào database và sẽ được thực hiện theo lịch trình: {cron_expression}"
         else:
             confirmation_msg = (
                 f"✅ Task đã được tạo thành công!\n\n"
@@ -71,11 +117,13 @@ def create_task_tool(content: str, priority: int = 0,
                 f"- Nội dung: {task.content}\n"
                 f"- Trạng thái: {task.status}\n"
                 f"- Độ ưu tiên: {task.priority}\n"
-                f"- Thời gian tạo: {created_time}\n\n"
-                f"Task đã được lưu vào database và sẽ được xử lý theo lịch trình."
+                f"- Thời gian tạo: {created_time}\n"
             )
+            if scheduled_time:
+                confirmation_msg += f"- Thời gian lên lịch: {scheduled_time}\n"
+            confirmation_msg += f"\nTask đã được lưu vào database và sẽ được xử lý theo lịch trình."
         
-        return {
+        result = {
             "success": True,
             "task_id": task.id,
             "content": task.content,
@@ -85,6 +133,9 @@ def create_task_tool(content: str, priority: int = 0,
             "created_at": task.created_at.isoformat() if task.created_at else None,
             "message": confirmation_msg
         }
+        if actual_scheduled_at:
+            result["scheduled_at"] = actual_scheduled_at.isoformat()
+        return result
     except Exception as e:
         logger.error(f"Error creating task: {e}", exc_info=True)
         # Try to rollback the session to clean up
@@ -104,7 +155,7 @@ def get_tasks_tool(status: Optional[str] = None,
                   agent_id: Optional[str] = None,
                   limit: int = 10) -> List[Dict[str, Any]]:
     """
-    Get tasks from the system with optional filters.
+    Get tasks from the system with optional filters, or get all tasks.
     
     Args:
         status: Filter by task status (pending, in_progress, done, failed, cancelled)
@@ -135,10 +186,23 @@ def get_tasks_tool(status: Optional[str] = None,
                 "content": task.content,
                 "status": task.status,
                 "priority": task.priority,
+                "payload": task.payload,
+                "result": task.result,
+                "scheduled_at": task.scheduled_at.isoformat() if task.scheduled_at else None,
                 "cron_expression": task.cron_expression,
-                "created_at": task.created_at.isoformat() if task.created_at else None,
                 "started_at": task.started_at.isoformat() if task.started_at else None,
-                "completed_at": task.completed_at.isoformat() if task.completed_at else None
+                "completed_at": task.completed_at.isoformat() if task.completed_at else None,
+                "retry_count": task.retry_count,
+                "max_retries": task.max_retries,
+                "execution_count": task.execution_count,
+                "total_tokens_used": task.total_tokens_used,
+                "challenge": task.challenge,
+                "execution_data": task.execution_data,
+                "last_execution_tokens": task.last_execution_tokens,
+                "last_execution_duration": task.last_execution_duration,
+                "success_rate": task.success_rate,
+                "created_at": task.created_at.isoformat() if task.created_at else None,
+                "updated_at": task.updated_at.isoformat() if task.updated_at else None
             })
         
         logger.info(f"Retrieved {len(result)} tasks")
@@ -154,6 +218,7 @@ def update_task_tool(task_id: int,
                     status: Optional[str] = None,
                     priority: Optional[int] = None,
                     cron_expression: Optional[str] = None,
+                    scheduled_at: Optional[datetime] = None,
                     started_at: Optional[datetime] = None,
                     result: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
     """
@@ -165,6 +230,7 @@ def update_task_tool(task_id: int,
         status: New status (pending, in_progress, done, failed, cancelled)
         priority: New priority (0=low, 1=medium, 2=high)
         cron_expression: New cron expression for scheduled tasks
+        scheduled_at: New scheduled datetime for the task (datetime object)
         started_at: New start time (datetime object)
         result: Task result data
         
@@ -185,6 +251,10 @@ def update_task_tool(task_id: int,
         # Update cron expression if provided
         if cron_expression is not None:
             task.cron_expression = cron_expression
+        
+        # Update scheduled_at if provided
+        if scheduled_at is not None:
+            task.scheduled_at = scheduled_at
         
         # Update started_at if provided
         if started_at is not None:
@@ -211,7 +281,7 @@ def update_task_tool(task_id: int,
         Task.session.commit()
         
         logger.info(f"Task updated: ID={task_id}, Content updated={content is not None}, "
-                   f"Status={status}, Priority={priority}, Cron={cron_expression is not None}")
+                   f"Status={status}, Priority={priority}, Cron={cron_expression is not None}, Scheduled_at={scheduled_at is not None}")
         
         # Build response message
         updates = []
@@ -223,6 +293,8 @@ def update_task_tool(task_id: int,
             updates.append("priority")
         if cron_expression is not None:
             updates.append("cron_expression")
+        if scheduled_at is not None:
+            updates.append("scheduled_at")
         if started_at is not None:
             updates.append("started_at")
         if result is not None:
@@ -237,6 +309,7 @@ def update_task_tool(task_id: int,
             "status": task.status,
             "priority": task.priority,
             "cron_expression": task.cron_expression,
+            "scheduled_at": task.scheduled_at.isoformat() if task.scheduled_at else None,
             "started_at": task.started_at.isoformat() if task.started_at else None,
             "result": task.result,
             "message": f"Task {task_id} updated successfully. {update_message}"

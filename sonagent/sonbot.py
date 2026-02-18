@@ -2,7 +2,7 @@ import ast
 import logging
 import os
 import time
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from queue import Queue
 from typing import Any, Dict, Optional
@@ -263,15 +263,20 @@ class SonBot(LoggingMixin):
         2. Check if the cron expression matches current time (within 10-60s window)
         3. If task is not already in queue, push it to queue
         4. Update task status to 'in_progress' atomically
+        
+        For periodic tasks with cron expressions, they will be reset to 'pending' after execution
+        so they can be scanned again for the next scheduled run.
         """
         try:
             from sonagent.persistence import Task
+            from croniter import croniter
             
             # Get current time
             current_time = dt_now()
             
             # Get all pending tasks with cron expressions
             pending_tasks = Task.get_tasks_by_status('pending')
+            logger.debug(f"Scanning {len(pending_tasks)} pending tasks")
             
             tasks_added = 0
             for task in pending_tasks:
@@ -286,6 +291,11 @@ class SonBot(LoggingMixin):
                     if croniter.is_valid(task.cron_expression):
                         cron = croniter(task.cron_expression, base_time)
                         next_time = cron.get_next(datetime)
+                        
+                        # Make next_time timezone-aware (UTC) to match current_time
+                        # croniter returns naive datetime, but current_time is timezone-aware
+                        if next_time.tzinfo is None:
+                            next_time = next_time.replace(tzinfo=timezone.utc)
                         
                         # Check if current time is within 10-60 seconds of next execution time
                         # This matches the requirement "có thể lệnh khoảng 10-60s"
@@ -303,6 +313,7 @@ class SonBot(LoggingMixin):
                                 task_data = {
                                     'task_id': task.id,
                                     'content': task.content,
+                                    'cron_expression': task.cron_expression,
                                     'status': 'in_progress'
                                 }
                                 
@@ -313,7 +324,7 @@ class SonBot(LoggingMixin):
                                 # Push to queue
                                 self.task_queue.put(task_data)
                                 tasks_added += 1
-                                logger.info(f"Added task {task.id} to queue: {task.content[:50]}...")
+                                logger.info(f"Added periodic task {task.id} to queue: {task.content[:50]}... (cron: {task.cron_expression})")
                             except Exception as task_error:
                                 logger.error(f"Error processing task {task.id}: {task_error}")
                     else:
@@ -322,9 +333,9 @@ class SonBot(LoggingMixin):
                     logger.error(f"Error checking cron for task {task.id}: {e}")
             
             if tasks_added > 0:
-                logger.info(f"Added {tasks_added} tasks to queue for agent worker")
+                logger.info(f"Added {tasks_added} periodic tasks to queue for agent worker")
             else:
-                logger.debug("No tasks to add to queue")
+                logger.debug("No periodic tasks to add to queue")
                 
         except Exception as e:
             logger.error(f"Error in scan_task_for_agent_worker: {e}")
@@ -338,6 +349,11 @@ class SonBot(LoggingMixin):
         1. Get task from queue (non-blocking)
         2. Call WorkerTeamAgent to execute the task
         3. Update task status based on execution result
+        
+        For periodic tasks with cron expressions:
+        - Reset status to 'pending' after execution (instead of 'done'/'failed')
+        - Update scheduled_at to next execution time based on cron
+        - Track execution history through execution_count and other fields
         """
         try:
             # Check if queue has tasks
@@ -354,6 +370,7 @@ class SonBot(LoggingMixin):
             
             task_id = task_data.get('task_id')
             content = task_data.get('content')
+            cron_expression = task_data.get('cron_expression')
             
             logger.info(f"Executing task {task_id}: {content[:50]}...")
             
@@ -367,6 +384,7 @@ class SonBot(LoggingMixin):
             try:
                 # Import Task model for updating status
                 from sonagent.persistence import Task
+                from croniter import croniter
                 
                 # Get task from database
                 task = Task.get_task_by_id(task_id)
@@ -385,31 +403,102 @@ class SonBot(LoggingMixin):
                     # Task executed successfully
                     worker_response = result.get("worker_response", "Task executed")
                     
-                    # Update task status to done
-                    task.complete(result={"worker_response": worker_response})
-                    
-                    logger.info(f"Task {task_id} executed successfully")
-                    
-                    # Notify status
-                    self.notify_status(f"Task {task_id} completed: {content[:50]}...")
+                    # Check if this is a periodic task with cron expression
+                    if cron_expression and task.cron_expression:
+                        # This is a periodic task - reset to pending for next execution
+                        
+                        # Calculate next execution time based on cron
+                        next_scheduled_at = None
+                        try:
+                            base_time = task.scheduled_at or task.created_at or dt_now()
+                            cron = croniter(cron_expression, base_time)
+                            next_time = cron.get_next(datetime)
+                            
+                            # Make next_time timezone-aware (UTC)
+                            if next_time.tzinfo is None:
+                                next_time = next_time.replace(tzinfo=timezone.utc)
+                            
+                            next_scheduled_at = next_time
+                            logger.info(f"Periodic task {task_id} scheduled for next execution at: {next_time}")
+                        except Exception as cron_error:
+                            logger.error(f"Error calculating next execution time for task {task_id}: {cron_error}")
+                        
+                        # Reset task for next execution
+                        task.reset_for_next_periodic_execution(next_scheduled_at)
+                        task.result = {"worker_response": worker_response, "execution_count": (task.execution_count or 0) + 1}
+                        
+                        # Update execution statistics
+                        task.update_execution_data(
+                            tokens_used=1000,  # Default estimate, should be updated with actual token usage
+                            duration_seconds=None,
+                            success=True
+                        )
+                        
+                        logger.info(f"Periodic task {task_id} executed successfully and reset to pending for next run")
+                        self.notify_status(f"Periodic task {task_id} completed and scheduled for next run: {content[:50]}...")
+                    else:
+                        # Regular one-time task - mark as done
+                        task.complete(result={"worker_response": worker_response})
+                        logger.info(f"Task {task_id} executed successfully")
+                        self.notify_status(f"Task {task_id} completed: {content[:50]}...")
+                        
                 else:
                     # Task execution failed
                     error_msg = result.get("error", "Unknown error")
-                    task.fail(error_message=error_msg)
                     
-                    logger.error(f"Task {task_id} failed: {error_msg}")
-                    
-                    # Notify status
-                    self.notify_status(f"Task {task_id} failed: {error_msg}")
+                    # Check if this is a periodic task with cron expression
+                    if cron_expression and task.cron_expression:
+                        # Periodic task failed - reset to pending for retry (if retries left)
+                        if task.retry_count < task.max_retries:
+                            task.status = 'pending'
+                            task.completed_at = dt_now()
+                            task.result = {'error': error_msg, 'retry_count': task.retry_count}
+                            
+                            # Update execution statistics (failed)
+                            task.update_execution_data(
+                                tokens_used=1000,  # Default estimate
+                                duration_seconds=None,
+                                success=False
+                            )
+                            
+                            Task.session.commit()
+                            logger.warning(f"Periodic task {task_id} failed but reset to pending for retry (retry {task.retry_count}/{task.max_retries}): {error_msg}")
+                            self.notify_status(f"Periodic task {task_id} failed but will retry: {error_msg[:100]}")
+                        else:
+                            # Max retries exceeded - mark as failed permanently
+                            task.fail(error_message=f"Max retries exceeded: {error_msg}")
+                            logger.error(f"Periodic task {task_id} failed permanently after {task.max_retries} retries: {error_msg}")
+                            self.notify_status(f"Periodic task {task_id} failed permanently: {error_msg[:100]}")
+                    else:
+                        # Regular one-time task failed
+                        task.fail(error_message=error_msg)
+                        logger.error(f"Task {task_id} failed: {error_msg}")
+                        self.notify_status(f"Task {task_id} failed: {error_msg}")
                     
             except Exception as e:
                 logger.error(f"Error executing task {task_id}: {e}")
                 
-                # Update task status to failed
+                # Update task status based on whether it's periodic or not
                 try:
                     from sonagent.persistence import Task
                     task = Task.get_task_by_id(task_id)
-                    task.fail(error_message=str(e))
+                    
+                    if task.cron_expression:
+                        # Periodic task - check retry count
+                        if task.retry_count < task.max_retries:
+                            task.status = 'pending'
+                            task.completed_at = dt_now()
+                            task.result = {'error': str(e), 'retry_count': task.retry_count}
+                            Task.session.commit()
+                            logger.warning(f"Periodic task {task_id} execution error but reset to pending for retry: {str(e)[:100]}")
+                        else:
+                            task.fail(error_message=str(e))
+                            logger.error(f"Periodic task {task_id} execution error after max retries: {str(e)[:100]}")
+                    else:
+                        # Regular task
+                        task.fail(error_message=str(e))
+                        logger.error(f"Task {task_id} execution error: {str(e)[:100]}")
+                        
                 except:
                     pass
                 
@@ -485,6 +574,8 @@ class SonBot(LoggingMixin):
                     conversation_id="default",
                     user_id="default"
                 )
+                print(result)
+                print("===========================")
                 
                 if result.get("success"):
                     response = result.get("assistant_response", "No response generated")

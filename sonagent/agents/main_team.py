@@ -113,19 +113,29 @@ class MainTeamAgent:
                 delete_task_tool
             ],
             instructions="""
-            You are responsible for task management. When users request tasks. When a user asks you to do something, you only need to create a task:
-            1. Create tasks with clear descriptions and priorities
-            2. Retrieve task status and information
-            3. Update task progress and completion
-            4. Always provide task IDs for reference
-            5. After creating a task, ALWAYS inform the user that the task has been saved to the database
-            6. Provide clear confirmation messages in Vietnamese when appropriate
-        
+            You are responsible for task management. When users request tasks, create a task with the information provided.
+            
+            Key principles:
+            1. The most important field is 'content' (task description) - this is REQUIRED
+            2. 'cron_expression' and 'scheduled_at' are OPTIONAL - if the user doesn't provide them, leave them empty
+            3. If the user provides incomplete information (e.g., only content), still create the task with empty optional fields
+            4. Priority defaults to 0 (low) if not specified
+            5. Always provide task IDs for reference
+            6. After creating a task, ALWAYS inform the user that the task has been saved to the database
+            7. Provide clear confirmation messages in Vietnamese when appropriate
+            
+            When creating a task:
+            - Extract the task content from the user's request
+            - Determine priority if mentioned (high=2, medium=1, low=0)
+            - If the user specifies a schedule (e.g., "every day at 9 AM"), convert to cron_expression
+            - If the user specifies a specific date/time (e.g., "tomorrow at 10:00"), convert to scheduled_at datetime object
+            - If schedule information is missing, leave cron_expression and scheduled_at empty
             
             When a task is created successfully, make sure to tell the user:
             - The task has been created and saved to the database
             - The task ID for reference
             - The task details (content, priority, status)
+            - Any schedule information (cron_expression or scheduled_at) if provided
             """,
             db=self.db,
             add_history_to_context=True,
@@ -162,8 +172,8 @@ class MainTeamAgent:
             search_knowledge=True,
             learning=LearningMachine(
                 knowledge=self.knowledge,
-                user_profile=UserProfileConfig(mode=LearningMode.ALWAYS),     # Automatic
-                user_memory=UserMemoryConfig(mode=LearningMode.ALWAYS),       # Automatic
+                user_profile=UserProfileConfig(mode=LearningMode.AGENTIC),     # Agent-driven, not automatic
+                user_memory=UserMemoryConfig(mode=LearningMode.AGENTIC),       # Agent-driven, not automatic
                 learned_knowledge=LearnedKnowledgeConfig(mode=LearningMode.AGENTIC),  # Agent-driven
             ),
         )
@@ -218,8 +228,8 @@ class MainTeamAgent:
             search_knowledge=True,
             learning=LearningMachine(
                 knowledge=self.knowledge,
-                user_profile=UserProfileConfig(mode=LearningMode.ALWAYS),     # Automatic
-                user_memory=UserMemoryConfig(mode=LearningMode.ALWAYS),       # Automatic
+                user_profile=UserProfileConfig(mode=LearningMode.AGENTIC),     # Agent-driven, not automatic
+                user_memory=UserMemoryConfig(mode=LearningMode.AGENTIC),       # Agent-driven, not automatic
                 learned_knowledge=LearnedKnowledgeConfig(mode=LearningMode.AGENTIC),  # Agent-driven
             ),
 
@@ -251,8 +261,8 @@ class MainTeamAgent:
             Always:
             - Save important conversations to chat history
             - Extract and update user's Theory of Mind when relevant
-            - Use human feedback to improve future interactions
             - Maintain conversation context across sessions
+            - If create task done tell user for end 
 
             Timenow: {datetime.now()}
             """,
@@ -265,8 +275,8 @@ class MainTeamAgent:
             knowledge=self.knowledge,
             learning=LearningMachine(
                 knowledge=self.knowledge,
-                user_profile=UserProfileConfig(mode=LearningMode.ALWAYS),     # Automatic
-                user_memory=UserMemoryConfig(mode=LearningMode.ALWAYS),       # Automatic
+                user_profile=UserProfileConfig(mode=LearningMode.AGENTIC),     # Agent-driven, not automatic
+                user_memory=UserMemoryConfig(mode=LearningMode.AGENTIC),       # Agent-driven, not automatic
                 learned_knowledge=LearnedKnowledgeConfig(mode=LearningMode.AGENTIC),  # Agent-driven
             ),
         )

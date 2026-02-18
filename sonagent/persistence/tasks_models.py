@@ -160,6 +160,28 @@ class Task(ModelBase):
         
         Task.session.commit()
     
+    def reset_for_next_periodic_execution(self, next_scheduled_at: Optional[datetime] = None) -> None:
+        """
+        Reset a periodic task for the next execution.
+        
+        Args:
+            next_scheduled_at: Next scheduled execution time (optional, will be calculated from cron if not provided)
+        """
+        # Reset status to pending
+        self.status = 'pending'
+        
+        # Set completion time for this execution
+        self.completed_at = dt_now()
+        
+        # Clear started_at for next execution
+        self.started_at = None
+        
+        # Update scheduled_at if provided
+        if next_scheduled_at:
+            self.scheduled_at = next_scheduled_at
+        
+        Task.session.commit()
+    
     def get_task_value_score(self, discount_factor: float = 0.7,
                            short_term_weight: float = 0.3,
                            long_term_weight: float = 0.7) -> float:

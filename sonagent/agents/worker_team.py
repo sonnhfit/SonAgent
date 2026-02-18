@@ -34,6 +34,10 @@ from sonagent.agents.worker_agent_tools import (
     update_task_execution_data_tool
 )
 
+from sonagent.agents.agent_tools import (
+    create_task_tool
+)
+
 logger = logging.getLogger(__name__)
 
 
@@ -82,6 +86,7 @@ class WorkerTeamAgent:
             role="Prioritize and execute tasks considering short-term and long-term goals",
             model=OpenAIResponses(id="gpt-4o-mini"),
             tools=[
+                create_task_tool,
                 get_task_list_tool,
                 get_targets_tool,
                 update_task_execution_data_tool,
@@ -115,8 +120,8 @@ class WorkerTeamAgent:
             search_knowledge=True,
             learning=LearningMachine(
                 knowledge=self.knowledge,
-                user_profile=UserProfileConfig(mode=LearningMode.ALWAYS),     # Automatic
-                user_memory=UserMemoryConfig(mode=LearningMode.ALWAYS),       # Automatic
+                user_profile=UserProfileConfig(mode=LearningMode.AGENTIC),     # Agent-driven, not automatic
+                user_memory=UserMemoryConfig(mode=LearningMode.AGENTIC),       # Agent-driven, not automatic
                 learned_knowledge=LearnedKnowledgeConfig(mode=LearningMode.AGENTIC),  # Agent-driven
             ),
         )
