@@ -31,7 +31,10 @@ from sonagent.utils.datetime_helpers import dt_now
 from sonagent.agents.worker_agent_tools import (
     get_task_list_tool,
     get_targets_tool,
-    update_task_execution_data_tool
+    update_task_execution_data_tool,
+    add_target_tool,
+    delete_target_tool,
+    update_target_tool
 )
 
 from sonagent.agents.agent_tools import (
@@ -90,6 +93,9 @@ class WorkerTeamAgent:
                 get_task_list_tool,
                 get_targets_tool,
                 update_task_execution_data_tool,
+                add_target_tool,
+                delete_target_tool,
+                update_target_tool,
             ],
             instructions="""
             You are a Worker Agent responsible for task prioritization and execution.

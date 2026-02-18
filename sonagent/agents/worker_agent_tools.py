@@ -163,3 +163,140 @@ def update_task_execution_data_tool(
             "message": f"Failed to update task {task_id}"
         }
 
+
+def add_target_tool(target: str, description: Optional[str] = None) -> Dict[str, Any]:
+    """
+    Add a new target (objective) to the system.
+    
+    Args:
+        target: The target description (short)
+        description: Detailed description (optional)
+        
+    Returns:
+        Dictionary with success status and created target info
+    """
+    try:
+        # Validate inputs
+        if not target or not target.strip():
+            return {
+                "success": False,
+                "error": "Target cannot be empty",
+                "message": "Failed to add target: target is required"
+            }
+        
+        # Create target
+        target_obj = Target.create_target(
+            target=target.strip(),
+            description=description.strip() if description else ""
+        )
+        
+        logger.info(f"Added target {target_obj.id}: {target}")
+        
+        return {
+            "success": True,
+            "target_id": target_obj.id,
+            "target": target_obj.target,
+            "description": target_obj.description,
+            "message": f"Target '{target}' added successfully"
+        }
+        
+    except Exception as e:
+        logger.error(f"Error adding target: {e}")
+        return {
+            "success": False,
+            "error": str(e),
+            "message": "Failed to add target"
+        }
+
+
+def delete_target_tool(target_id: int) -> Dict[str, Any]:
+    """
+    Delete a target by ID.
+    
+    Args:
+        target_id: ID of the target to delete
+        
+    Returns:
+        Dictionary with success status
+    """
+    try:
+        # Check if target exists
+        target = Target.get_target_by_id(target_id)
+        
+        # Delete target
+        deleted = Target.delete_target(target_id)
+        
+        if deleted:
+            logger.info(f"Deleted target {target_id}: {target.target}")
+            return {
+                "success": True,
+                "target_id": target_id,
+                "message": f"Target {target_id} deleted successfully"
+            }
+        else:
+            return {
+                "success": False,
+                "error": "Target not found",
+                "message": f"Target {target_id} not found"
+            }
+        
+    except Exception as e:
+        logger.error(f"Error deleting target: {e}")
+        return {
+            "success": False,
+            "error": str(e),
+            "message": f"Failed to delete target {target_id}"
+        }
+
+
+def update_target_tool(target_id: int, target: Optional[str] = None, 
+                      description: Optional[str] = None) -> Dict[str, Any]:
+    """
+    Update an existing target.
+    
+    Args:
+        target_id: ID of the target to update
+        target: New target description (optional)
+        description: New detailed description (optional)
+        
+    Returns:
+        Dictionary with success status and updated target info
+    """
+    try:
+        # Get the target
+        target_obj = Target.get_target_by_id(target_id)
+        
+        # Prepare update fields
+        update_fields = {}
+        if target is not None:
+            if not target.strip():
+                return {
+                    "success": False,
+                    "error": "Target cannot be empty",
+                    "message": "Failed to update target: target cannot be empty"
+                }
+            update_fields["target"] = target.strip()
+        
+        if description is not None:
+            update_fields["description"] = description.strip() if description else ""
+        
+        # Update target
+        target_obj.update(**update_fields)
+        
+        logger.info(f"Updated target {target_id}: fields={list(update_fields.keys())}")
+        
+        return {
+            "success": True,
+            "target_id": target_id,
+            "updated_fields": list(update_fields.keys()),
+            "message": f"Target {target_id} updated successfully"
+        }
+        
+    except Exception as e:
+        logger.error(f"Error updating target: {e}")
+        return {
+            "success": False,
+            "error": str(e),
+            "message": f"Failed to update target {target_id}"
+        }
+

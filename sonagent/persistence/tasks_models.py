@@ -44,6 +44,7 @@ class Task(ModelBase):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=dt_now)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=dt_now, onupdate=dt_now)
 
+
     @staticmethod
     def get_all_tasks() -> List["Task"]:
         return Task.session.scalars(select(Task)).all()
@@ -276,3 +277,77 @@ class Target(ModelBase):
     
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=dt_now)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=dt_now, onupdate=dt_now)
+
+
+    @staticmethod
+    def get_all_targets() -> List["Target"]:
+        return Target.session.scalars(select(Target)).all()
+    
+    @staticmethod
+    def get_active_targets() -> List["Target"]:
+        return Target.session.scalars(
+            select(Target).filter(Target.status == 'active')).all()
+    
+    @staticmethod
+    def get_target_by_id(target_id: int) -> "Target":
+        return Target.session.scalars(
+            select(Target).filter(Target.id == target_id)).one()
+    
+    @staticmethod
+    def create_target(target: str, description: str, progress: Optional[int] = None,
+                     tokens_used: Optional[int] = None, status: str = 'active',
+                     start_date: Optional[datetime] = None,
+                     target_date: Optional[datetime] = None) -> "Target":
+        """
+        Create a new target.
+        
+        Args:
+            target: The target description (short)
+            description: Detailed description
+            progress: Initial progress (0-100)
+            tokens_used: Tokens used so far
+            status: Status (active, completed, etc.)
+            start_date: Start date
+            target_date: Target completion date
+        """
+        target_obj = Target(
+            target=target,
+            description=description,
+            progress=progress,
+            tokens_used=tokens_used,
+            status=status,
+            start_date=start_date,
+            target_date=target_date
+        )
+        Target.session.add(target_obj)
+        Target.session.commit()
+        return target_obj
+    
+    @staticmethod
+    def delete_target(target_id: int) -> bool:
+        """
+        Delete a target by ID.
+        
+        Returns:
+            True if deleted, False if not found
+        """
+        target = Target.session.scalars(
+            select(Target).filter(Target.id == target_id)).first()
+        if target:
+            Target.session.delete(target)
+            Target.session.commit()
+            return True
+        return False
+    
+    def update(self, **kwargs) -> None:
+        """
+        Update target fields.
+        
+        Args:
+            **kwargs: Fields to update (target, description, progress, status, etc.)
+        """
+        for key, value in kwargs.items():
+            if hasattr(self, key):
+                setattr(self, key, value)
+        self.updated_at = dt_now()
+        Target.session.commit()

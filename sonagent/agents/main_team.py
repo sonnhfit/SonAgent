@@ -35,14 +35,14 @@ from sonagent.agents.agent_tools import (
     get_tasks_tool,
     update_task_tool,
     delete_task_tool,
-    save_chat_message_tool,
-    get_chat_history_tool,
     extract_tom_tool,
     analyze_intent_tool,
     request_feedback_tool,
-    process_feedback_tool,
-    coordinate_agents_tool,
-    respond_to_user_tool
+    process_feedback_tool
+)
+
+from sonagent.agents.worker_agent_tools import (
+    get_targets_tool
 )
 
 logger = logging.getLogger(__name__)
@@ -205,10 +205,7 @@ class MainTeamAgent:
             role="Handle general user queries and coordinate with other agents",
             model=OpenAIResponses(id="gpt-4o-mini"),
             tools=[
-                coordinate_agents_tool,
-                respond_to_user_tool,
-                save_chat_message_tool,
-                get_chat_history_tool
+                get_targets_tool
             ],
             instructions="""
             You are the primary interface for users. Your responsibilities:
@@ -223,7 +220,7 @@ class MainTeamAgent:
             """,
             db=self.db,
             add_history_to_context=True,
-            num_history_runs=3,
+            num_history_runs=10,
             
             search_knowledge=True,
             learning=LearningMachine(
