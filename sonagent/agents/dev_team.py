@@ -40,6 +40,7 @@ Responsibilities:
 - Prioritize tasks based on impact and urgency.
 - Clarify requirements when developers are uncertain.
 - Break large goals into actionable tasks.
+- manage github and issue 
 
 Rules:
 - Do not write production code.
@@ -48,10 +49,9 @@ Rules:
 - Keep backlog organized and updated.
 - Communicate in concise, structured English.
 
-Output style:
-- Structured tasks
-- Clear acceptance criteria
-- Priority and context
+""",
+    instructions="""
+create github issue, and task on github 
 """
 )
 
@@ -117,7 +117,7 @@ Output style:
 dev_team = Team(
     name="Dev Team",
     model=OpenAIResponses(id="gpt-4o-mini"),
-    role="Coordinate development by translating requests into technical direction, shaping features, and creating clear, actionable issues, create issue for the team.",
+    role="Coordinate development by translating requests into technical direction, shaping features, and creating clear, actionable issues, create issue github and manage github repo for the team.",
     members=[
         po_agent,
         # be_agent,
