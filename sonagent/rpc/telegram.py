@@ -203,14 +203,14 @@ class Telegram(RPCHandler):
         section.
         """
         self._keyboard: List[List[Union[str, KeyboardButton]]] = [
-            ['/ibelieve', '/sum', '/version', '/help']
+            ['/show_skills', '/show_tasks', '/version', '/help']
         ]
         # do not allow commands with mandatory arguments and critical cmds
         # TODO: DRY! - its not good to list all valid cmds here. But otherwise
         #       this needs refactoring of the whole telegram module (same
         #       problem in _help()).
         valid_keys: List[str] = [
-            r'/ibelieve', r'/sum$', r'/show_skills$',
+            r'/show_skills$',
             r'/reload_skills$', r'/remove_skill', r'/show_tasks$', r'/env$',
             r'/add_env', r'/remove_env', r'/reload_env',
             r'/help$', r'/version$'
@@ -296,8 +296,6 @@ class Telegram(RPCHandler):
         # Register command handler and start telegram message polling
         handles = [
             CommandHandler('clear_chat', self._clear_short_term_memory),
-            CommandHandler('ibelieve', self._ibelieve),
-            CommandHandler('sum', self._summerize_dialog),
             CommandHandler('show_skills', self._show_skills),
             CommandHandler('show_tasks', self._show_task),
             CommandHandler('env', self._env),
@@ -513,8 +511,6 @@ class Telegram(RPCHandler):
             "------------\n"
             "*/show_tasks:* `Show all tasks with details`\n"
             "*/clear_chat:* `Clear chat`\n"
-            "*/ibelieve:* `I believe in you`\n"
-            "*/sum:* `Summerize dialog`\n"
             "*/show_skills:* `Show skills`\n"
             "*/reload_skills:* `Reload skills`\n"
             "*/remove_skill:* `Remove skill`\n"
@@ -671,24 +667,6 @@ class Telegram(RPCHandler):
 
         await update.message.reply_text(result)
 
-    async def _ibelieve(self, update: Update, context: CallbackContext) -> None:
-        """
-        Handler for /ibelieve.
-        Show version information
-        :param bot: telegram bot
-        :param update: message update
-        :return: None
-        """
-        result = "I believe in you!"
-        msg = update.message.text.replace('/ibelieve', '')
-
-        if len(msg) > 0:
-            result = await self._rpc.ibelieve(msg)
-        else:
-            result = "What do you believe?"
-
-        await update.message.reply_text(result)
-
     async def _handle_messages(self, update: Update, context: CallbackContext)  -> None:
         # Lấy thông tin từ tin nhắn
         # message = update.message
@@ -725,14 +703,3 @@ class Telegram(RPCHandler):
 
         result = await self._rpc.show_task()
         await self._send_msg(result, parse_mode=ParseMode.MARKDOWN)
-
-    async def _summerize_dialog(self, update: Update, context: CallbackContext) -> None:
-        """
-        Handler for /summerize_dialog.
-        Show version information
-        :param bot: telegram bot
-        :param update: message update
-        :return: None
-        """
-        result = await self._rpc.summerize_dialog()
-        await update.message.reply_text(result)

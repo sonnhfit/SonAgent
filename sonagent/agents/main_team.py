@@ -28,7 +28,7 @@ from agno.learn import (
     LearnedKnowledgeConfig,
 )
 
-from sonagent.persistence import Task, ChatMessage, Conversation, Belief
+from sonagent.persistence import Task, ChatMessage, Conversation
 from sonagent.utils.datetime_helpers import dt_now
 from sonagent.agents.agent_tools import (
     create_task_tool,
@@ -38,7 +38,6 @@ from sonagent.agents.agent_tools import (
     save_chat_message_tool,
     get_chat_history_tool,
     extract_tom_tool,
-    update_beliefs_tool,
     analyze_intent_tool,
     request_feedback_tool,
     process_feedback_tool,
@@ -140,16 +139,14 @@ class MainTeamAgent:
             model=OpenAIResponses(id="gpt-4o-mini"),
             tools=[
                 extract_tom_tool,
-                update_beliefs_tool,
                 analyze_intent_tool
             ],
             instructions="""
             You analyze user's Theory of Mind (TOM). Your responsibilities:
             1. Extract user's beliefs, desires, intentions, and mental state from conversations
-            2. Update user belief system based on new information
-            3. Analyze user intent and predict future actions
-            4. Maintain a model of user's knowledge and perspective
-            5. Detect changes in user's emotional state or preferences
+            2. Analyze user intent and predict future actions
+            3. Maintain a model of user's knowledge and perspective
+            4. Detect changes in user's emotional state or preferences
             
             Focus on understanding:
             - What does the user know/believe?

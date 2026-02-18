@@ -8,7 +8,7 @@ import yaml
 from croniter import croniter
 from tabulate import tabulate
 
-from sonagent.persistence import Belief, Environment, Task
+from sonagent.persistence import Environment, Task
 from sonagent.tools import GitManager, LocalCodeManager
 from sonagent.utils.datetime_helpers import dt_now
 
@@ -74,10 +74,6 @@ class Agent:
         for skill in self.skills.get_all_skills():
             self.skills_dict[str(skill.__class__.__name__)] = skill
 
-    def get_beliefs_for_planner(self, ids: list) -> list:
-        list_belief = Belief.get_belief_by_ids(ids=ids)
-        return list_belief
-
     def show_skills(self) -> str:
         self.skills.reload_skills()
         return ", ".join(self.skills_dict.keys())
@@ -95,37 +91,6 @@ class Agent:
     def reload_skills(self) -> str:
         self._reload_skills()
         return self.show_skills()
-
-    def sync_beliefs(self) -> None:
-        logger.debug("Start syncing beliefs to memory.")
-        # TODO: Implement memory sync with new memory system
-        logger.info("Finish syncing beliefs to memory.")
-
-    def create_beslief(self, text: str, description: str) -> None:
-        try:
-            belief = Belief(text=text, description=description)
-            Belief.session.add(belief)
-            Belief.session.commit()
-            logger.debug("Finish Create new belief.")
-            # Belief.commit()
-        except Exception as e:
-            logger.error(f"Error create belief: {e}")
-
-    def clear_all_beliefs(self) -> None:
-        Belief.session.query(Belief).delete()
-        Belief.session.commit()
-
-        logger.debug("Finish delete all belief.")
-
-    def delete_everything(self) -> bool:
-        try:
-            self.clear_all_beliefs()
-            # TODO: Implement memory clear with new memory system
-            logger.debug("Finish delete everything.")
-        except Exception as e:
-            logger.error(f"Error delete everything: {e}")
-            return False
-        return True
 
     def get_tools(self) -> list:
         return []
@@ -229,22 +194,6 @@ class Agent:
         except Exception as e:
             logger.error(f"Error clearing chat history: {e}")
             return f"Error clearing chat history: {str(e)}"
-
-    async def ibelieve(self, input: str) -> bool:
-        # maybe that gen by LLM + your input
-        try:
-            self.create_beslief(input, input)
-            self.sync_beliefs()
-            return True
-        except Exception as e:
-            logger.error(f"Error gen belief: {e}")
-            return False
-
-    async def reincarnate(self) -> str:
-        if self.delete_everything():
-            return "Reincarnate successfully."
-        else:
-            return "Reincarnate failed."
 
     async def show_task(self) -> str:
         """

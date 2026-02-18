@@ -14,7 +14,6 @@ from sonagent.agents import MainTeamAgent
 from sonagent.enums.enums import State
 from sonagent.enums.rpcmessagetype import RPCMessageType
 from sonagent.loggers.logging_mixin import LoggingMixin
-from sonagent.persistence.belief_models import Belief
 from sonagent.persistence.models import init_db
 from sonagent.rpc import IOMsg, RPCManager
 from sonagent.skills.skills_manager import SkillsManager
@@ -94,8 +93,12 @@ class SonBot(LoggingMixin):
         # Add skill scanning every 10 seconds
         def scan_skills():
             self.scan_and_reload_skills()
+
+        def agent_worker():
+            print("TODO: implement agent worker here")
         
         self._schedule.every(10).seconds.do(scan_skills)
+        self._schedule.every(600).seconds.do(agent_worker)
 
         # Set initial bot state from config
         initial_state = self.config.get('initial_state')
@@ -337,12 +340,6 @@ class SonBot(LoggingMixin):
         result = self.agent.remove_skill(skill_name)
         self.reload_skills()
         return result
-    
-    async def ibelieve(self, input: str) -> str:
-        return await self.agent.ibelieve(input)
-
-    async def reincarnate(self) -> str:
-        return await self.agent.reincarnate()
     
     async def clear_short_term_memory(self) -> str:
         return await self.agent.clear_short_term_memory()
@@ -712,14 +709,6 @@ class SonBot(LoggingMixin):
         # self.rpc.cleanup()
         # if self.emc:
         #     self.emc.shutdown()
-
-        # commit all changes to the database
-        try:
-            Belief.session.commit()
-        except Exception:
-            # Exeptions here will be happening if the db disappeared.
-            # At which point we can no longer commit anyway.
-            pass
 
     def startup(self) -> None:
         pass

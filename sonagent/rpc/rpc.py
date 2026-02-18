@@ -125,18 +125,6 @@ class RPC:
                 "message": "Failed to confirm action"
             }
     
-    async def ibelieve(self, msg: str) -> bool:
-        """
-        Send a chat message to all registered rpc modules.
-        :param msg: Message to send
-        :return: None
-        """
-        is_belief_added = await self.sonagent.ibelieve(msg)
-        if is_belief_added:
-            return "Belief added"
-    
-        return "Belief not added"
-
     async def reincarnate(self) -> None:
         """
         Send a chat message to all registered rpc modules.
@@ -201,9 +189,6 @@ class RPC:
     
     async def remove_skill(self, skill_name: str) -> str:
         return await self.sonagent.remove_skill(skill_name)
-    
-    async def summerize_dialog(self) -> str:
-        return self.sonagent.agent.short_term_memory.summerize_dialog()
     
     # Team agent methods
     async def create_task(self, content: str, priority: int = 0) -> str:

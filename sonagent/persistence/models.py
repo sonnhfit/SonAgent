@@ -7,7 +7,6 @@ from sqlalchemy.pool import StaticPool
 
 from sonagent.exceptions import OperationalException
 from sonagent.persistence.base import ModelBase
-from sonagent.persistence.belief_models import Belief
 from sonagent.persistence.chat_models import ChatMessage, Conversation
 from sonagent.persistence.environment_models import Environment
 from sonagent.persistence.migrations import check_migrate
@@ -45,9 +44,6 @@ def init_db(db_url: str) -> None:
         })
 
     engine = create_engine(db_url, future=True, **kwargs)
-
-    Belief.session = scoped_session(sessionmaker(bind=engine, autoflush=False))
-    Belief.query = Belief.session.query_property()
 
     Environment.session = scoped_session(sessionmaker(bind=engine, autoflush=False))
     Environment.query = Environment.session.query_property()
