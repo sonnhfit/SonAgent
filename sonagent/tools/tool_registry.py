@@ -344,16 +344,16 @@ class ToolRegistry:
             # Truncate docstring if too long
             docstring = tool_info['docstring']
             if len(docstring) > 200:
-                docstring = docstring[:197] + "..."
-            tools_list.append(f"   *Description:* {docstring}")
+                docstring = docstring[:100] + "..."
+            # tools_list.append(f"   *Description:* ")
             
             # Add parameters if available
-            if tool_info['params']:
-                params_str = ", ".join([
-                    f"{p['name']} ({p['type']})" 
-                    for p in tool_info['params']
-                ])
-                tools_list.append(f"   *Parameters:* {params_str}")
+            # if tool_info['params']:
+            #     params_str = ", ".join([
+            #         f"{p['name']} ({p['type']})" 
+            #         for p in tool_info['params']
+            #     ])
+            #     tools_list.append(f"   *Parameters:* {params_str}")
             
             tools_list.append("")  # Empty line between tools
         
