@@ -30,7 +30,6 @@ def crawl_web(url: str) -> str:
     if not url or not isinstance(url, str):
         raise ValueError("URL must be a non-empty string")
 
-
     if not url.startswith(('http://', 'https://')):
         logger.warning(f"URL '{url}' does not start with http:// or https://. Proceeding anyway.")
 
@@ -41,5 +40,5 @@ def crawl_web(url: str) -> str:
         raw_content = result.markdown if hasattr(result, 'markdown') else str(result)
         return raw_content
     except Exception as e:
-        logger.error(f"Failed to crawl {url}: {e}")
+        logger.error(f"Failed to crawl with url {url}: {e}")
         raise
