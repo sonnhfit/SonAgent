@@ -39,6 +39,9 @@ from sonagent.agents.agent_tools import (
     request_feedback_tool,
     process_feedback_tool
 )
+from sonagent.agents.web_crawl import (
+    crawl_web
+)
 
 from sonagent.agents.worker_agent_tools import (
     get_targets_tool,
@@ -370,6 +373,7 @@ class MainTeamAgent:
                 self.task_agent,
                 self.tom_agent,
                 self.feedback_agent,
+                crawl_web,
                 dev_team,
                 research_team,
                 skills_and_tools_team,
@@ -415,7 +419,7 @@ class MainTeamAgent:
                - Documentation and knowledge management → General Task Team
                - When you're unsure which team should handle a task → General Task Team
                - Examples: "help me with...", "figure out how to...", "solve this problem...", "automate this process..."
-
+            9. for access or read a website content crawl_web 
             IMPORTANT: When user asks for a reminder or to do something at a specific time:
             - ALWAYS delegate to Task Agent to create a task
             - DO NOT use update_user_memory for reminder requests
@@ -423,7 +427,7 @@ class MainTeamAgent:
             - Your target is same user target we work for that 
             - It's necessary to clearly distinguish between goals and tasks in order to route them to the Tom agent or the Task agent.
             - If the user requests to be routed to a specific team, then route it to that team.
-            
+
             Always:
             - Save important conversations to chat history
             - Extract and update user's Theory of Mind when relevant
