@@ -1,4 +1,4 @@
-from typing import Literal, TypedDict, Union
+from typing import Literal, Optional, TypedDict, Union
 
 from sonagent.enums import RPCMessageType
 
@@ -14,7 +14,15 @@ class RPCStatusMsg(RPCSendMsgBase):
     status: str
 
 
+class RPCImageMsg(RPCSendMsgBase):
+    """Used for sending image messages"""
+    type: Literal[RPCMessageType.IMAGE]
+    image_url: str
+    caption: Optional[str] = None
+
+
 RPCSendMsg = Union[
     RPCStatusMsg,
+    RPCImageMsg,
     RPCSendMsgBase
     ]

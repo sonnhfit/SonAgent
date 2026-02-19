@@ -15,7 +15,7 @@ from typing import List, Optional, Union
 
 from tabulate import tabulate
 from telegram import (CallbackQuery, InlineKeyboardButton,
-                      InlineKeyboardMarkup, KeyboardButton,
+                      InlineKeyboardMarkup, InputFile, KeyboardButton,
                       ReplyKeyboardMarkup, Update)
 from telegram.constants import MessageLimit, ParseMode
 from telegram.error import BadRequest, NetworkError, TelegramError
@@ -374,6 +374,9 @@ class Telegram(RPCHandler):
             message = f"{msg['status']}"
         elif msg['type'] == RPCMessageType.CHAT:
             message = msg['message']
+        elif msg['type'] == RPCMessageType.IMAGE:
+            # For image messages, we'll handle separately in send_image
+            return None
         else:
             logger.debug("Unknown message type: %s", msg['type'])
             return None
@@ -393,6 +396,17 @@ class Telegram(RPCHandler):
         if noti == 'off':
             logger.info(f"Notification '{msg_type}' not sent.")
             # Notification disabled
+            return
+
+        # Handle image messages separately
+        if msg['type'] == RPCMessageType.IMAGE:
+            image_url = msg.get('image_url', '')
+            caption = msg.get('caption', None)
+            if image_url:
+                asyncio.run_coroutine_threadsafe(
+                    self._send_image(image_url, caption),
+                    self._loop
+                )
             return
 
         message = self.compose_message(deepcopy(msg))
@@ -446,6 +460,44 @@ class Telegram(RPCHandler):
                 logger.warning('TelegramError: %s', e.message)
         except TelegramError as telegram_err:
             logger.warning('TelegramError: %s! Giving up on that message.', telegram_err.message)
+
+    async def _send_image(self, image_url: str, caption: Optional[str] = None) -> None:
+        """
+        Send an image to Telegram chat.
+        
+        :param image_url: URL of the image to send
+        :param caption: Optional caption for the image
+        :return: None
+        """
+        try:
+            try:
+                await self._app.bot.send_photo(
+                    chat_id=self._config['telegram']['chat_id'],
+                    photo=image_url,
+                    caption=caption,
+                    parse_mode=ParseMode.MARKDOWN if caption else None,
+                )
+                logger.info(f"Image sent successfully: {image_url[:100]}...")
+            except NetworkError as network_err:
+                # Sometimes the telegram server resets the current connection,
+                # if this is the case we send the image again.
+                logger.warning(
+                    'Telegram NetworkError while sending image: %s! Trying one more time.',
+                    network_err.message
+                )
+                await self._app.bot.send_photo(
+                    chat_id=self._config['telegram']['chat_id'],
+                    photo=image_url,
+                    caption=caption,
+                    parse_mode=ParseMode.MARKDOWN if caption else None,
+                )
+        except TelegramError as telegram_err:
+            logger.warning(
+                'TelegramError while sending image: %s! Giving up on that image.',
+                telegram_err.message
+            )
+        except Exception as e:
+            logger.error(f"Unexpected error while sending image: {e}", exc_info=True)
 
     async def _send_msg(self, msg: str, parse_mode: str = ParseMode.MARKDOWN,
                         disable_notification: bool = False,
