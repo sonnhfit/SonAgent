@@ -51,6 +51,7 @@ from sonagent.agents.dev_team import dev_team
 from sonagent.agents.skills_and_tools_team import skills_and_tools_team
 from sonagent.agents.research_team import research_team
 from sonagent.agents.finance_team import finance_team
+from sonagent.agents.general_task_team import general_task_team
 
 logger = logging.getLogger(__name__)
 
@@ -219,6 +220,7 @@ class WorkerTeamAgent:
                 skills_and_tools_team,  # Skills & Tools Team for creating new tools and skills
                 research_team,  # Research Team for academic and general knowledge research
                 finance_team,  # Finance Team for financial and market analysis
+                general_task_team,  # General Task Team for handling diverse tasks that don't fit specialized categories
             ],
             mode=TeamMode.coordinate,
             instructions="""
@@ -254,7 +256,12 @@ class WorkerTeamAgent:
                - Examples: "analyze NVIDIA stock", "check tech trends on Hacker News"
                - Finance Team includes Finance Analyst and HackerNews Analyst
             
-            7. For complex tasks that span multiple areas: coordinate between agents
+            7. For tasks that don't fit into specialized categories: delegate to General Task Team
+               - This includes: diverse problems, multi-domain tasks, experimental work, system administration
+               - Examples: "help me with a complex multi-step problem", "automate this workflow", "troubleshoot this issue"
+               - General Task Team has dynamic tools and can handle anything that doesn't clearly belong elsewhere
+            
+            8. For complex tasks that span multiple areas: coordinate between agents
             
             Key principles:
             - Always track token usage for tasks
@@ -485,5 +492,6 @@ class WorkerTeamAgent:
             "skills_and_tools_team_included": True,
             "research_team_included": True,
             "finance_team_included": True,
+            "general_task_team_included": True,
             "knowledge_base": self.knowledge.name if hasattr(self, 'knowledge') else "unknown"
         }
