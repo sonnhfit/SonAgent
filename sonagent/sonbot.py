@@ -110,11 +110,15 @@ class SonBot(LoggingMixin):
 
         def agent_worker_task_execute():
             self.execute_task_from_queue()
+
+        def periodic_task_scheduler():
+            self.execute_pending_tasks_without_schedule()
         
         self._schedule.every(10).seconds.do(scan_skills)
         self._schedule.every(30).seconds.do(scan_tools)
         self._schedule.every(11).seconds.do(agent_worker_cronjob_schedule)
         self._schedule.every(60).seconds.do(agent_worker_task_execute)
+        self._schedule.every(21600).seconds.do(periodic_task_scheduler)  # 6 hours
 
         # Set initial bot state from config
         initial_state = self.config.get('initial_state')
@@ -1135,3 +1139,116 @@ class SonBot(LoggingMixin):
         self.conversation_id = self._generate_conversation_id()
         logger.info(f"Started new conversation: {old_id} -> {self.conversation_id}")
         return self.conversation_id
+
+    def execute_pending_tasks_without_schedule(self) -> None:
+        """
+        Execute ONE pending task that doesn't have schedule_at or cronjob.
+        This method is called every 21600 seconds (6 hours) by the scheduler.
+        
+        It will:
+        1. Find pending tasks without scheduled_at and without cron_expression
+        2. Take ONE task (the first one found) and execute it
+        3. Update task status based on execution result
+        """
+        try:
+            from sonagent.persistence import Task
+            
+            # Get all pending tasks
+            pending_tasks = Task.get_tasks_by_status('pending')
+            logger.info(f"Checking {len(pending_tasks)} pending tasks for tasks without schedule/cronjob")
+            
+            task_to_execute = None
+            for task in pending_tasks:
+                # Skip tasks that have scheduled_at or cron_expression
+                if task.scheduled_at or task.cron_expression:
+                    continue
+                
+                # Found a task without schedule/cronjob - take this one
+                task_to_execute = task
+                break
+            
+            if not task_to_execute:
+                logger.info("No pending tasks without schedule/cronjob found to execute")
+                return
+            
+            # Found a task without schedule/cronjob - execute it
+            logger.info(f"Executing task without schedule/cronjob: ID={task_to_execute.id}, content={task_to_execute.content[:50]}...")
+            
+            # Check if WorkerTeamAgent is available
+            if not self.worker_team_agent:
+                logger.error("WorkerTeamAgent not initialized, cannot execute task")
+                return
+            
+            try:
+                # Update task status to in_progress
+                task_to_execute.start()
+                
+                # Prepare input for worker agent
+                user_input = f"Execute task with ID {task_to_execute.id}: {task_to_execute.content}"
+                
+                # Call worker team agent to process the task
+                result = self.worker_team_agent.process_worker_request(
+                    user_input=user_input,
+                    conversation_id=f"task_{task_to_execute.id}_{int(time.time())}",
+                    user_id="system"
+                )
+                
+                if result.get("success"):
+                    # Task executed successfully
+                    worker_response = result.get("worker_response", "Task executed")
+                    task_to_execute.complete(result={"worker_response": worker_response})
+                    
+                    # Update execution statistics
+                    task_to_execute.update_execution_data(
+                        tokens_used=1000,  # Default estimate, should be updated with actual token usage
+                        duration_seconds=None,
+                        success=True
+                    )
+                    
+                    logger.info(f"Task {task_to_execute.id} executed successfully without schedule/cronjob")
+                    self.notify_status(f"Task {task_to_execute.id} completed (no schedule): {task_to_execute.content[:50]}...")
+                else:
+                    # Task execution failed
+                    error_msg = result.get("error", "Unknown error")
+                    
+                    # Check retry count
+                    if task_to_execute.retry_count < task_to_execute.max_retries:
+                        task_to_execute.status = 'pending'
+                        task_to_execute.completed_at = dt_now()
+                        task_to_execute.result = {'error': error_msg, 'retry_count': task_to_execute.retry_count}
+                        
+                        # Update execution statistics (failed)
+                        task_to_execute.update_execution_data(
+                            tokens_used=1000,  # Default estimate
+                            duration_seconds=None,
+                            success=False
+                        )
+                        
+                        Task.session.commit()
+                        logger.warning(f"Task {task_to_execute.id} failed but reset to pending for retry (retry {task_to_execute.retry_count}/{task_to_execute.max_retries}): {error_msg}")
+                        self.notify_status(f"Task {task_to_execute.id} failed but will retry: {error_msg[:100]}")
+                    else:
+                        # Max retries exceeded - mark as failed permanently
+                        task_to_execute.fail(error_message=f"Max retries exceeded: {error_msg}")
+                        logger.error(f"Task {task_to_execute.id} failed permanently after {task_to_execute.max_retries} retries: {error_msg}")
+                        self.notify_status(f"Task {task_to_execute.id} failed permanently: {error_msg[:100]}")
+                        
+            except Exception as e:
+                logger.error(f"Error executing task {task_to_execute.id}: {e}")
+                
+                # Update task status based on retry count
+                if task_to_execute.retry_count < task_to_execute.max_retries:
+                    task_to_execute.status = 'pending'
+                    task_to_execute.completed_at = dt_now()
+                    task_to_execute.result = {'error': str(e), 'retry_count': task_to_execute.retry_count}
+                    Task.session.commit()
+                    logger.warning(f"Task {task_to_execute.id} execution error but reset to pending for retry: {str(e)[:100]}")
+                else:
+                    task_to_execute.fail(error_message=str(e))
+                    logger.error(f"Task {task_to_execute.id} execution error after max retries: {str(e)[:100]}")
+                
+                # Notify status
+                self.notify_status(f"Task {task_to_execute.id} execution error: {str(e)[:100]}")
+                
+        except Exception as e:
+            logger.error(f"Error in execute_pending_tasks_without_schedule: {e}")

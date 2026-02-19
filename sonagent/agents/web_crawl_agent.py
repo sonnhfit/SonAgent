@@ -15,6 +15,7 @@ from sonagent.constants import TOOL_CALL_LIMIT
 from sonagent.agents.web_crawl import (
     crawl_web
 )
+from agno.tools.duckduckgo import DuckDuckGoTools
 logger = logging.getLogger(__name__)
 
 
@@ -22,7 +23,7 @@ logger = logging.getLogger(__name__)
 web_crawl_agent = Agent(
     name="Web Crawl Agent",
     model=OpenAIResponses(id="gpt-4o-mini"),
-    tools=[crawl_web],
+    tools=[crawl_web, DuckDuckGoTools()],
     tool_call_limit=TOOL_CALL_LIMIT,
     role="""
 You are a Web Crawl Agent specialized in crawling websites and extracting content.
@@ -33,6 +34,8 @@ Your responsibilities:
 3. Extract specific types of content (articles, products, summaries)
 4. Handle various website structures and formats
 5. Provide clean, readable content extraction
+
+DuckDuckGoTools for search 
 
 Capabilities:
 - Extract webpage content in markdown format

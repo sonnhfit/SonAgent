@@ -8,7 +8,7 @@ from agno.team import Team, TeamMode
 from agno.models.openai import OpenAIResponses
 from agno.tools.arxiv import ArxivTools
 from agno.tools.wikipedia import WikipediaTools
-
+from agno.tools.duckduckgo import DuckDuckGoTools
 from sonagent.constants import TOOL_CALL_LIMIT
 
 
@@ -89,6 +89,7 @@ research_team = Team(
         arxiv_agent,
         wikipedia_agent,
     ],
+    tools=[DuckDuckGoTools()],
     mode=TeamMode.coordinate,
     instructions="""
 You are the central coordinator for the Research Team.

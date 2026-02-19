@@ -64,7 +64,8 @@ required = [
     'beautifulsoup4==4.14.3',
     'youtube_transcript_api==1.2.4',
     'yfinance==1.2.0',
-    'firecrawl==4.16.0'
+    'firecrawl==4.16.0',
+    'ddgs==9.10.0'
 ]
 
 # print(f"Required: {required}")

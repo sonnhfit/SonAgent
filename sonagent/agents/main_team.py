@@ -417,7 +417,7 @@ class MainTeamAgent:
                - Documentation and knowledge management → General Task Team
                - When you're unsure which team should handle a task → General Task Team
                - Examples: "help me with...", "figure out how to...", "solve this problem...", "automate this process..."
-            9. for access or read a website content web crawl agent 
+            9. for access or read a website content web crawl agent, web search
 
             IMPORTANT: When user asks for a reminder or to do something at a specific time:
             - ALWAYS delegate to Task Agent to create a task
@@ -432,7 +432,8 @@ class MainTeamAgent:
             - Extract and update user's Theory of Mind when relevant
             - Maintain conversation context across sessions
             - If create task done tell user for end
-            - response format familar with telegram, messenger, it short 
+            - response format familar with telegram, messenger, Keep it short, direct, and to the point.
+
 
             Timenow: {dt_now()}
             """,
