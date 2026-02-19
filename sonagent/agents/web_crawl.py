@@ -30,6 +30,7 @@ def crawl_web(url: str) -> str:
     if not url or not isinstance(url, str):
         raise ValueError("URL must be a non-empty string")
 
+
     if not url.startswith(('http://', 'https://')):
         logger.warning(f"URL '{url}' does not start with http:// or https://. Proceeding anyway.")
 
