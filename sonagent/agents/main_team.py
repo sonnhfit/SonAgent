@@ -47,7 +47,7 @@ from sonagent.agents.worker_agent_tools import (
     delete_target_tool,
     update_target_tool
 )
-
+from sonagent.agents.web_crawl_agent import web_crawl_agent
 from sonagent.agents.dev_team import dev_team
 from sonagent.agents.research_team import research_team
 from sonagent.agents.skills_and_tools_team import skills_and_tools_team
@@ -373,6 +373,7 @@ class MainTeamAgent:
                 self.feedback_agent,
                 dev_team,
                 research_team,
+                web_crawl_agent,
                 skills_and_tools_team,
                 general_task_team
             ],
@@ -416,7 +417,8 @@ class MainTeamAgent:
                - Documentation and knowledge management → General Task Team
                - When you're unsure which team should handle a task → General Task Team
                - Examples: "help me with...", "figure out how to...", "solve this problem...", "automate this process..."
-            9. for access or read a website content crawl_web 
+            9. for access or read a website content web crawl agent 
+
             IMPORTANT: When user asks for a reminder or to do something at a specific time:
             - ALWAYS delegate to Task Agent to create a task
             - DO NOT use update_user_memory for reminder requests

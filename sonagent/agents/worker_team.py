@@ -47,6 +47,7 @@ from sonagent.agents.agent_tools import (
 
 # Import dev_team from the dev_team module
 from sonagent.agents.dev_team import dev_team
+from sonagent.agents.web_crawl_agent import web_crawl_agent
 # Import new teams
 from sonagent.agents.skills_and_tools_team import skills_and_tools_team
 from sonagent.agents.research_team import research_team
@@ -220,6 +221,7 @@ class WorkerTeamAgent:
                 skills_and_tools_team,  # Skills & Tools Team for creating new tools and skills
                 research_team,  # Research Team for academic and general knowledge research
                 finance_team,  # Finance Team for financial and market analysis
+                web_crawl_agent,
                 general_task_team,  # General Task Team for handling diverse tasks that don't fit specialized categories
             ],
             mode=TeamMode.coordinate,
@@ -263,6 +265,8 @@ class WorkerTeamAgent:
             
             8. For complex tasks that span multiple areas: coordinate between agents
             
+            9. for get, read or crawl web conntent form a website rout to eb Crawl Agent
+
             Key principles:
             - Always track token usage for tasks
             - Consider both short-term and long-term goals

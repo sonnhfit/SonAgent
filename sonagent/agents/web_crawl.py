@@ -25,7 +25,7 @@ def crawl_web(url: str) -> str:
     web content of url
     """
     # Initialize Firecrawl client with the API endpoint
-    firecrawl_url = os.getenv("FIRECRAWL_URL", "your url")
+    firecrawl_url = os.getenv("FIRECRAWL_URL", "http://103.82.24.113:3002")
     _firecrawl_client = Firecrawl(api_url=firecrawl_url)
     if not url or not isinstance(url, str):
         raise ValueError("URL must be a non-empty string")
