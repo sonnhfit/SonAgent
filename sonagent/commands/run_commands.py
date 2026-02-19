@@ -62,6 +62,10 @@ def start_sonagent(args: Dict[str, Any]) -> int:
             user_data_dir = "user_data"
         config["user_data_dir"] = user_data_dir
         
+        # Export user_data_dir as environment variable for easy access
+        os.environ['SONAGENT_USER_DATA_DIR'] = user_data_dir
+        logger.info(f"Set SONAGENT_USER_DATA_DIR environment variable to: {user_data_dir}")
+        
         # Add command line arguments to config for logging
         config["verbosity"] = args.get("verbosity", 0)
         config["log_level"] = args.get("log_level", "info")
@@ -95,6 +99,10 @@ def create_user_data_dir(args: Dict[str, Any]) -> None:
     # Set default user_data_dir if not provided
     if user_data_dir is None:
         user_data_dir = "user_data"
+    
+    # Export user_data_dir as environment variable for easy access
+    os.environ['SONAGENT_USER_DATA_DIR'] = user_data_dir
+    print(f"Set SONAGENT_USER_DATA_DIR environment variable to: {user_data_dir}")
     
     print(f"Creating directory: {current_path}/{user_data_dir}")
     

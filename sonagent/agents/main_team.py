@@ -47,6 +47,7 @@ from sonagent.agents.worker_agent_tools import (
 
 from sonagent.agents.dev_team import dev_team
 from sonagent.agents.research_team import research_team
+from sonagent.agents.skills_and_tools_team import skills_and_tools_team
 
 
 logger = logging.getLogger(__name__)
@@ -367,7 +368,8 @@ class MainTeamAgent:
                 self.tom_agent,
                 self.feedback_agent,
                 dev_team,
-                research_team
+                research_team,
+                skills_and_tools_team
             ],
             mode=TeamMode.coordinate,
             instructions=f"""
@@ -391,6 +393,12 @@ class MainTeamAgent:
                - Stock prices, financial data, company fundamentals, analyst recommendations → Research Team (uses YFinance)
                - Market research, technology landscape, competitive analysis → Research Team
                - Examples: "research...", "find papers about...", "what is...", "summarize this video...", "stock price of...", "read this page..."
+            7. For creating new tools, skills, or capabilities: delegate to Skills & Tools Team
+               - Creating new Python tools (functions, modules, utilities) → Skills & Tools Team
+               - Creating Agno skills (structured expertise packages) → Skills & Tools Team
+               - Writing tool templates and implementations → Skills & Tools Team
+               - Managing existing tools and skills → Skills & Tools Team
+               - Examples: "create a tool to...", "write a skill for...", "make a new utility that...", "build a module for..."
 
             IMPORTANT: When user asks for a reminder or to do something at a specific time:
             - ALWAYS delegate to Task Agent to create a task
