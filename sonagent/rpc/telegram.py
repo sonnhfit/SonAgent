@@ -203,7 +203,7 @@ class Telegram(RPCHandler):
         section.
         """
         self._keyboard: List[List[Union[str, KeyboardButton]]] = [
-            ['/show_skills', '/show_tasks', '/version', '/help']
+            ['/show_tasks', '/version', '/help']
         ]
         # do not allow commands with mandatory arguments and critical cmds
         # TODO: DRY! - its not good to list all valid cmds here. But otherwise
@@ -213,7 +213,9 @@ class Telegram(RPCHandler):
             r'/show_skills$',
             r'/reload_skills$', r'/remove_skill', r'/show_tasks$', r'/env$',
             r'/add_env', r'/remove_env', r'/reload_env',
+             r'/show_tools$', r'/reload_tools$', r'/execute_tool',
             r'/help$', r'/version$'
+           
         ]
         # Create keys for generation
         valid_keys_print = [k.replace('$', '') for k in valid_keys]
@@ -304,6 +306,9 @@ class Telegram(RPCHandler):
             CommandHandler('reload_skills', self._reload_skills),
             CommandHandler('reload_env', self._reload_env),
             CommandHandler('remove_skill', self._remove_skill),
+            CommandHandler('show_tools', self._show_tools),
+            CommandHandler('reload_tools', self._reload_tools),
+            CommandHandler('execute_tool', self._execute_tool),
             CommandHandler('help', self._help),
             CommandHandler('version', self._version),
             CommandHandler('sonagent', self.echo),
@@ -518,7 +523,13 @@ class Telegram(RPCHandler):
             "*/add_env:* `Add environment`\n"
             "*/remove_env:* `Remove environment`\n"
             "*/help:* `This help message`\n"
-            "*/version:* `Show version`"
+            "*/version:* `Show version`\n\n"
+            "_Tool Management_\n"
+            "----------------\n"
+            "*/show_tools:* `Show all loaded tools from user_data/tools/`\n"
+            "*/reload_tools:* `Force reload all tools from directory`\n"
+            "*/execute_tool <tool_name> [args]:* `Execute a specific tool with optional JSON arguments`\n\n"
+
             )
 
         await self._send_msg(message, parse_mode=ParseMode.MARKDOWN)
@@ -703,3 +714,94 @@ class Telegram(RPCHandler):
 
         result = await self._rpc.show_task()
         await self._send_msg(result, parse_mode=ParseMode.MARKDOWN)
+
+    async def _show_tools(self, update: Update, context: CallbackContext) -> None:
+        """
+        Handler for /show_tools.
+        Show all loaded tools from the ToolRegistry.
+        :param bot: telegram bot
+        :param update: message update
+        :return: None
+        """
+        logger.info("[Telegram] Showing tools")
+        try:
+            result = await self._rpc.show_tools()
+            await self._send_msg(result, parse_mode=ParseMode.MARKDOWN)
+        except Exception as e:
+            error_msg = f"Error showing tools: {str(e)[:200]}"
+            logger.error(f"[Telegram] Error in _show_tools: {e}", exc_info=True)
+            await update.message.reply_text(error_msg)
+
+    async def _reload_tools(self, update: Update, context: CallbackContext) -> None:
+        """
+        Handler for /reload_tools.
+        Force reload all tools from the tools directory.
+        :param bot: telegram bot
+        :param update: message update
+        :return: None
+        """
+        logger.info("[Telegram] Reloading tools")
+        try:
+            result = await self._rpc.reload_tools()
+            await update.message.reply_text(result, parse_mode=ParseMode.MARKDOWN)
+        except Exception as e:
+            error_msg = f"Error reloading tools: {str(e)[:200]}"
+            logger.error(f"[Telegram] Error in _reload_tools: {e}", exc_info=True)
+            await update.message.reply_text(error_msg)
+
+    async def _execute_tool(self, update: Update, context: CallbackContext) -> None:
+        """
+        Handler for /execute_tool.
+        Execute a specific tool with arguments.
+        :param bot: telegram bot
+        :param update: message update
+        :return: None
+        """
+        logger.info("[Telegram] Executing tool")
+        
+        # Get the full message text
+        full_text = update.message.text
+        
+        # Remove command and get arguments
+        args_text = full_text.replace('/execute_tool', '').strip()
+        
+        if not args_text:
+            # No arguments provided
+            await update.message.reply_text(
+                "Usage: /execute_tool <tool_name> [json_arguments]\n"
+                "Example: /execute_tool greet_user {\"name\": \"John\"}",
+                parse_mode=ParseMode.MARKDOWN
+            )
+            return
+        
+        # Parse tool name and arguments
+        try:
+            # Split by space to get tool name and JSON args
+            parts = args_text.split(' ', 1)
+            tool_name = parts[0].strip()
+            
+            # Check if there are JSON arguments
+            if len(parts) > 1:
+                json_args = parts[1].strip()
+                # Try to parse JSON to validate
+                import json
+                try:
+                    json.loads(json_args)
+                    # Arguments are valid JSON
+                    tool_args = json_args
+                except json.JSONDecodeError:
+                    # Arguments are not valid JSON, treat as plain text
+                    tool_args = json.dumps({"arg": json_args})
+            else:
+                tool_args = ""
+            
+            logger.info(f"[Telegram] Executing tool: {tool_name} with args: {tool_args[:100]}...")
+            
+            # Call RPC to execute tool
+            result = await self._rpc.execute_tool(tool_name, tool_args)
+            await update.message.reply_text(result, parse_mode=ParseMode.MARKDOWN)
+            
+        except Exception as e:
+            error_msg = f"Error executing tool: {str(e)[:200]}"
+            logger.error(f"[Telegram] Error in _execute_tool: {e}", exc_info=True)
+            await update.message.reply_text(error_msg)

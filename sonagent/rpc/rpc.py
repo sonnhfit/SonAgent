@@ -329,3 +329,69 @@ class RPC:
         except Exception as e:
             logger.error(f"[RPC] Error getting team agent info: {e}", exc_info=True)
             return {"error": str(e), "message": "Failed to get team agent info"}
+    
+    # Tool management methods
+    async def show_tools(self) -> str:
+        """
+        Show all loaded tools from the ToolRegistry.
+        
+        Returns:
+            Formatted tools list
+        """
+        logger.info(f"[RPC] Showing tools")
+        try:
+            if hasattr(self.sonagent, 'show_tools'):
+                result = self.sonagent.show_tools()
+                logger.info(f"[RPC] Tools shown successfully")
+                return result
+            else:
+                logger.error(f"[RPC] SonBot does not have show_tools method")
+                return "Tool management not available. Please update SonBot."
+        except Exception as e:
+            logger.error(f"[RPC] Error showing tools: {e}", exc_info=True)
+            return f"Error showing tools: {str(e)}"
+    
+    async def reload_tools(self) -> str:
+        """
+        Force reload all tools from the tools directory.
+        
+        Returns:
+            Reload status message
+        """
+        logger.info(f"[RPC] Reloading tools")
+        try:
+            if hasattr(self.sonagent, 'reload_tools'):
+                result = self.sonagent.reload_tools()
+                logger.info(f"[RPC] Tools reloaded successfully")
+                return result
+            else:
+                logger.error(f"[RPC] SonBot does not have reload_tools method")
+                return "Tool management not available. Please update SonBot."
+        except Exception as e:
+            logger.error(f"[RPC] Error reloading tools: {e}", exc_info=True)
+            return f"Error reloading tools: {str(e)}"
+    
+    async def execute_tool(self, tool_name: str, tool_args: str = "") -> str:
+        """
+        Execute a specific tool with arguments.
+        
+        Args:
+            tool_name: Name of the tool to execute
+            tool_args: JSON string of arguments (optional)
+            
+        Returns:
+            Tool execution result
+        """
+        logger.info(f"[RPC] Executing tool: {tool_name}")
+        try:
+            if hasattr(self.sonagent, 'execute_tool'):
+                result = await self.sonagent.execute_tool(tool_name, tool_args)
+                logger.info(f"[RPC] Tool {tool_name} executed successfully")
+                return result
+            else:
+                logger.error(f"[RPC] SonBot does not have execute_tool method")
+                return "Tool execution not available. Please update SonBot."
+        except Exception as e:
+            logger.error(f"[RPC] Error executing tool {tool_name}: {e}", exc_info=True)
+            return f"Error executing tool {tool_name}: {str(e)}"
+

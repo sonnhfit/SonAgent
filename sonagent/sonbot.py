@@ -18,6 +18,7 @@ from sonagent.loggers.logging_mixin import LoggingMixin
 from sonagent.persistence.models import init_db
 from sonagent.rpc import IOMsg, RPCManager
 from sonagent.skills.skills_manager import SkillsManager
+from sonagent.tools.tool_registry import ToolRegistry
 from sonagent.utils.datetime_helpers import dt_now
 from sonagent.utils.utils import init_evironment
 
@@ -76,8 +77,10 @@ class SonBot(LoggingMixin):
 
         self.skills = SkillsManager(self)
 
+        # Initialize ToolRegistry for dynamic tool loading
+        self.tool_registry = ToolRegistry(self.config)
+
         names = str(self.skills.load_register_skills_name())
-        logger.info(f"SKILLLS NAME: {names}")
         self._schedule = Scheduler()
 
         # Initialize task queue for agent worker
@@ -98,6 +101,10 @@ class SonBot(LoggingMixin):
         def scan_skills():
             self.scan_and_reload_skills()
 
+        # Add tool scanning every 30 seconds (matching ToolRegistry scan interval)
+        def scan_tools():
+            self.scan_and_reload_tools()
+
         def agent_worker_cronjob_schedule():
             self.scan_task_for_agent_worker()
 
@@ -105,6 +112,7 @@ class SonBot(LoggingMixin):
             self.execute_task_from_queue()
         
         self._schedule.every(10).seconds.do(scan_skills)
+        self._schedule.every(30).seconds.do(scan_tools)
         self._schedule.every(11).seconds.do(agent_worker_cronjob_schedule)
         self._schedule.every(60).seconds.do(agent_worker_task_execute)
 
@@ -612,6 +620,32 @@ class SonBot(LoggingMixin):
         except Exception as e:
             logger.error(f"Error scanning skills directory: {e}")
 
+    def scan_and_reload_tools(self) -> None:
+        """
+        Scan the tools directory for changes and reload tools if needed.
+        This method is called every 30 seconds by the scheduler.
+        Only scans and reloads, no status notifications.
+        """
+        try:
+            if hasattr(self, 'tool_registry'):
+                reloaded = self.tool_registry.scan_and_load_tools()
+                if reloaded:
+                    logger.info(f"Tools reloaded. Total tools: {len(self.tool_registry.tools)}")
+                else:
+                    # Log only occasionally to avoid spam
+                    current_time = time.time()
+                    if hasattr(self, 'last_tool_scan_time'):
+                        if current_time - self.last_tool_scan_time > 300:  # Log once every 5 minutes
+                            logger.debug(f"No changes in tools directory. Current tool count: {len(self.tool_registry.tools)}")
+                            self.last_tool_scan_time = current_time
+                    else:
+                        self.last_tool_scan_time = current_time
+            else:
+                logger.warning("ToolRegistry not initialized, cannot scan tools")
+                
+        except Exception as e:
+            logger.error(f"Error scanning tools directory: {e}")
+
     async def chat(self, input: str) -> str:
         """
         Process chat message using team agent.
@@ -687,6 +721,70 @@ class SonBot(LoggingMixin):
     
     def reload_skills(self) -> str:
         return self.agent.reload_skills()
+    
+    # Tool management methods
+    def show_tools(self) -> str:
+        """
+        Get formatted list of all loaded tools.
+        
+        Returns:
+            Formatted tools list
+        """
+        if hasattr(self, 'tool_registry'):
+            return self.tool_registry.format_tools_list()
+        else:
+            return "ToolRegistry not initialized"
+    
+    def reload_tools(self) -> str:
+        """
+        Force reload all tools.
+        
+        Returns:
+            Reload status message
+        """
+        if hasattr(self, 'tool_registry'):
+            self.tool_registry.reload_tools()
+            return f"Tools reloaded. Total tools: {len(self.tool_registry.tools)}"
+        else:
+            return "ToolRegistry not initialized"
+    
+    async def execute_tool(self, tool_name: str, tool_args: str = "") -> str:
+        """
+        Execute a specific tool with arguments.
+        
+        Args:
+            tool_name: Name of the tool to execute
+            tool_args: JSON string of arguments
+            
+        Returns:
+            Tool execution result
+        """
+        if not hasattr(self, 'tool_registry'):
+            return "ToolRegistry not initialized"
+        
+        try:
+            import json
+            
+            # Parse arguments if provided
+            kwargs = {}
+            if tool_args:
+                try:
+                    kwargs = json.loads(tool_args)
+                    if not isinstance(kwargs, dict):
+                        return f"Error: Arguments must be a JSON object (dict), got {type(kwargs)}"
+                except json.JSONDecodeError as e:
+                    return f"Error parsing JSON arguments: {str(e)}"
+            
+            # Check if tool exists
+            if tool_name not in self.tool_registry.tool_functions:
+                return f"Error: Tool '{tool_name}' not found. Available tools: {', '.join(self.tool_registry.tool_functions.keys())}"
+            
+            # Execute tool
+            result = self.tool_registry.execute_tool(tool_name, **kwargs)
+            return f"Tool '{tool_name}' executed successfully. Result:\n{result}"
+            
+        except Exception as e:
+            return f"Error executing tool '{tool_name}': {str(e)}"
     
     # Team agent specific methods
     async def create_task_via_team(self, content: str, priority: int = 0) -> str:
