@@ -128,3 +128,4 @@ Working style:
 - Provide actionable insights and key takeaways at the end of each report.
 """
 )
+
