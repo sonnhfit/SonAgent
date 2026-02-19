@@ -662,7 +662,7 @@ Always be careful not to overwrite existing files without permission.
 # Create the team (though it's a single agent for now)
 skills_and_tools_team = Team(
     name="Skills & Tools Team",
-    model=OpenAIResponses(id="gpt-5.2"),
+    model=OpenAIResponses(id="gpt-4o-mini"),
     members=[skills_tools_agent],
     mode=TeamMode.coordinate,
     role="Create new and manage tools and skills for the SonAgent system",
