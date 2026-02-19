@@ -274,26 +274,6 @@ class RPC:
             logger.error(f"[RPC] Error getting chat history: {e}", exc_info=True)
             return f"Error: {str(e)}"
     
-    async def extract_tom(self, conversation_text: str, user_id: str = "default") -> str:
-        """
-        Extract Theory of Mind using team agent.
-        
-        Args:
-            conversation_text: Conversation text to analyze
-            user_id: User identifier
-            
-        Returns:
-            TOM analysis result
-        """
-        logger.info(f"[RPC] Extracting TOM for user {user_id}")
-        try:
-            result = await self.sonagent.extract_tom_via_team(conversation_text, user_id)
-            logger.info(f"[RPC] TOM extraction completed")
-            return result
-        except Exception as e:
-            logger.error(f"[RPC] Error extracting TOM: {e}", exc_info=True)
-            return f"Error: {str(e)}"
-    
     async def request_feedback(self, action: str, context: str) -> str:
         """
         Request human feedback using team agent.

@@ -471,82 +471,6 @@ class MainTeamAgent:
                 "message": "Failed to save chat message"
             }
     
-
-    def _extract_tom(self, conversation_text: str, user_id: str = "default") -> Dict[str, Any]:
-        """
-        Internal method to extract Theory of Mind (TOM) from conversation text.
-        
-        Args:
-            conversation_text: The conversation text to analyze
-            user_id: ID of the user
-            
-        Returns:
-            Dictionary with TOM analysis
-        """
-        try:
-            # This would typically use an LLM to analyze the conversation
-            # For now, we'll create a structured analysis
-            
-            tom_analysis = {
-                "user_id": user_id,
-                "timestamp": dt_now().isoformat(),
-                "extracted_beliefs": [],
-                "inferred_intentions": [],
-                "emotional_state": "neutral",
-                "knowledge_level": "medium",
-                "preferences": [],
-                "uncertainties": [],
-                "summary": ""
-            }
-            
-            # Simple keyword-based analysis (in production, use LLM)
-            text_lower = conversation_text.lower()
-            
-            # Extract potential beliefs
-            belief_keywords = ["think", "believe", "know", "feel", "opinion"]
-            for keyword in belief_keywords:
-                if keyword in text_lower:
-                    tom_analysis["extracted_beliefs"].append(f"User expresses {keyword} about topic")
-            
-            # Extract intentions
-            intent_keywords = ["want", "need", "would like", "plan to", "going to"]
-            for keyword in intent_keywords:
-                if keyword in text_lower:
-                    tom_analysis["inferred_intentions"].append(f"User indicates {keyword}")
-            
-            # Emotional analysis
-            positive_words = ["happy", "good", "great", "excited", "love"]
-            negative_words = ["sad", "bad", "angry", "frustrated", "hate"]
-            
-            if any(word in text_lower for word in positive_words):
-                tom_analysis["emotional_state"] = "positive"
-            elif any(word in text_lower for word in negative_words):
-                tom_analysis["emotional_state"] = "negative"
-            
-            # Create summary
-            tom_analysis["summary"] = (
-                f"Extracted {len(tom_analysis['extracted_beliefs'])} beliefs and "
-                f"{len(tom_analysis['inferred_intentions'])} intentions. "
-                f"Emotional state: {tom_analysis['emotional_state']}"
-            )
-            
-            logger.info(f"TOM analysis extracted: {tom_analysis['summary']}")
-            
-            return {
-                "success": True,
-                "tom_analysis": tom_analysis,
-                "message": "TOM analysis completed successfully"
-            }
-            
-        except Exception as e:
-            logger.error(f"Error extracting TOM: {e}")
-            return {
-                "success": False,
-                "error": str(e),
-                "message": "Failed to extract TOM"
-            }
-    
-
     def _determine_agent_types(self, request: str) -> List[str]:
         """
         Determine which agent types should handle a request.
@@ -651,9 +575,6 @@ class MainTeamAgent:
                 metadata={"user_id": user_id}
             )
             
-            # Extract TOM from user input
-            tom_result = self._extract_tom(user_input, user_id)
-            
             # Process request through team
             team_response = self.team.run(user_input, user_id=user_id, session_id=conversation_id)
             
@@ -673,7 +594,6 @@ class MainTeamAgent:
                 "user_id": user_id,
                 "user_input": user_input,
                 "assistant_response": team_response.content,
-                "tom_analysis": tom_result.get("tom_analysis") if tom_result.get("success") else None,
                 "message": "Request processed successfully"
             }
             
@@ -715,8 +635,6 @@ class MainTeamAgent:
                 metadata={"user_id": user_id}
             )
             
-            # Extract TOM from user input
-            tom_result = self._extract_tom(user_input, user_id)
             
             # Debug: Log before calling team.arun
             logger.debug(f"Calling team.arun with input: {user_input}")
@@ -735,7 +653,6 @@ class MainTeamAgent:
                     "user_id": user_id,
                     "user_input": user_input,
                     "assistant_response": None,
-                    "tom_analysis": tom_result.get("tom_analysis") if tom_result.get("success") else None,
                     "run_paused": True,
                     "run_id": team_response.run_id if hasattr(team_response, 'run_id') else None,
                     "active_requirements": self._extract_requirements_info(team_response),
@@ -761,7 +678,6 @@ class MainTeamAgent:
                 "user_id": user_id,
                 "user_input": user_input,
                 "assistant_response": team_response.content,
-                "tom_analysis": tom_result.get("tom_analysis") if tom_result.get("success") else None,
                 "message": "Request processed successfully"
             }
             

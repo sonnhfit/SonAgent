@@ -1004,62 +1004,7 @@ class SonBot(LoggingMixin):
         except Exception as e:
             logger.error(f"Error getting chat history via team: {e}")
             return f"Error retrieving chat history: {str(e)}"
-    
-    async def extract_tom_via_team(self, conversation_text: str, user_id: str = "default") -> str:
-        """
-        Extract Theory of Mind using team agent.
-        
-        Args:
-            conversation_text: Conversation text to analyze
-            user_id: User identifier
-            
-        Returns:
-            TOM analysis result
-        """
-        if not self.team_agent:
-            return "Team agent not initialized. Please switch to team mode first."
-        
-        try:
-            # extract_tom_tool is decorated with @tool, so we need to call it properly
-            result = self.team_agent.extract_tom_tool.entrypoint(
-                conversation_text=conversation_text,
-                user_id=user_id
-            )
-            
-            if result.get("success"):
-                tom_analysis = result.get("tom_analysis", {})
-                
-                # Format TOM analysis for display
-                analysis_parts = []
-                analysis_parts.append(f"TOM Analysis for user {user_id}:")
-                
-                beliefs = tom_analysis.get("extracted_beliefs", [])
-                if beliefs:
-                    analysis_parts.append(f"Beliefs: {len(beliefs)} found")
-                    for i, belief in enumerate(beliefs[:3], 1):  # Show first 3
-                        analysis_parts.append(f"  {i}. {belief}")
-                
-                intentions = tom_analysis.get("inferred_intentions", [])
-                if intentions:
-                    analysis_parts.append(f"Intentions: {len(intentions)} found")
-                    for i, intent in enumerate(intentions[:3], 1):  # Show first 3
-                        analysis_parts.append(f"  {i}. {intent}")
-                
-                emotional_state = tom_analysis.get("emotional_state", "unknown")
-                analysis_parts.append(f"Emotional State: {emotional_state}")
-                
-                summary = tom_analysis.get("summary", "No summary available")
-                analysis_parts.append(f"Summary: {summary}")
-                
-                return "\n".join(analysis_parts)
-            else:
-                error_msg = result.get("error", "Unknown error")
-                return f"Failed to extract TOM: {error_msg}"
-                
-        except Exception as e:
-            logger.error(f"Error extracting TOM via team: {e}")
-            return f"Error extracting TOM: {str(e)}"
-    
+ 
     async def request_feedback_via_team(self, action: str, context: str) -> str:
         """
         Request human feedback using team agent.
