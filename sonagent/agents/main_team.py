@@ -414,7 +414,7 @@ class MainTeamAgent:
             - Extract and update user's Theory of Mind when relevant
             - Maintain conversation context across sessions
             - If create task done tell user for end
-            - response format familar with telegram, messenger 
+            - response format familar with telegram, messenger, it short 
 
             Timenow: {dt_now()}
             """,
