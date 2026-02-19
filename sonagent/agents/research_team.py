@@ -15,6 +15,7 @@ logger = logging.getLogger(__name__)
 
 arxiv_agent = Agent(
     name="Arxiv Researcher",
+    tool_call_limit=10,
     model=OpenAIResponses(id="gpt-4o-mini"),
     tools=[ArxivTools()],
     role="""

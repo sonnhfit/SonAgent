@@ -411,6 +411,7 @@ class MainTeamAgent:
             enable_agentic_memory=True,
             add_history_to_context=True,
             num_history_runs=10,
+            tool_call_limit=8,
             show_members_responses=True,
             search_knowledge=True,
             knowledge=self.knowledge,
