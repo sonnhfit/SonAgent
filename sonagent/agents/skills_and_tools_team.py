@@ -21,6 +21,8 @@ from agno.tools.python import PythonTools
 from agno.tools.shell import ShellTools
 from agno.tools.sleep import SleepTools
 
+from sonagent.constants import TOOL_CALL_LIMIT
+
 logger = logging.getLogger(__name__)
 
 # Base directories - get from environment variable or use default
@@ -582,6 +584,7 @@ skills_tools_agent = Agent(
         ShellTools(base_dir=USER_DATA_DIR),
         SleepTools(),
     ],
+    tool_call_limit=TOOL_CALL_LIMIT,
     role="""
 You are a specialized agent for creating new tools and skills for the SonAgent system.
 

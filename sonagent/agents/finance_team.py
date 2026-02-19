@@ -1,10 +1,11 @@
-
 import logging
 from agno.agent import Agent
 from agno.team import Team, TeamMode
 from agno.models.openai import OpenAIResponses
 from agno.tools.hackernews import HackerNewsTools
 from agno.tools.yfinance import YFinanceTools
+
+from sonagent.constants import TOOL_CALL_LIMIT
 
 logger = logging.getLogger(__name__)
 
@@ -14,6 +15,7 @@ hackernews_agent = Agent(
     name="HackerNews Analyst",
     model=OpenAIResponses(id="gpt-4o-mini"),
     tools=[HackerNewsTools()],
+    tool_call_limit=TOOL_CALL_LIMIT,
     role="""
 You are a tech community intelligence specialist focused on Hacker News.
 
@@ -48,6 +50,7 @@ finance_agent = Agent(
     name="Finance Analyst",
     model=OpenAIResponses(id="gpt-4o-mini"),
     tools=[YFinanceTools()],
+    tool_call_limit=TOOL_CALL_LIMIT,
     role="""
 You are a financial research specialist using Yahoo Finance data.
 
@@ -81,3 +84,38 @@ Do not provide personalized investment advice.
 """
 )
 
+
+# Create finance team combining both financial and community analysis
+finance_team = Team(
+    name="Finance Team",
+    model=OpenAIResponses(id="gpt-4o-mini"),
+    role="Coordinate financial research and tech community analysis by combining Yahoo Finance data with Hacker News trends.",
+    members=[
+        finance_agent,
+        hackernews_agent,
+    ],
+    mode=TeamMode.coordinate,
+    instructions="""
+You are the central coordinator for financial and tech community research.
+
+Primary responsibilities:
+- Understand the user's financial or market research request.
+- Delegate to Finance Analyst for stock prices, company fundamentals, and financial data.
+- Delegate to HackerNews Analyst for tech community sentiment, startup news, and industry trends.
+- Synthesize findings from both agents to provide comprehensive market insights.
+- Combine quantitative financial data with qualitative community sentiment.
+- Identify connections between market movements and tech community discussions.
+
+Routing guidelines:
+- Stock prices, financial metrics, company analysis → Finance Analyst (primary)
+- Tech trends, startup news, community sentiment → HackerNews Analyst (primary)
+- Investment research → Both agents for comprehensive analysis
+- Market news interpretation → Both agents for multi-perspective view
+
+Working style:
+- Present financial data in clear tables with ticker symbols and timestamps.
+- Summarize community sentiment and trending topics from Hacker News.
+- Highlight potential correlations between market events and community discussions.
+- Provide actionable insights combining both quantitative and qualitative data.
+"""
+)

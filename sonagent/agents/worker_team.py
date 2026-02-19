@@ -27,6 +27,8 @@ from agno.learn import (
     LearnedKnowledgeConfig,
 )
 
+from sonagent.constants import TOOL_CALL_LIMIT
+
 from sonagent.persistence import Task, Target
 from sonagent.utils.datetime_helpers import dt_now
 from sonagent.agents.worker_agent_tools import (
@@ -45,6 +47,10 @@ from sonagent.agents.agent_tools import (
 
 # Import dev_team from the dev_team module
 from sonagent.agents.dev_team import dev_team
+# Import new teams
+from sonagent.agents.skills_and_tools_team import skills_and_tools_team
+from sonagent.agents.research_team import research_team
+from sonagent.agents.finance_team import finance_team
 
 logger = logging.getLogger(__name__)
 
@@ -102,6 +108,7 @@ class WorkerTeamAgent:
                 update_task_execution_data_tool,
                 send_rpc_message_tool,
             ],
+            tool_call_limit=TOOL_CALL_LIMIT,
             instructions="""
             You are a Worker Agent responsible for task prioritization and execution.
             
@@ -173,6 +180,7 @@ class WorkerTeamAgent:
                 delete_target_tool,
                 update_target_tool
             ],
+            tool_call_limit=TOOL_CALL_LIMIT,
             instructions="""
             You are responsible for managing targets (goals) in the system.
             
@@ -203,10 +211,14 @@ class WorkerTeamAgent:
         self.worker_team = Team(
             name="Worker Team",
             model=OpenAIResponses(id="gpt-4o-mini"),
+            tool_call_limit=TOOL_CALL_LIMIT,
             members=[
                 self.worker_agent,
                 self.target_agent,
-                dev_team  # Include the development team as a member
+                dev_team,  # Include the development team as a member
+                skills_and_tools_team,  # Skills & Tools Team for creating new tools and skills
+                research_team,  # Research Team for academic and general knowledge research
+                finance_team,  # Finance Team for financial and market analysis
             ],
             mode=TeamMode.coordinate,
             instructions="""
@@ -227,7 +239,22 @@ class WorkerTeamAgent:
                - Examples: "implement feature X", "fix bug Y", "deploy to production"
                - Development Team will coordinate with Product Owner, Backend Dev, and DevOps
             
-            4. For complex tasks that span multiple areas: coordinate between agents
+            4. For creating new tools or skills: delegate to Skills & Tools Team
+               - This includes: creating new Python tools, creating Agno skills
+               - Examples: "create a tool for data processing", "create a skill for code review"
+               - Skills & Tools Team will create files in user_data/tools/ and user_data/skills/
+            
+            5. For research and knowledge gathering: delegate to Research Team
+               - This includes: academic papers, general knowledge, tech community trends
+               - Examples: "research AI agents", "find information about quantum computing"
+               - Research Team includes Arxiv Researcher and Wikipedia Researcher
+            
+            6. For financial and market analysis: delegate to Finance Team
+               - This includes: stock prices, company fundamentals, market trends, tech community sentiment
+               - Examples: "analyze NVIDIA stock", "check tech trends on Hacker News"
+               - Finance Team includes Finance Analyst and HackerNews Analyst
+            
+            7. For complex tasks that span multiple areas: coordinate between agents
             
             Key principles:
             - Always track token usage for tasks
@@ -245,6 +272,25 @@ class WorkerTeamAgent:
             4. Monitor progress and provide feedback as needed
             5. Notify users when development tasks are completed
             6. Update task execution data with results
+            
+            Tool/Skill creation workflow:
+            1. When user requests new functionality, delegate to Skills & Tools Team
+            2. Skills & Tools Team will create appropriate Python tools or Agno skills
+            3. New tools go to user_data/tools/, skills go to user_data/skills/
+            4. Test new tools/skills when possible
+            5. Notify user when creation is complete
+            
+            Research workflow:
+            1. When research is needed, delegate to Research Team
+            2. Research Team will gather information from academic and general knowledge sources
+            3. Present findings in structured format
+            4. Include citations and sources
+            
+            Finance workflow:
+            1. When financial/market analysis is needed, delegate to Finance Team
+            2. Finance Team will gather stock data and tech community sentiment
+            3. Combine quantitative and qualitative analysis
+            4. Present insights with clear tables and summaries
             
             Always maintain:
             - Task execution history (using update_task_execution_data_tool)
@@ -436,5 +482,8 @@ class WorkerTeamAgent:
             "worker_agent_name": self.worker_agent.name if hasattr(self, 'worker_agent') else "unknown",
             "target_agent_name": self.target_agent.name if hasattr(self, 'target_agent') else "unknown",
             "dev_team_included": True,
+            "skills_and_tools_team_included": True,
+            "research_team_included": True,
+            "finance_team_included": True,
             "knowledge_base": self.knowledge.name if hasattr(self, 'knowledge') else "unknown"
         }

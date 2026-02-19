@@ -22,6 +22,8 @@ from agno.learn import (
     LearnedKnowledgeConfig,
 )
 
+from sonagent.constants import TOOL_CALL_LIMIT
+
 
 os.environ["GITHUB_ACCESS_TOKEN"] = os.getenv("GITHUB_ACCESS_TOKEN", "your_token_here")
 
@@ -143,5 +145,6 @@ dev_team = Team(
     - Favor simple, robust solutions over complex ones.
     - Always clarify assumptions and constraints.
     - Keep outputs structured and ready for execution by engineers or agents.
-    """
+    """,
+            tool_call_limit=TOOL_CALL_LIMIT,
 )

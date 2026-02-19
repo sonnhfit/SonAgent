@@ -6,3 +6,6 @@ PROCESS_THROTTLE_SECS = 1  # seconds
 DEFAULT_CONFIG = 'config.json'
 
 AGENT_MODE = ['coding', 'chat', 'team']
+
+# Tool call limit per agent
+TOOL_CALL_LIMIT = 10

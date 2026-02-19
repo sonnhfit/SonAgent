@@ -9,13 +9,15 @@ from agno.models.openai import OpenAIResponses
 from agno.tools.arxiv import ArxivTools
 from agno.tools.wikipedia import WikipediaTools
 
+from sonagent.constants import TOOL_CALL_LIMIT
+
 
 logger = logging.getLogger(__name__)
 
 
 arxiv_agent = Agent(
     name="Arxiv Researcher",
-    tool_call_limit=10,
+    tool_call_limit=TOOL_CALL_LIMIT,
     model=OpenAIResponses(id="gpt-4o-mini"),
     tools=[ArxivTools()],
     role="""
