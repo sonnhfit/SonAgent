@@ -10,7 +10,7 @@ from agno.tools.arxiv import ArxivTools
 from agno.tools.wikipedia import WikipediaTools
 from agno.tools.duckduckgo import DuckDuckGoTools
 from sonagent.constants import TOOL_CALL_LIMIT
-
+from sonagent.agents.web_crawl_agent import web_crawl_agent
 
 logger = logging.getLogger(__name__)
 
@@ -88,6 +88,7 @@ research_team = Team(
     members=[
         arxiv_agent,
         wikipedia_agent,
+        web_crawl_agent
     ],
     tools=[DuckDuckGoTools()],
     mode=TeamMode.coordinate,
