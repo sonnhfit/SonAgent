@@ -6,7 +6,7 @@ import inspect
 import logging
 import time
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Set, Tuple
+from typing import Any, Dict, List, Optional, Set, Tuple, Callable
 import sys
 
 logger = logging.getLogger(__name__)
@@ -40,6 +40,9 @@ class ToolRegistry:
         self.last_scan_time = 0
         self.cached_file_hashes: Set[str] = set()
         self.scan_interval = 30  # Scan every 30 seconds
+        
+        # Tool update subscribers
+        self.update_callbacks: List[Callable[[List[Dict[str, Any]]], None]] = []
         
         # Initial scan
         self.scan_and_load_tools()
@@ -166,6 +169,9 @@ class ToolRegistry:
                 failed_files += 1
         
         logger.info(f"Loaded {len(self.tools)} tools from {successful_files} files ({failed_files} files failed)")
+        
+        # Notify subscribers about tool changes
+        self._notify_subscribers()
     
     def _load_tools_from_file(self, file_path: Path) -> int:
         """
@@ -365,3 +371,63 @@ class ToolRegistry:
         """
         logger.info("Force reloading tools")
         self.scan_and_load_tools(force=True)
+    
+    def register_update_callback(self, callback: Callable[[List[Dict[str, Any]]], None]) -> None:
+        """
+        Register a callback to be notified when tools change.
+        
+        Args:
+            callback: Function to call with list of tool information dictionaries
+        """
+        self.update_callbacks.append(callback)
+        logger.info(f"Registered tool update callback. Total callbacks: {len(self.update_callbacks)}")
+    
+    def unregister_update_callback(self, callback: Callable[[List[Dict[str, Any]]], None]) -> bool:
+        """
+        Unregister a previously registered callback.
+        
+        Args:
+            callback: Callback function to remove
+            
+        Returns:
+            True if callback was removed, False if not found
+        """
+        if callback in self.update_callbacks:
+            self.update_callbacks.remove(callback)
+            logger.info(f"Unregistered tool update callback. Total callbacks: {len(self.update_callbacks)}")
+            return True
+        return False
+    
+    def _notify_subscribers(self) -> None:
+        """
+        Notify all registered subscribers about tool changes.
+        """
+        if not self.update_callbacks:
+            return
+        
+        tools_list = self.get_tools()
+        logger.info(f"Notifying {len(self.update_callbacks)} subscribers about {len(tools_list)} tools")
+        
+        for callback in self.update_callbacks:
+            try:
+                callback(tools_list)
+            except Exception as e:
+                logger.error(f"Error notifying subscriber: {e}", exc_info=True)
+    
+    def get_registry_info(self) -> Dict[str, Any]:
+        """
+        Get information about the registry state.
+        
+        Returns:
+            Dictionary with registry information
+        """
+        return {
+            "tools_dir": str(self.tools_dir),
+            "total_tools": len(self.tools),
+            "total_tool_functions": len(self.tool_functions),
+            "last_scan_time": self.last_scan_time,
+            "cached_file_count": len(self.cached_file_hashes),
+            "scan_interval": self.scan_interval,
+            "subscriber_count": len(self.update_callbacks),
+            "tool_names": list(self.tools.keys())
+        }

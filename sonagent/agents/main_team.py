@@ -50,6 +50,7 @@ from sonagent.agents.worker_agent_tools import (
 from sonagent.agents.dev_team import dev_team
 from sonagent.agents.research_team import research_team
 from sonagent.agents.skills_and_tools_team import skills_and_tools_team
+from sonagent.agents.general_task_team import general_task_team, register_team_for_dynamic_tools
 
 
 logger = logging.getLogger(__name__)
@@ -78,7 +79,7 @@ class MainTeamAgent:
         
         # Store for paused runs
         self.paused_runs: Dict[str, Any] = {}
-        chroma_path = memory_db_path if memory_db_path else "tmp/chromadb"
+        chroma_path = memory_db_path if memory_db_path else "user_data/chromadb"
         # Use provided memory_db_path or default
 
 
@@ -371,7 +372,8 @@ class MainTeamAgent:
                 self.feedback_agent,
                 dev_team,
                 research_team,
-                skills_and_tools_team
+                skills_and_tools_team,
+                general_task_team
             ],
             mode=TeamMode.coordinate,
             instructions=f"""
@@ -402,13 +404,26 @@ class MainTeamAgent:
                - Managing existing tools and skills → Skills & Tools Team
                - Examples: "create a tool to...", "write a skill for...", "make a new utility that...", "build a module for..."
 
+            8. For tasks that don't fit into any specialized category: delegate to General Task Team
+               - Complex multi-step problems requiring multiple tool types → General Task Team
+               - Tasks that span multiple domains → General Task Team
+               - Experimental or exploratory work → General Task Team
+               - System administration and automation → General Task Team
+               - Data processing and analysis → General Task Team
+               - Custom scripting and tool creation → General Task Team
+               - Troubleshooting and debugging → General Task Team
+               - Documentation and knowledge management → General Task Team
+               - When you're unsure which team should handle a task → General Task Team
+               - Examples: "help me with...", "figure out how to...", "solve this problem...", "automate this process..."
+
             IMPORTANT: When user asks for a reminder or to do something at a specific time:
             - ALWAYS delegate to Task Agent to create a task
             - DO NOT use update_user_memory for reminder requests
             - Task Agent will create a proper task with schedule information
             - Your target is same user target we work for that 
             - It's necessary to clearly distinguish between goals and tasks in order to route them to the Tom agent or the Task agent.
-
+            - If the user requests to be routed to a specific team, then route it to that team.
+            
             Always:
             - Save important conversations to chat history
             - Extract and update user's Theory of Mind when relevant
