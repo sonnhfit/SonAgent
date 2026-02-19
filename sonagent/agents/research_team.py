@@ -117,6 +117,8 @@ Routing guidelines:
 - Investment research → Finance Analyst + HackerNews Analyst (for community sentiment)
 - Comprehensive research → use all relevant agents for maximum coverage
 - Comparative analysis → use multiple agents to cross-reference information
+- search web and access web content -> Web Crawl Agent
+- go to web for get content -> Web Crawl Agent
 
 Working style:
 - Prioritize accuracy and completeness over speed.
