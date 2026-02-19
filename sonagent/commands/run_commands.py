@@ -86,7 +86,7 @@ def start_sonagent(args: Dict[str, Any]) -> int:
 
 def create_user_data_dir(args: Dict[str, Any]) -> None:
     """
-    Create user data directory
+    Create user data directory with all required subdirectories
     """
     print("Creating user data directory")
     current_path = str(os.getcwd())
@@ -104,11 +104,31 @@ def create_user_data_dir(args: Dict[str, Any]) -> None:
         os.makedirs(user_data_path)
         print(f"Created directory: {user_data_path}")
     
-    # Create skills subdirectory if it doesn't exist
-    skills_path = os.path.join(user_data_path, "skills")
-    if not os.path.exists(skills_path):
-        os.makedirs(skills_path)
-        print(f"Created skills directory: {skills_path}")
+    # Define all required subdirectories
+    subdirs = [
+        "agents",
+        "memory", 
+        "skills",
+        "tools",
+        "workflows",
+        "workspace"
+    ]
+    
+    # Create all subdirectories
+    for subdir in subdirs:
+        subdir_path = os.path.join(user_data_path, subdir)
+        if not os.path.exists(subdir_path):
+            os.makedirs(subdir_path)
+            print(f"Created {subdir} directory: {subdir_path}")
+            
+            # Add .gitkeep file to empty directories
+            gitkeep_file = os.path.join(subdir_path, '.gitkeep')
+            if not os.path.exists(gitkeep_file):
+                with open(gitkeep_file, 'w') as f:
+                    f.write('')
+                print(f"  Added .gitkeep to {subdir} directory")
+        else:
+            print(f"{subdir} directory already exists: {subdir_path}")
     
     # Note: We no longer create skills.yaml file since skills are loaded dynamically from the directory
 
@@ -175,9 +195,16 @@ def create_user_data_dir(args: Dict[str, Any]) -> None:
 """
     
     config_file_path = os.path.join(user_data_path, "config.json")
-    with open(config_file_path, "w") as file:
-        file.write(config_example)
+    if not os.path.exists(config_file_path):
+        with open(config_file_path, "w") as file:
+            file.write(config_example)
+        print(f"Created config file: {config_file_path}")
+    else:
+        print(f"Config file already exists: {config_file_path}")
     
-    print(f"Created config file: {config_file_path}")
     logger.info(f"[DONE] User data directory created at {user_data_path}")
+    print(f"\n✅ User data directory setup complete at: {user_data_path}")
+    print("   Subdirectories created: agents, memory, skills, tools, workflows, workspace")
+    print("   Default config.json created")
+    print("\nYou can now add your tools to the user_data/tools/ directory")
     return None
