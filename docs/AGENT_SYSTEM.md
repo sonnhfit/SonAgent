@@ -1,5 +1,7 @@
 # Agent System Architecture
 
+> **⚠️ Note:** This document describes legacy architecture. For current architecture based on Agno framework with MainTeamAgent, WorkerTeamAgent, and specialized teams, see [ARCHITECTURE.md](ARCHITECTURE.md).
+
 ## Overview
 
 SonAgent now includes a comprehensive multi-agent system with autonomous capabilities. The system supports:

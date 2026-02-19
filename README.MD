@@ -2,7 +2,9 @@
 
 ### Autonomous Agent for Digital Consciousness Backup Using Large Language Models (LLM) 
 
-[![](https://dcbadge.vercel.app/api/server/XZ8reU9z3T)](https://discord.gg/XZ8reU9z3T) 
+[![](https://dcbadge.vercel.app/api/server/XZ8reU9z3T)](https://discord.gg/XZ8reU9z3T)
+
+📖 **[Tài liệu tiếng Việt / Vietnamese Documentation](docs/README_VI.md)** 
 
 
 ### Overview
