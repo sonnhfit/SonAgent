@@ -19,6 +19,9 @@ from agno.tools.github import GithubTools
 
 from sonagent.constants import TOOL_CALL_LIMIT
 from sonagent.tools.tool_update_service import register_team_for_tool_updates
+from sonagent.agents.web_crawl import (
+    crawl_web
+)
 
 logger = logging.getLogger(__name__)
 
@@ -44,6 +47,8 @@ def create_general_task_agent() -> Agent:
             ArxivTools(),
             WikipediaTools(),
             GithubTools(),
+            crawl_web,
+
         ],
         tool_call_limit=TOOL_CALL_LIMIT,
         role="""

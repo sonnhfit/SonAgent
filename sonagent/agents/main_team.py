@@ -39,9 +39,7 @@ from sonagent.agents.agent_tools import (
     request_feedback_tool,
     process_feedback_tool
 )
-from sonagent.agents.web_crawl import (
-    crawl_web
-)
+
 
 from sonagent.agents.worker_agent_tools import (
     get_targets_tool,
@@ -373,7 +371,6 @@ class MainTeamAgent:
                 self.task_agent,
                 self.tom_agent,
                 self.feedback_agent,
-                crawl_web,
                 dev_team,
                 research_team,
                 skills_and_tools_team,
