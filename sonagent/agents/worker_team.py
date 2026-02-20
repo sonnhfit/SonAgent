@@ -46,7 +46,7 @@ from sonagent.agents.agent_tools import (
 )
 
 # Import dev_team from the dev_team module
-from sonagent.agents.dev_team import dev_team
+from sonagent.agents.dev_team import create_dev_team
 from sonagent.agents.web_crawl_agent import web_crawl_agent
 # Import new teams
 from sonagent.agents.skills_and_tools_team import skills_and_tools_team
@@ -209,6 +209,9 @@ class WorkerTeamAgent:
             num_history_runs=5
         )
         
+        # Create dev_team with shared database instance
+        dev_team_instance = create_dev_team(db_instance=self.db)
+        
         # Initialize the worker team with all agents including dev_team
         self.worker_team = Team(
             name="Worker Team",
@@ -217,7 +220,7 @@ class WorkerTeamAgent:
             members=[
                 self.worker_agent,
                 self.target_agent,
-                dev_team,  # Include the development team as a member
+                dev_team_instance,  # Include the development team as a member
                 skills_and_tools_team,  # Skills & Tools Team for creating new tools and skills
                 research_team,  # Research Team for academic and general knowledge research
                 finance_team,  # Finance Team for financial and market analysis

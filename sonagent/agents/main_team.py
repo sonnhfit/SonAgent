@@ -48,7 +48,7 @@ from sonagent.agents.worker_agent_tools import (
     update_target_tool
 )
 from sonagent.agents.web_crawl_agent import web_crawl_agent
-from sonagent.agents.dev_team import dev_team
+from sonagent.agents.dev_team import create_dev_team
 from sonagent.agents.research_team import research_team
 from sonagent.agents.skills_and_tools_team import skills_and_tools_team
 from sonagent.agents.general_task_team import general_task_team, register_team_for_dynamic_tools
@@ -363,6 +363,9 @@ class MainTeamAgent:
     
     def _init_team(self):
         """Initialize the main team with all agents."""
+        # Create dev_team with shared database instance
+        dev_team_instance = create_dev_team(db_instance=self.db)
+        
         self.team = Team(
             name="Main Team",
             model=OpenAIResponses(id="gpt-4o-mini"),
@@ -371,7 +374,7 @@ class MainTeamAgent:
                 self.task_agent,
                 self.tom_agent,
                 self.feedback_agent,
-                dev_team,
+                dev_team_instance,
                 research_team,
                 web_crawl_agent,
                 skills_and_tools_team,

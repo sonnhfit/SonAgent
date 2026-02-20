@@ -33,13 +33,17 @@ from agno.vectordb.chroma import ChromaDb, SearchType
 
 from sonagent.constants import TOOL_CALL_LIMIT
 
-WORKSPACE = Path(os.getenv("WORKSPACE_DIR", "/workspace"))
-WORKSPACE.mkdir(exist_ok=True)
+logger = logging.getLogger(__name__)
+
+# Base directories
+USER_DATA_DIR = Path(os.environ.get('SONAGENT_USER_DATA_DIR', 'user_data'))
+WORKSPACE = USER_DATA_DIR / "workspace"
+WORKSPACE.mkdir(exist_ok=True, parents=True)
 
 
 os.environ["GITHUB_ACCESS_TOKEN"] = os.getenv("GITHUB_ACCESS_TOKEN", "your_token_here")
 
-chroma_path = ""
+chroma_path = str(USER_DATA_DIR / "chromadb")
 
 
 instructions = f"""\
@@ -230,50 +234,67 @@ commit cleanly, and leave a trail that makes sense if someone reads the
 git log later.\
 """
 
-gcode_knowledge = Knowledge(
-    name="Knowledge Base",
-    description="user knowledge",
-    vector_db=ChromaDb(
-        collection="gcode_knowledge", path=chroma_path, persistent_client=True,
-        search_type=SearchType.hybrid,
-        embedder=OpenAIEmbedder(id="text-embedding-3-small")
-    ),
-)
+try:
+    gcode_knowledge = Knowledge(
+        name="Knowledge Base",
+        description="user knowledge",
+        vector_db=ChromaDb(
+            collection="gcode_knowledge", path=chroma_path, persistent_client=True,
+            search_type=SearchType.hybrid,
+            embedder=OpenAIEmbedder(id="text-embedding-3-small")
+        ),
+    )
+    
+    gcode_learnings = Knowledge(
+        name="Knowledge Base",
+        description="user knowledge",
+        vector_db=ChromaDb(
+            collection="gcode_learnings", path=chroma_path, persistent_client=True,
+            search_type=SearchType.hybrid,
+            embedder=OpenAIEmbedder(id="text-embedding-3-small")
+        ),
+    )
+except Exception as e:
+    logger.warning(f"Could not initialize ChromaDB knowledge base: {e}. Using in-memory knowledge.")
+    gcode_knowledge = None
+    gcode_learnings = None
 
+# Function to create dev_team with configurable database
+def create_dev_team(db_path: str = "user_data/agno.db", db_instance: Optional[SqliteDb] = None):
+    """
+    Create dev_team agent with configurable database.
+    
+    Args:
+        db_path: Path to SQLite database file (used if db_instance is None)
+        db_instance: Existing SqliteDb instance to use (optional)
+    """
+    # Use provided db_instance or create new one
+    if db_instance is not None:
+        agent_db = db_instance
+    else:
+        agent_db = SqliteDb(db_file=db_path)
+    
+    return Agent(
+        id="gcode",
+        name="Dev Agent",
+        model=OpenAIResponses(id="gpt-4o-mini"),
+        db=agent_db,
+        instructions=instructions,
+        knowledge=gcode_knowledge,
+        search_knowledge=True,
+        enable_agentic_memory=True,
+        learning=LearningMachine(
+            knowledge=gcode_learnings,
+            learned_knowledge=LearnedKnowledgeConfig(mode=LearningMode.AGENTIC),
+        ),
+        tools=[CodingTools(base_dir=WORKSPACE, all=True), ReasoningTools(), GithubTools()],
+        add_datetime_to_context=True,
+        add_history_to_context=True,
+        read_chat_history=True,
+        num_history_runs=5,
+        markdown=True,
+    )
 
-gcode_learnings= Knowledge(
-    name="Knowledge Base",
-    description="user knowledge",
-    vector_db=ChromaDb(
-        collection="gcode_learnings", path=chroma_path, persistent_client=True,
-        search_type=SearchType.hybrid,
-        embedder=OpenAIEmbedder(id="text-embedding-3-small")
-    ),
-)
-
-agent_db = SqliteDb(db_file="user_data/agno.db")
-
-# ---------------------------------------------------------------------------
-# Create Agent
-# ---------------------------------------------------------------------------
-dev_team = Agent(
-    id="gcode",
-    name="Dev Agent",
-    model=OpenAIResponses(id="gpt-4o-mini"),
-    db=agent_db,
-    instructions=instructions,
-    knowledge=gcode_knowledge,
-    search_knowledge=True,
-    enable_agentic_memory=True,
-    learning=LearningMachine(
-        knowledge=gcode_learnings,
-        learned_knowledge=LearnedKnowledgeConfig(mode=LearningMode.AGENTIC),
-    ),
-    tools=[CodingTools(base_dir=WORKSPACE, all=True), ReasoningTools(), GithubTools()],
-    add_datetime_to_context=True,
-    add_history_to_context=True,
-    read_chat_history=True,
-    num_history_runs=5,
-    markdown=True,
-)
+# Default dev_team instance with default database
+dev_team = create_dev_team()
 
