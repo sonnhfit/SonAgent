@@ -2,7 +2,9 @@
 
 ### Autonomous Agent for Digital Consciousness Backup Using Large Language Models (LLM) 
 
-[![](https://dcbadge.vercel.app/api/server/XZ8reU9z3T)](https://discord.gg/XZ8reU9z3T) 
+[![](https://dcbadge.vercel.app/api/server/XZ8reU9z3T)](https://discord.gg/XZ8reU9z3T)
+
+📖 **[Tài liệu tiếng Việt / Vietnamese Documentation](docs/README_VI.md)** 
 
 
 ### Overview
@@ -95,36 +97,87 @@ pip install --editable .
 
 ### Docker
 
-You can run SonAgent using Docker:
+Docker provides the easiest way to run SonAgent without managing Python dependencies.
 
-#### Using Docker Compose (recommended)
+#### Prerequisites
 
-1. Clone the repository:
+- Docker installed on your system ([Install Docker](https://docs.docker.com/get-docker/))
+- Docker Compose (included with Docker Desktop)
+
+#### Quick Start with Docker Compose (Recommended)
+
+1. **Clone the repository**:
 ```bash
 git clone https://github.com/sonnhfit/SonAgent.git
 cd SonAgent
 ```
 
-2. Create a `.env` file with your configuration (copy from `example.env`):
-```bash
-cp example.env .env
-# Edit .env with your API keys and settings
-```
-
-3. Create user_data directory and config:
+2. **Create user_data directory**:
 ```bash
 mkdir -p user_data
-# Create your config.json in user_data/
 ```
 
-4. Run with Docker Compose:
-```bash
-docker-compose up
+3. **Create configuration file** (`user_data/config.json`):
+```json
+{
+    "initial_state": "running",
+    "timezone": "UTC",
+    "api_server": {
+        "enabled": true,
+        "listen_ip_address": "0.0.0.0",
+        "listen_port": 8080,
+        "username": "admin",
+        "password": "admin"
+    },
+    "telegram": {
+        "enabled": true,
+        "token": "YOUR_TELEGRAM_BOT_TOKEN",
+        "chat_id": "YOUR_TELEGRAM_CHAT_ID"
+    },
+    "openai": {
+        "enabled": true,
+        "api_type": "openai",
+        "api_key": "YOUR_OPENAI_API_KEY"
+    },
+    "github": {
+        "enabled": false,
+        "username": "",
+        "token": ""
+    }
+}
 ```
 
-#### Using Docker directly
+4. **(Optional) Create `.env` file** for environment variables:
+```bash
+cp example.env .env
+# Edit .env with your preferred settings
+```
+
+5. **Start SonAgent**:
+```bash
+docker-compose up -d
+```
+
+6. **View logs**:
+```bash
+docker-compose logs -f sonagent
+```
+
+7. **Stop SonAgent**:
+```bash
+docker-compose down
+```
+
+#### Using Pre-built Docker Image
+
+Run directly from GitHub Container Registry without cloning:
 
 ```bash
+# Create user_data directory and config first
+mkdir -p user_data
+# Create user_data/config.json with your API keys
+
+# Run the container
 docker run -d \
   --name sonagent \
   -v $(pwd)/user_data:/sonagent/user_data \
@@ -132,24 +185,71 @@ docker run -d \
   ghcr.io/sonnhfit/sonagent/sonagent:latest \
   run \
   --config /sonagent/user_data/config.json \
-  --agentdb sqlite:///user_data/tradesv3.sqlite \
-  --memory-url /sonagent/user_data/memory
+  --agentdb sqlite:///sonagent/user_data/agentdb.db \
+  --memory-url /sonagent/user_data/memory \
+  --user-data-dir /sonagent/user_data \
+  --log-level info
 ```
 
-#### Building Docker image locally
+#### Available Docker Tags
+
+Pre-built images are automatically published to GitHub Container Registry:
+
+- `ghcr.io/sonnhfit/sonagent/sonagent:latest` - Latest stable release from main branch
+- `ghcr.io/sonnhfit/sonagent/sonagent:dev` - Latest development build from dev branch
+- `ghcr.io/sonnhfit/sonagent/sonagent:v1.0.13` - Specific version tags
+- `ghcr.io/sonnhfit/sonagent/sonagent:sha-abc123` - Specific commit builds
+
+#### Building Docker Image Locally
+
+If you want to build the image yourself:
 
 ```bash
+# Build the image
 docker build -t sonagent:latest .
+
+# Run your custom build
+docker run -d \
+  --name sonagent \
+  -v $(pwd)/user_data:/sonagent/user_data \
+  -p 8080:8080 \
+  sonagent:latest \
+  run \
+  --config /sonagent/user_data/config.json \
+  --agentdb sqlite:///sonagent/user_data/agentdb.db \
+  --memory-url /sonagent/user_data/memory \
+  --user-data-dir /sonagent/user_data \
+  --log-level info
 ```
 
-#### Available Docker tags
+#### Docker Features
 
-The CI automatically builds and pushes Docker images to GitHub Container Registry:
+**Persistent Data**: The `user_data` directory is mounted as a volume, ensuring:
+- Configuration persists across restarts
+- Database and memory are preserved
+- Custom tools and skills are maintained
+- Logs are accessible from host
 
-- `ghcr.io/sonnhfit/sonagent/sonagent:latest` - Latest build from main branch
-- `ghcr.io/sonnhfit/sonagent/sonagent:dev` - Latest build from dev branch  
-- `ghcr.io/sonnhfit/sonagent/sonagent:v1.0.13` - Specific version tag
-- `ghcr.io/sonnhfit/sonagent/sonagent:sha-abc123` - Specific commit SHA
+**API Access**: Once running, access:
+- **REST API**: http://localhost:8080
+- **WebSocket**: ws://localhost:8080/ws
+- **API Docs**: http://localhost:8080/docs (if enabled)
+
+#### Docker Troubleshooting
+
+**Container won't start:**
+- Verify `user_data/config.json` exists and is valid JSON
+- Check port availability: `lsof -i :8080`
+- View logs: `docker logs sonagent`
+
+**Permission issues:**
+- Linux: `chmod -R 755 user_data`
+- Ensure Docker has access to the mounted directory
+
+**Database errors:**
+- Stop all instances: `docker stop sonagent`
+- Remove lock files: `rm user_data/agentdb.db-*`
+- Restart: `docker start sonagent`
 
 ## Contributors
 A big thank you to all the contributors who helped improve this project. 
